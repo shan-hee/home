@@ -120,7 +120,6 @@ export default ({ mode }: { mode: string }): UserConfig => {
                     silenceDeprecations: ["legacy-js-api"],
                 },
             },
-            postcss: {},
         },
         build: {
             minify: "terser",
