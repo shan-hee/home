@@ -113,7 +113,7 @@ import { Paw } from "@vicons/ionicons5";
 import { mainStore } from "@/store";
 import config from "@/../package.json";
 import { ref, watch, computed, onMounted, nextTick, onUpdated, onBeforeUnmount } from "vue";
-import { throttle } from "lodash";
+import { throttle } from "lodash-es";
 
 const store = mainStore();
 const fullYear = new Date().getFullYear();
