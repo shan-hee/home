@@ -128,7 +128,6 @@ export default ({ mode }: { mode: string }): UserConfig => {
                 scss: {
                     charset: false,
                     additionalData: `@use "@/style/global.scss" as global;`,
-                    silenceDeprecations: ["legacy-js-api"],
                 },
             },
         },
