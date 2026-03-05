@@ -8,6 +8,8 @@ import Components from "unplugin-vue-components/vite";
 import viteCompression from "vite-plugin-compression2";
 import UnoCSS from 'unocss/vite';
 import type { UserConfig } from "vite";
+import postcssPresetEnv from 'postcss-preset-env';
+import cssnano from 'cssnano';
 
 // https://vitejs.dev/config/
 export default ({ mode }: { mode: string }): UserConfig => {
@@ -113,6 +115,15 @@ export default ({ mode }: { mode: string }): UserConfig => {
             extensions: [".ts", ".js", ".vue", ".json"],
         },
         css: {
+            postcss: {
+                plugins: [
+                    postcssPresetEnv({
+                        stage: 3,
+                        features: { 'nesting-rules': true }
+                    }),
+                    cssnano()
+                ]
+            },
             preprocessorOptions: {
                 scss: {
                     charset: false,
