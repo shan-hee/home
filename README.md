@@ -11,9 +11,8 @@
 <p>&nbsp;<p>
 
 > [!WARNING]
-> ## 喜报
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;间隔 386 天，Google 终于发布新版本 Workbox 了！ <p>
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;目前 PWA 应正常工作！<p>
+> ## hmm...
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;下一个版本原计划是添加 i18n ，由于工作量巨大且...某个笨蛋最近迷上了 洛克王国 ，故这个更新可能会遥遥无期(x)... 等腾点时间出来叭（<p>
 
 <p>&nbsp;<p>
 <strong><h2>無名の主页</h2></strong>
