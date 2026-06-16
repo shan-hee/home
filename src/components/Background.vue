@@ -1,7 +1,7 @@
 <template>
   <div :class="store.backgroundShow ? 'cover show' : 'cover'">
     <!-- 当前壁纸层 -->
-    <img v-show="store.imgLoadStatus" :src="currentBgUrl" :class="['bg', 'current', { 'blur-out': isTransitioning }]"
+    <img v-show="store.imgLoadStatus" :src="currentBgUrl" :class="['bg', 'current', { 'blur-out': isTransitioning, 'no-transition': skipTransition }]"
       alt="cover" @load="imgLoadComplete" @error.once="imgLoadError" @animationend="imgAnimationEnd" />
     <!-- 新壁纸层 -->
     <img v-if="isTransitioning" :src="nextBgUrl" :class="['bg', 'next', { 'blur-in': isBlurringIn }]" alt="cover" />
@@ -21,7 +21,7 @@ import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
 import { initFirefly, closeFirefly } from "@/utils/season/firefly";
 import { initLantern, closeLantern } from "@/utils/season/lantern";
-import { ref, h } from 'vue';
+import { ref, h, nextTick } from 'vue';
 import { gasC } from "@/utils/authServer";
 
 
@@ -30,6 +30,7 @@ const currentBgUrl = ref(null);
 const nextBgUrl = ref(null);
 const isTransitioning = ref(false);
 const isBlurringIn = ref(false);
+const skipTransition = ref(false);
 const imgTimeout = ref(null);
 const autoBGSwitchTimer = ref(null); // 定时切换定时器
 const emit = defineEmits(["loadComplete", "imageLoaded"]);
@@ -207,13 +208,20 @@ const performTransition = async (newUrl) => {
     isBlurringIn.value = true;
   }, 30);
 
-  // 等待过渡完全完成后再切换 (1.6s transform是最长的，再加100ms缓冲)
+  // 等待过渡完全完成后再切换
   setTimeout(() => {
+    skipTransition.value = true;
     currentBgUrl.value = newUrl;
     isTransitioning.value = false;
     isBlurringIn.value = false;
     nextBgUrl.value = null;
-  }, 1700);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        skipTransition.value = false;
+      });
+    });
+  }, 1600);
 };
 
 // 图片加载完成
@@ -427,11 +435,41 @@ watch(() => store.autoBGSwitchInterval, () => {
     object-fit: cover;
     backface-visibility: hidden;
     filter: blur(20px) brightness(0.3);
+    transform: scale(1);
+    will-change: filter, opacity, transform;
     transition:
-      filter 0.3s,
-      transform 0.3s;
-    animation: fade-blur-in 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-    animation-delay: 0.45s;
+      filter 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.no-transition {
+      transition: none !important;
+    }
+
+    &.current {
+      animation: fade-blur-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      animation-delay: 0.45s;
+
+      &.blur-out {
+        filter: blur(30px) brightness(0.4);
+        opacity: 0;
+        transform: scale(1.05);
+      }
+    }
+
+    &.next {
+      filter: blur(30px) brightness(0.4);
+      opacity: 0;
+      transform: scale(1.05);
+      animation: none;
+      z-index: 2;
+
+      &.blur-in {
+        filter: blur(0px) brightness(1);
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
   }
 
   .gray {
