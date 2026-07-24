@@ -1,0 +1,4 @@
+# Wrangler 本地没有 Cloudflare request.cf 时使用的可选默认位置。
+DEFAULT_LATITUDE = ""
+DEFAULT_LONGITUDE = ""
+DEFAULT_CITY = ""
