@@ -23,7 +23,6 @@ import { MusicMenu, Error } from "@icon-park/vue-next";
 import { getHitokoto } from "@/api";
 import { mainStore } from "@/store";
 import debounce from "@/utils/debounce.js";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 
 const store = mainStore();
 
@@ -52,12 +51,6 @@ const getHitokotoData = async () => {
     });
     hitokotoData.text = "这里应该显示一句话";
     hitokotoData.from = "無名";
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("一言加载失败.mp3");
-    };
   }
 };
 

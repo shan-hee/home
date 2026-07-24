@@ -36,8 +36,6 @@ export const storeState: MainState = {
   playerAutoplay: true, // 【开关】是否自动播放
   playerLoop: "all", // 【开关】循环播放 "all", "one", "none"
   playerOrder: "random", // 【开关】循环顺序 "list", "random"
-  webSpeech: true, // 【开关】网页语音交互总开关（包含播报歌名功能）
-  playerSpeechName: true, // 【开关】播报歌名
   playerTrLrc: false, // 【开关】逐行歌词调用翻译歌词开关
   playerDWRCShow: true, // 【开关】逐字歌词解析总开关
   playerDWRCShowPro: true, // 【开关】逐字效果增强开关
@@ -53,7 +51,6 @@ export const storeState: MainState = {
   dwrcEnable: true, // 【状态】调用逐字歌词
   dwrcLoading: false, // 【状态】逐字歌词加载
   lyricSeekVersion: 0, // 【状态】歌词跳转版本，用于重置动画
-  forceShowBarIcon: false, // 【开关】进度图标常驻
   showFirefly: false, // 【状态】萤火虫特效
   showSnowfall: false, // 【状态】雪花特效
   showLantern: false, // 【状态】灯笼特效
@@ -160,8 +157,6 @@ export const mainStore = defineStore("main", {
         'playerAutoplay',
         'playerLoop',
         'playerOrder',
-        'webSpeech',
-        'playerSpeechName',
         'playerTrLrc',
         'playerDWRCShow',
         'playerDWRCShowPro',

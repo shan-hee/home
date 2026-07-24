@@ -1,6 +1,8 @@
 allowBuilds:
   '@parcel/watcher': true
   esbuild: true
+  sharp: true
+  workerd: true
 
 overrides:
   glob: ^13.0.6

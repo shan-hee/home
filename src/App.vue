@@ -43,7 +43,6 @@ import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
 import cursorInit from "@/utils/cursor.js";
 import config from "@/../package.json";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { getColor } from "@/utils/getColor";
 
 const store = mainStore();
@@ -58,7 +57,7 @@ const getWidth = () => {
 const loadComplete = () => {
   nextTick(() => {
     // 欢迎提示
-    helloInit(store);
+    helloInit();
     // 默哀模式
     checkDays();
   });
@@ -140,22 +139,6 @@ onMounted(() => {
   // 自定义鼠标
   cursorInit();
 
-  // 屏蔽右键
-  document.oncontextmenu = () => {
-    ElMessage({
-      message: "为了浏览体验，本站禁用右键",
-      grouping: true,
-      duration: 2000,
-    });
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("鼠标右键.mp3");
-    };
-    return false;
-  };
-
   // 鼠标中键事件
   window.addEventListener("mousedown", (event) => {
     if (event.button == 1) {
@@ -164,19 +147,6 @@ onMounted(() => {
         message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
         grouping: true,
       });
-      if (store.webSpeech) {
-        if (store.backgroundShow) {
-          stopSpeech();
-          const voice = envConfig.VITE_TTS_Voice;
-          const vstyle = envConfig.VITE_TTS_Style;
-          SpeechLocal("壁纸预览已启用.mp3");
-        } else {
-          stopSpeech();
-          const voice = envConfig.VITE_TTS_Voice;
-          const vstyle = envConfig.VITE_TTS_Style;
-          SpeechLocal("壁纸预览已退出.mp3");
-        };
-      };
     }
   });
 

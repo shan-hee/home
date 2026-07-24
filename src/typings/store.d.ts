@@ -30,8 +30,6 @@ export interface MainState {
     playerAutoplay: boolean;
     playerLoop: "all" | "one" | "none";
     playerOrder: "list" | "random";
-    webSpeech: boolean;
-    playerSpeechName: boolean;
     playerTrLrc: boolean;
     playerDWRCShow: boolean;
     playerDWRCShowPro: boolean;
@@ -46,7 +44,6 @@ export interface MainState {
     dwrcEnable: boolean;
     dwrcLoading: boolean;
     lyricSeekVersion: number;
-    forceShowBarIcon: boolean;
     showFirefly: boolean;
     showSnowfall: boolean;
     showLantern: boolean;

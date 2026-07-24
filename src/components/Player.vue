@@ -11,7 +11,6 @@ import { getPlayerList, testGitHubConnectivity } from "@/api";
 import { mainStore } from "@/store";
 import APlayer from "@worstone/vue-aplayer";
 import type { APlayer as APlayerType } from '@worstone/vue-aplayer';
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { decodeDWQYRC } from "@/utils/decodeDWQYRC";
 import { alignPilferedLyrics } from "@/utils/checkPilferDWRC";
 
@@ -81,10 +80,6 @@ const props = defineProps({
     type: String,
     default: "netease", //'netease' | 'tencent'
   },
-  songServerSE: {
-    type: String,
-    default: null,
-  },
   // 播放类型 ( song-歌曲, playlist-播放列表, album-专辑, search-搜索, artist-艺术家 )
   songType: {
     type: String,
@@ -94,10 +89,6 @@ const props = defineProps({
   songId: {
     type: String,
     default: "7452421335",
-  },
-  songIdSE: {
-    type: String,
-    default: null,
   },
   // 列表是否默认折叠
   listFolded: {
@@ -141,7 +132,7 @@ watch(
 onMounted(() => {
   nextTick(() => {
     try {
-      getPlayerList(props.songServer, props.songType, props.songId, props.songServerSE, props.songIdSE, store.playerTrLrc).then((res) => {
+      getPlayerList(props.songServer, props.songType, props.songId, store.playerTrLrc).then((res) => {
         // 更改播放器加载状态
         store.musicIsOk = true;
         // 生成歌单
@@ -171,12 +162,6 @@ onMounted(() => {
           fill: "var(--music-aplayer-message-icon-color)",
         }),
       });
-      if (store.webSpeech) {
-        stopSpeech();
-        const voice = envConfig.VITE_TTS_Voice;
-        const vstyle = envConfig.VITE_TTS_Style;
-        SpeechLocal("播放器加载失败.mp3");
-      };
     };
   });
 });
@@ -220,22 +205,6 @@ const onPlay = () => {
     updatePositionState();
   };
 
-  if (store.webSpeech) {
-    if (store.playerSpeechName) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      Speech(
-        "正在播放，“" +
-        store.getPlayerData.artist +
-        "”的歌曲，《" +
-        store.getPlayerData.name +
-        "》。",
-        voice,
-        vstyle,
-      );
-    };
-  };
 };
 
 // 开始播放处理
@@ -329,20 +298,8 @@ const loadMusicError = () => {
   let notice = "";
   if (playList.value.length > 1) {
     notice = "播放歌曲出现错误，播放器将在 2s 后进行下一首";
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("歌曲加载失败.mp3");
-    };
   } else {
     notice = "播放歌曲出现错误";
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("播放器未知异常.mp3");
-    };
   };
   ElMessage({
     message: notice,

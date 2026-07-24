@@ -42,7 +42,7 @@
           </span>
         </span>
       </div>
-      <div v-else class="lrc" @dblclick="toggleForceIcon">
+      <div v-else class="lrc">
         <!-- 音乐进度条 -->
         <ProgressBar v-if="store.footerProgressBar" />
         <Transition name="fade" mode="out-in" :id="`lrc-line-${store.playerLrc[0][2]}`"
@@ -106,7 +106,6 @@
 
 <script setup lang="ts">
 import ProgressBar from "@/components/ProgressBar.vue";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { MusicOne } from "@icon-park/vue-next";
 import { Icon } from "@vicons/utils";
 import { Paw } from "@vicons/ionicons5";
@@ -152,29 +151,6 @@ const siteUrl = computed(() => {
     return "https://www.imsyy.top/";
   };
 });
-
-const toggleForceIcon = () => {
-  store.forceShowBarIcon = !store.forceShowBarIcon;
-  ElMessage({
-    dangerouslyUseHTMLString: true,
-    message: `${store.forceShowBarIcon ? '诶？' : '进度 ICON 常驻已禁用'}`,
-  });
-  if (store.forceShowBarIcon) {
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("启用进度图标常驻.mp3");
-    };
-  } else {
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("禁用进度图标常驻.mp3");
-    };
-  };
-};
 
 // dwrc part
 watch(() => store.getPlayerLrc, (_new, _old) => {

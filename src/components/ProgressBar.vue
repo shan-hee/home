@@ -137,17 +137,6 @@ watch(() => store.playerState, (_acc, _now) => {
     audio.value = document.querySelector('audio');
 });
 
-// 监听外部强制开关
-watch(() => store.forceShowBarIcon, (value) => {
-    if (value) {
-        store.showProgressIconState = 2;
-        store.showProgressIcon = true;
-    } else {
-        store.showProgressIconState = 0;
-        store.showProgressIcon = false;
-    };
-});
-
 onMounted(() => nextTick(() => {
     audio.value = document.querySelector('audio');
     const progressBarShowCheck = document.querySelector('#footer');

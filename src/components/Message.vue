@@ -34,7 +34,6 @@ import { Icon } from "@vicons/utils";
 import { QuoteLeft, QuoteRight } from "@vicons/fa";
 import { Error } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 const store = mainStore();
 
 // 主页站点logo
@@ -78,12 +77,6 @@ const changeBox = () => {
         fill: "#efefef",
       }),
     });
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("分辨率不足.mp3");
-    };
   };
 };
 
@@ -94,12 +87,6 @@ watch(
     if (value) {
       descriptionText.hello = envConfig.VITE_DESC_HELLO_OTHER;
       descriptionText.text = envConfig.VITE_DESC_TEXT_OTHER;
-      if (store.webSpeech) {
-        stopSpeech();
-        const voice = envConfig.VITE_TTS_Voice;
-        const vstyle = envConfig.VITE_TTS_Style;
-        SpeechLocal("惊讶.mp3");
-      };
     } else {
       descriptionText.hello = envConfig.VITE_DESC_HELLO;
       descriptionText.text = envConfig.VITE_DESC_TEXT;

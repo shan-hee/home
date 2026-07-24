@@ -20,7 +20,7 @@
           <Set />
         </div>
         <div class="version">
-          <div class="num" @dblclick="toggleVer">v&nbsp;{{ config.version }}</div>
+          <div class="num">v&nbsp;{{ config.version }}</div>
           <github-one class="github" theme="outline" size="24" @click="jumpTo(config.github)" />
           <file-editing-one class="github" theme="outline" size="24" @click="jumpTo(config.efug)" />
         </div>
@@ -40,7 +40,7 @@
         </div>
         <div class="version">
           <el-tooltip content="Version" placement="top" effect="color" :show-arrow="false">
-            <div class="num" @dblclick="toggleVer">v&nbsp;{{ config.version }}</div>
+            <div class="num">v&nbsp;{{ config.version }}</div>
           </el-tooltip>
           <el-tooltip content="Github 源代码仓库" placement="top" effect="color" :show-arrow="false">
             <github-one class="github" theme="outline" size="24" @click="jumpTo(config.github)" />
@@ -83,14 +83,12 @@
 
 <script setup lang="ts">
 import { CloseOne, SettingTwo, GithubOne, AddOne, Bug, FileEditingOne } from "@icon-park/vue-next";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { mainStore } from "@/store";
 import Set from "@/components/Set.vue";
 import config from "@/../package.json";
 
 const store = mainStore();
 const closeShow = ref(false);
-let chuover = 0;
 
 // 站点链接
 const siteUrl = computed(() => {
@@ -117,34 +115,6 @@ const upData = reactive({
   ],
   fix: ["消除依赖及功能弃用提示", "增强网页兼容性", "修复 Player 模块的故障"],
 });
-
-const toggleVer = () => {
-  chuover = chuover + 1;
-  if (chuover > 4) {
-    ElMessage({
-      dangerouslyUseHTMLString: true,
-      message: `怎么还在戳哇喂！有那么神秘嘛...？`,
-    });
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("戳戳版本.mp3");
-    };
-    store.setV = true;
-  } else {
-    ElMessage({
-      dangerouslyUseHTMLString: true,
-      message: `诶？是在找...什么神秘的东西嘛？`,
-    });
-    if (store.webSpeech) {
-      stopSpeech();
-      const voice = envConfig.VITE_TTS_Voice;
-      const vstyle = envConfig.VITE_TTS_Style;
-      SpeechLocal("戳版本.mp3");
-    };
-  };
-};
 
 // 跳转源代码仓库
 const jumpTo = (url) => {

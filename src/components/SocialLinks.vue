@@ -7,31 +7,14 @@
         <img class="icon" :src="item.icon" height="24" />
       </a>
     </div>
-    <span class="tip" @dblclick="togglesocial">{{ socialTip }}</span>
+    <span class="tip">{{ socialTip }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import socialLinks from "@/assets/socialLinks.json";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
-import { mainStore } from "@/store";
-
-const store = mainStore();
 // 社交链接提示
 const socialTip = ref("通过这里联系我吧");
-
-const togglesocial = () => {
-  ElMessage({
-    dangerouslyUseHTMLString: true,
-    message: `哦？来扩列嘛？~`,
-  });
-  if (store.webSpeech) {
-    stopSpeech();
-    const voice = envConfig.VITE_TTS_Voice;
-    const vstyle = envConfig.VITE_TTS_Style;
-    SpeechLocal("戳戳社.mp3");
-  };
-};
 </script>
 
 <style lang="scss" scoped>

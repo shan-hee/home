@@ -17,12 +17,10 @@
 <script setup lang="js">
 import { mainStore } from "@/store";
 import { Error } from "@icon-park/vue-next";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
 import { initFirefly, closeFirefly } from "@/utils/season/firefly";
 import { initLantern, closeLantern } from "@/utils/season/lantern";
 import { ref, h, nextTick } from 'vue';
-import { gasC } from "@/utils/authServer";
 
 
 const store = mainStore();
@@ -34,7 +32,6 @@ const skipTransition = ref(false);
 const imgTimeout = ref(null);
 const autoBGSwitchTimer = ref(null); // 定时切换定时器
 const emit = defineEmits(["loadComplete", "imageLoaded"]);
-const key = envConfig.VITE_SFILE_SKEY;
 const isLoading = ref(false);
 
 // 自定义壁纸
@@ -44,20 +41,13 @@ let bgImageCount = 10; // PC 版壁纸
 let bgImageCountP = 2; // 移动版壁纸
 let bgRandom = 0;
 let bgRandomp = 0;
-let confUrlS = null;
 let sest = 0;
 let sBGCountN = null;
 
 // 加载 config.json
 async function loadConfig() {
   try {
-    if (key) {
-      const confUrl = "/images/config.json";
-      confUrlS = await gasC(confUrl, key);
-    } else {
-      confUrlS = "/images/config.json";
-    };
-    const response = await fetch(confUrlS);
+    const response = await fetch("/images/config.json");
     const data = await response.json();
     bgImageCount = Math.max(data.bgImageCount, 1);
     bgImageCountP = Math.max(data.bgImageCountP, 1);
@@ -100,26 +90,11 @@ const getLocalBgUrl = async (deviceType) => {
   // 酪灰的小批注：这里添加了设备类型识别以加载不同分辨率的壁纸
   // 如果不需要区分设备类型，则只需要保留这一行 bgUrl.value = `/images/background${bgRandom}.jpg`;
   if (deviceType === 'mobile') {
-    if (key) {
-      const bgUrlS = `/images/phone/backgroundphone${bgRandomp}.jpg`;
-      return await gasC(bgUrlS, key);
-    } else {
-      return `/images/phone/backgroundphone${bgRandomp}.jpg`;
-    };
+    return `/images/phone/backgroundphone${bgRandomp}.jpg`;
   } else if (deviceType === 'tablet' || deviceType === 'pc') {
-    if (key) {
-      const bgUrlS = `/images/background${bgRandom}.jpg`;
-      return await gasC(bgUrlS, key);
-    } else {
-      return `/images/background${bgRandom}.jpg`;
-    };
+    return `/images/background${bgRandom}.jpg`;
   } else {
-    if (key) {
-      const bgUrlS = `/images/background${bgRandom}.jpg`;
-      return await gasC(bgUrlS, key);
-    } else {
-      return `/images/background${bgRandom}.jpg`;
-    };
+    return `/images/background${bgRandom}.jpg`;
   };
 };
 
@@ -157,12 +132,6 @@ const changeBg = async (type) => {
           currentBgUrl.value = newBgUrl;
         } else {
           performTransition(newBgUrl);
-        };
-        if (store.webSpeech) {
-          stopSpeech();
-          const voice = envConfig.VITE_TTS_Voice;
-          const vstyle = envConfig.VITE_TTS_Style;
-          SpeechLocal("壁纸加载失败.mp3");
         };
       };
     } finally {
@@ -252,18 +221,7 @@ const imgLoadError = async () => {
       fill: "var(--el-message-icon-color)",
     }),
   });
-  if (key) {
-    const bgUrlS = `/images/background${bgRandom}.jpg`;
-    currentBgUrl.value = await gasC(bgUrlS, key);
-  } else {
-    currentBgUrl.value = `/images/background${bgRandom}.jpg`;
-  };
-  if (store.webSpeech) {
-    stopSpeech();
-    const voice = envConfig.VITE_TTS_Voice;
-    const vstyle = envConfig.VITE_TTS_Style;
-    SpeechLocal("壁纸加载失败.mp3");
-  };
+  currentBgUrl.value = `/images/background${bgRandom}.jpg`;
 };
 
 // 监听壁纸切换

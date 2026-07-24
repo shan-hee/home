@@ -1,5 +1,4 @@
 import { PiniaPluginContext } from "pinia";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 
 // Pinia 变量验证规则
 export const validationRules = {
@@ -50,14 +49,6 @@ export const validationPlugin = ({ store }: PiniaPluginContext) => {
                     dangerouslyUseHTMLString: true,
                     message: `不支持将变量 '${String(key)}' 的值设置为 '${newValue}'，已阻止更改。`,
                 });
-                setTimeout(() => {
-                    if (store.webSpeech) {
-                        stopSpeech();
-                        const voice = envConfig.VITE_TTS_Voice;
-                        const vstyle = envConfig.VITE_TTS_Style;
-                        SpeechLocal("变量异常.mp3");
-                    };
-                }, 300);
             };
         };
     });

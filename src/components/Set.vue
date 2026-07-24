@@ -99,17 +99,7 @@
           <el-switch v-model="playerTrLrc" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
       </el-collapse-item>
-      <el-collapse-item title="语音设置" name="6">
-        <div class="item">
-          <span class="text">网页语音交互总开关</span>
-          <el-switch v-model="webSpeech" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div v-if="webSpeech" class="item">
-          <span class="text">播报歌名</span>
-          <el-switch v-model="playerSpeechName" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-      </el-collapse-item>
-      <el-collapse-item title="其他设置" name="7">
+      <el-collapse-item title="其他设置" name="6">
         <div class="text">暂时没有其它啦qwq</div>
       </el-collapse-item>
       <el-collapse-item v-if="setV" title="开发设置" name="8">
@@ -124,8 +114,6 @@ import { CheckSmall, CloseSmall, SuccessPicture } from "@icon-park/vue-next";
 import DevSet from "@/components/DevSet.vue";
 import { mainStore } from "@/store";
 import { storeToRefs } from "pinia";
-import config from "@/../package.json";
-import { Speech, stopSpeech, SpeechLocal } from "@/utils/speech";
 
 const store = mainStore();
 const {
@@ -137,8 +125,6 @@ const {
   playerAutoplay,
   playerOrder,
   playerLoop,
-  webSpeech,
-  playerSpeechName,
   playerTrLrc,
   playerDWRCShow,
   playerDWRCShowPro,
@@ -150,7 +136,6 @@ const {
   seasonalEffects,
   setV,
   theme,
-  msgNameShow,
 } = storeToRefs(store);
 
 // 默认选中项
@@ -165,12 +150,6 @@ const radioChange = () => {
       fill: "var(--el-message-icon-color)",
     }),
   });
-  if (store.webSpeech) {
-    stopSpeech();
-    const voice = envConfig.VITE_TTS_Voice;
-    const vstyle = envConfig.VITE_TTS_Style;
-    SpeechLocal("更换壁纸成功.mp3");
-  };
 };
 </script>
 

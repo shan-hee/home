@@ -60,8 +60,6 @@
             :songServer="playerData.server"
             :songType="playerData.type"
             :songId="playerData.id"
-            :songServerSE="playerData.serverse"
-            :songIdSE="playerData.idse"
             :volume="volumeNum"
           />
         </div>
@@ -96,8 +94,6 @@ const playerData = reactive({
   server: envConfig.VITE_SONG_SERVER,
   type: envConfig.VITE_SONG_TYPE,
   id: envConfig.VITE_SONG_ID,
-  serverse: envConfig.VITE_SONG_SERVER_SECOND,
-  idse: envConfig.VITE_SONG_ID_SECOND,
 });
 
 // 开启播放列表
