@@ -1,16 +1,6 @@
 <template>
     <div class="devsettings">
         <el-collapse class="collapse" v-model="activeName" accordion>
-            <el-collapse-item title="季节特效" name="1">
-                <div class="item">
-                    <el-button plain class="el-button" :class="{ 'active': store.showSnowfall }"
-                        @click="toggleEffect('snow')">{{ store.showSnowfall ? "禁用" : "启用" }}冬日飘雪</el-button>
-                    <el-button plain class="el-button" :class="{ 'active': store.showFirefly }"
-                        @click="toggleEffect('firefly')">{{ store.showFirefly ? "禁用" : "启用" }}秋萤火虫</el-button>
-                    <el-button plain class="el-button" :class="{ 'active': store.showLantern }"
-                        @click="toggleEffect('lantern')">{{ store.showLantern ? "禁用" : "启用" }}春节灯笼</el-button>
-                </div>
-            </el-collapse-item>
             <el-collapse-item title="壁纸调整" name="2">
                 <div class="item">
                     <div class="upver">使用内置壁纸时临时指定壁纸</div>
@@ -34,17 +24,6 @@
                     <span class="text">信息区域显示自定义名</span>
                     <el-switch v-model="msgNameShow" inline-prompt :active-icon="CheckSmall"
                         :inactive-icon="CloseSmall" />
-                </div>
-            </el-collapse-item>
-            <el-collapse-item title="壁纸高级设置" name="4">
-                <div class="item">
-                    <span class="text">壁纸自动切换</span><br><br>
-                    <el-radio-group v-model="autoBGSwitchInterval" size="small" text-color="#FFFFFF">
-                        <el-radio :value="0" border>禁用</el-radio>
-                        <el-radio :value="1" border>15 秒</el-radio>
-                        <el-radio :value="2" border>30 秒</el-radio>
-                        <el-radio :value="3" border>45 秒</el-radio>
-                    </el-radio-group>
                 </div>
             </el-collapse-item>
             <el-collapse-item title="重置" name="5">
@@ -71,17 +50,13 @@ import { ref, reactive } from 'vue'
 import { CheckSmall, CloseSmall } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
 import { storeToRefs } from "pinia";
-import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
-import { initFirefly, closeFirefly } from "@/utils/season/firefly";
-import { initLantern, closeLantern } from "@/utils/season/lantern";
 import { parseVersion } from "@/utils/ver";
 import { checkForUpdate } from "@/utils/updatecheck";
 import config from "@/../package.json";
 const activeName = ref("0");
 const store = mainStore();
 const {
-    msgNameShow,
-    autoBGSwitchInterval
+    msgNameShow
 } = storeToRefs(store);
 
 const versionInfo = parseVersion(config.version);
@@ -118,20 +93,6 @@ const checkUpdate = async () => {
             grouping: true,
         });
     };
-};
-
-const toggleEffect = (type: 'snow' | 'firefly' | 'lantern') => {
-    switch (type) {
-        case 'snow':
-            store.showSnowfall ? closeSnowfall() : initSnowfall();
-            break;
-        case 'firefly':
-            store.showFirefly ? closeFirefly() : initFirefly();
-            break;
-        case 'lantern':
-            store.showLantern ? closeLantern() : initLantern();
-            break;
-    }
 };
 
 const form = reactive({
@@ -173,7 +134,10 @@ const handleSetWallpaper = () => {
         return;
     };
     const wallpaperId = parseInt(form.wallpaperId, 10);
-    store.setSBGCount(Number(wallpaperId));
+    if (!store.setSBGCount(wallpaperId)) {
+        ElMessage.error(`壁纸 ID 应在 1–${store.wallpaperMaxId || 1} 之间`);
+        return;
+    }
     ElMessage.success(`已设置壁纸ID: ${wallpaperId}`);
     form.wallpaperId = '';
 };

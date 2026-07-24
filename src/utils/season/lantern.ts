@@ -12,10 +12,11 @@ let lanternContainer: HTMLDivElement | null = null;
 // 初始化灯笼特效
 export function initLantern() {
   const store = mainStore();
-  store.showLantern = true;
   if (styleElement || lanternContainer) {
-    closeLantern();
+    store.showLantern = true;
+    return;
   };
+  store.showLantern = true;
   styleElement = document.createElement('style');
   styleElement.type = 'text/css';
   styleElement.innerHTML = `
@@ -159,6 +160,13 @@ export function initLantern() {
     @media (max-width: 520px) {
       .j-china-lantern {
         display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .j-china-lantern .lantern__box,
+      .j-china-lantern .lantern__tail {
+        animation: none;
       }
     }
   `;

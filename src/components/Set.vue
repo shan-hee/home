@@ -10,6 +10,24 @@
             <el-radio :value="3" size="large" border>随机动漫</el-radio>
           </el-radio-group>
         </div>
+        <div class="item">
+          <span class="text">自动切换</span>
+          <el-radio-group v-model="autoBGSwitchInterval" size="small" text-color="#FFFFFF">
+            <el-radio :value="0" border>关闭</el-radio>
+            <el-radio :value="1" border>15 秒</el-radio>
+            <el-radio :value="2" border>30 秒</el-radio>
+            <el-radio :value="3" border>45 秒</el-radio>
+          </el-radio-group>
+        </div>
+        <div v-if="coverType === 0" class="item">
+          <span class="text">默认壁纸 ID</span>
+          <div class="inline-control">
+            <input v-model="wallpaperIdInput" type="number" min="1" :max="store.wallpaperMaxId || undefined"
+              inputmode="numeric" aria-label="默认壁纸 ID" placeholder="随机" />
+            <button type="button" @click="applyDefaultWallpaper">应用</button>
+            <button type="button" @click="clearDefaultWallpaper">随机</button>
+          </div>
+        </div>
       </el-collapse-item>
       <el-collapse-item title="主题设置" name="2">
         <div class="item">
@@ -32,9 +50,21 @@
           <span class="text">音乐点击是否打开面板</span>
           <el-switch v-model="musicClick" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
-        <div class="item">
-          <span class="text">显示季节特效</span>
-          <el-switch v-model="seasonalEffects" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
+        <div class="item effect-settings">
+          <span class="text">季节特效</span>
+          <el-radio-group v-model="effectsMode" size="small" text-color="#FFFFFF">
+            <el-radio value="auto" border>自动</el-radio>
+            <el-radio value="off" border>关闭</el-radio>
+            <el-radio value="manual" border>手动</el-radio>
+          </el-radio-group>
+        </div>
+        <div v-if="effectsMode === 'manual'" class="item effect-settings">
+          <span class="text">手动选择</span>
+          <el-checkbox-group v-model="selectedEffects">
+            <el-checkbox value="snow">雪</el-checkbox>
+            <el-checkbox value="firefly">萤火虫</el-checkbox>
+            <el-checkbox value="lantern">灯笼</el-checkbox>
+          </el-checkbox-group>
         </div>
         <div class="item">
           <span class="text">底栏背景模糊</span>
@@ -133,13 +163,16 @@ const {
   playerDWRCPilfer,
   playerRMMetadata,
   footerProgressBar,
-  seasonalEffects,
+  autoBGSwitchInterval,
+  effectsMode,
+  selectedEffects,
   setV,
   theme,
 } = storeToRefs(store);
 
 // 默认选中项
 const activeName = ref("0");
+const wallpaperIdInput = ref(store.wallpaperLocalId?.toString() || "");
 
 // 壁纸切换
 const radioChange = () => {
@@ -150,6 +183,24 @@ const radioChange = () => {
       fill: "var(--el-message-icon-color)",
     }),
   });
+};
+
+const applyDefaultWallpaper = () => {
+  if (!wallpaperIdInput.value.trim()) {
+    clearDefaultWallpaper();
+    return;
+  }
+  if (!store.setWallpaperLocalId(wallpaperIdInput.value)) {
+    ElMessage.error(`壁纸 ID 应在 1–${store.wallpaperMaxId || 1} 之间`);
+    return;
+  }
+  ElMessage.success(`默认壁纸已设置为 ${store.wallpaperLocalId}`);
+};
+
+const clearDefaultWallpaper = () => {
+  store.setWallpaperLocalId(null);
+  wallpaperIdInput.value = "";
+  ElMessage.success("默认壁纸已改为随机");
 };
 </script>
 
@@ -185,6 +236,35 @@ const radioChange = () => {
           justify-content: space-between;
           flex-wrap: wrap;
           font-size: 14px;
+
+          .inline-control {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+
+            input,
+            button {
+              min-height: 32px;
+              border: 1px solid var(--set-radio-border-color);
+              border-radius: 6px;
+              color: var(--text-color);
+              background: var(--set-radio-bg-color);
+            }
+
+            input {
+              width: 76px;
+              padding: 0 8px;
+            }
+
+            button {
+              padding: 0 10px;
+              cursor: pointer;
+            }
+          }
+
+          &.effect-settings {
+            gap: 12px;
+          }
 
           .el-switch__core {
             border-color: transparent;

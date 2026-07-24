@@ -10,7 +10,10 @@ export const storeState: MainState = {
   sBGCount: null as string | null, // 【状态】使用内置壁纸时用于临时指定壁纸的接口
   /* 0 不切换，1 等待 15 秒，2 等待 30 秒，3 等待 45 秒。 */
   autoBGSwitchInterval : 2 as number, // 【开关】自动切换壁纸设置
-  seasonalEffects: true, // 【开关】季节特效
+  wallpaperLocalId: null as number | null, // 【开关】默认本地壁纸 ID
+  wallpaperMaxId: 0, // 【状态】当前设备本地壁纸数量
+  effectsMode: "auto", // 【开关】季节特效模式
+  selectedEffects: [] as Array<"snow" | "firefly" | "lantern">, // 【开关】手动季节特效
   msgNameShow: false, // 【开关】信息区域显示自定义名而非原本的 URL
   siteStartShow: true, // 【开关】建站日期显示
   musicClick: true, // 【开关】音乐链接是否跳转
@@ -124,11 +127,24 @@ export const mainStore = defineStore("main", {
     },
     // 使用内置壁纸时用于临时指定壁纸的接口
     setSBGCount(value) {
-      if (this.coverType == 0) {
-        this.sBGCount = value;
-      } else {
-        return 'not use';
-      };
+      const wallpaperId = Number(value);
+      if (this.coverType !== 0 || !Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > this.wallpaperMaxId) {
+        return false;
+      }
+      this.sBGCount = String(wallpaperId);
+      return true;
+    },
+    setWallpaperLocalId(value) {
+      if (value === null || value === "") {
+        this.wallpaperLocalId = null;
+        return true;
+      }
+      const wallpaperId = Number(value);
+      if (!Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > this.wallpaperMaxId) {
+        return false;
+      }
+      this.wallpaperLocalId = wallpaperId;
+      return true;
     },
     // 重置所有设置
     resetStore() {
@@ -152,6 +168,8 @@ export const mainStore = defineStore("main", {
       pick: [
         // 持久性存储，这里的变量永久存储于浏览器，用于存储用户的自定义设置
         'coverType',
+        'wallpaperLocalId',
+        'autoBGSwitchInterval',
         'musicVolume',
         'siteStartShow',
         'musicClick',
@@ -168,7 +186,8 @@ export const mainStore = defineStore("main", {
         'playerDWRCATDBF',
         'playerDWRCPilfer',
         'playerRMMetadata',
-        'seasonalEffects',
+        'effectsMode',
+        'selectedEffects',
         'theme',
       ],
     },

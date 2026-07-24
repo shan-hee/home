@@ -166,29 +166,25 @@ Now using` MiSans` and `HarmonyOS Sans` font, using font splitting to improve lo
 
 You can modify the website background in `public/images`.<p>
 
-If you want to add more local images as website backgrounds, you can rename the images to `background+number` and modify them:<p>
+Desktop and mobile use separate image collections. To add or remove local wallpapers, update the image files and `public/images/config.json`:<p>
 
->· First edit `src/components/Background/index.vue`
-```js
-// Set a default value to prevent the wallpaper from failing when the JSON file cannot be loaded. You should try to ensure that the number of wallpapers is always no less than this default value.
-let bgImageCount = 10; // Wallpapers for PC
-let bgImageCountP = 2; // Mobile wallpaper
-```
-
->· Then edit `public/images/config.json`
-```js
+```json
 {
-  "bgImageCount": 10, // Wallpapers for PC
-  "bgImageCountP": 2 // Mobile wallpaper
+  "version": 1,
+  "desktop": {
+    "count": 10,
+    "pattern": "/images/background{id}.jpg",
+    "fallback": "/images/background1.jpg"
+  },
+  "mobile": {
+    "count": 2,
+    "pattern": "/images/phone/backgroundphone{id}.jpg",
+    "fallback": "/images/phone/backgroundphone1.jpg"
+  }
 }
 ```
-To add or reduce wallpapers later, you can edit `config.json` directly without recompiling the project. However, you must ensure that the number of wallpapers is always greater than or equal to the configuration in `index.vue`.
 
-To configure the default wallpaper options, edit `src/store/index.js`
-
-```js
-coverType: "0", // Wallpaper Type
-```
+`count` must match the continuously numbered files in each collection, and `pattern` must keep `{id}`. The configuration is loaded at runtime, so changing the JSON and images does not require rebuilding the JavaScript. The default local wallpaper ID, rotation interval, and source are available in site settings.
 
 #### Website Icon
 

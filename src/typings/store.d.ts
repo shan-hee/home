@@ -1,4 +1,6 @@
 export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
+export type SeasonalEffect = "snow" | "firefly" | "lantern";
+export type SeasonalEffectMode = "auto" | "off" | "manual";
 export type PlayerLyricItem = [
     active: boolean,
     played: boolean | number,
@@ -15,7 +17,10 @@ export interface MainState {
     coverType: number;
     sBGCount: string | null;
     autoBGSwitchInterval : number;
-    seasonalEffects: boolean;
+    wallpaperLocalId: number | null;
+    wallpaperMaxId: number;
+    effectsMode: SeasonalEffectMode;
+    selectedEffects: SeasonalEffect[];
     msgNameShow: boolean;
     siteStartShow: boolean;
     musicClick: boolean;

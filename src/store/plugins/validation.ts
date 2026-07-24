@@ -18,6 +18,10 @@ export const validationRules = {
         allowed: [0, 1, 2, 3],
         defaultValue: 2,
     },
+    effectsMode: {
+        allowed: ["auto", "off", "manual"],
+        defaultValue: "auto",
+    },
 };
 
 /**

@@ -176,29 +176,25 @@ VITE_SONG_ID = "3035221869"
 
 可以在 `public/images` 中修改网站背景。<p>
 
-如果想要添加更多的本地图片作为网站背景，可以将图片重命名 `background+数字` 的形式，并进行修改：<p>
+桌面与移动端使用独立图片集合。添加或减少本地壁纸时，只需调整图片文件并编辑 `public/images/config.json`：<p>
 
->· 先编辑 `src/components/Background/index.vue`
-```js
-// 设置一个默认值，防止在无法加载 JSON 文件时壁纸失效。应该尽量保证壁纸数始终不小于这个默认值
-let bgImageCount = 10; // PC 版壁纸
-let bgImageCountP = 2; // 移动版壁纸
-```
-
->· 再编辑 `public/images/config.json`
-```js
+```json
 {
-  "bgImageCount": 10, // PC 版壁纸
-  "bgImageCountP": 2 // 移动版壁纸
+  "version": 1,
+  "desktop": {
+    "count": 10,
+    "pattern": "/images/background{id}.jpg",
+    "fallback": "/images/background1.jpg"
+  },
+  "mobile": {
+    "count": 2,
+    "pattern": "/images/phone/backgroundphone{id}.jpg",
+    "fallback": "/images/phone/backgroundphone1.jpg"
+  }
 }
 ```
-后续添加或减少壁纸，可直接编辑 `config.json` ，而无需重新编译项目。但必须确保壁纸数始终大于或等于 `index.vue` 中的配置。
 
-如需配置默认壁纸选项，请编辑 `src/store/index.js`
-
-```js
-coverType: "0", // 壁纸种类
-```
+`count` 必须与对应集合中的连续编号图片一致，`pattern` 中必须保留 `{id}`。该配置在运行时读取，修改 JSON 和图片后不需要重新编译 JavaScript。默认本地壁纸 ID、自动切换间隔和壁纸来源可在站点设置中调整。
 
 #### 网站图标
 

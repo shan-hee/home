@@ -1,143 +1,111 @@
 import { mainStore } from "@/store";
-let animationFrameId: number | null = null;
-let intervalId: ReturnType<typeof setInterval> | null = null;
-let canvas: HTMLCanvasElement | null = null;
-let fireflyCount: number = 0;
-const fireflies: {
+
+interface Firefly {
   x: number;
   y: number;
   opacity: number;
   speedX: number;
   speedY: number;
   radius: number;
-}[] = [];
+  phase: number;
+}
+
+let animationFrameId: number | null = null;
+let canvas: HTMLCanvasElement | null = null;
+let context: CanvasRenderingContext2D | null = null;
+let viewportWidth = 0;
+let viewportHeight = 0;
+const fireflies: Firefly[] = [];
 
 const resizeCanvas = () => {
-  if (canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  if (!canvas || !context) return;
+  viewportWidth = window.innerWidth;
+  viewportHeight = window.innerHeight;
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(viewportWidth * ratio);
+  canvas.height = Math.round(viewportHeight * ratio);
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+};
+
+const createFireflies = () => {
+  const count = window.matchMedia("(max-width: 720px)").matches ? 20 : 42;
+  fireflies.length = 0;
+  for (let index = 0; index < count; index++) {
+    fireflies.push({
+      x: Math.random() * viewportWidth,
+      y: Math.random() * viewportHeight,
+      opacity: Math.random() * 0.6 + 0.2,
+      speedX: Math.random() * 0.7 - 0.35,
+      speedY: Math.random() * 0.7 - 0.35,
+      radius: Math.random() * 1.7 + 0.8,
+      phase: Math.random() * Math.PI * 2,
+    });
   }
 };
 
-const createCanvas = () => {
-  if (canvas) return;
-  canvas = document.createElement('canvas');
-  canvas.id = 'fireflyCanvas';
-  canvas.style.position = 'fixed';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.pointerEvents = 'none';
-  canvas.style.zIndex = '0';
-  canvas.style.willChange = 'transform';
-  document.body.appendChild(canvas);
+const render = () => {
+  if (!context) return;
+  context.clearRect(0, 0, viewportWidth, viewportHeight);
+  for (const firefly of fireflies) {
+    firefly.x += firefly.speedX;
+    firefly.y += firefly.speedY;
+    firefly.phase += 0.025;
+    if (firefly.x > viewportWidth) firefly.x = 0;
+    if (firefly.x < 0) firefly.x = viewportWidth;
+    if (firefly.y > viewportHeight) firefly.y = 0;
+    if (firefly.y < 0) firefly.y = viewportHeight;
+    context.beginPath();
+    context.globalAlpha = firefly.opacity * (0.65 + Math.sin(firefly.phase) * 0.35);
+    context.fillStyle = "#fff36b";
+    context.shadowColor = "#fff36b";
+    context.shadowBlur = 8;
+    context.arc(firefly.x, firefly.y, firefly.radius, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.globalAlpha = 1;
+  context.shadowBlur = 0;
+  animationFrameId = requestAnimationFrame(render);
 };
 
 const initFirefly = () => {
   const store = mainStore();
+  if (canvas) {
+    store.showFirefly = true;
+    return;
+  }
+  canvas = document.createElement("canvas");
+  canvas.id = "fireflyCanvas";
+  Object.assign(canvas.style, {
+    position: "fixed",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: "0",
+  });
+  document.body.appendChild(canvas);
+  context = canvas.getContext("2d");
+  if (!context) {
+    canvas.remove();
+    canvas = null;
+    return;
+  }
   store.showFirefly = true;
-  if (animationFrameId || intervalId) {
-    closeFirefly();
-  };
-  createCanvas();
-  const ctx = canvas?.getContext('2d');
-  if (!ctx || !canvas) return;
-  const createFireflies = () => {
-    fireflies.length = 0;
-    const deviceType = detectDevice();
-    if (deviceType === 'mobile') {
-      fireflyCount = 24;
-    } else {
-      fireflyCount = 48;
-    };
-    for (let i = 0; i < fireflyCount; i++) {
-      fireflies.push({
-        x: Math.random() * canvas!.width,
-        y: Math.random() * canvas!.height,
-        opacity: Math.random(),
-        speedX: Math.random() * 1.2 - 0.35,
-        speedY: Math.random() * 1.2 - 0.35,
-        radius: Math.random() * 2 + 1,
-      });
-    }
-  };
-
-  const drawFireflies = () => {
-    ctx.clearRect(0, 0, canvas!.width, canvas!.height);
-    ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
-    ctx.beginPath();
-    fireflies.forEach((firefly) => {
-      ctx.moveTo(firefly.x, firefly.y);
-      ctx.arc(firefly.x, firefly.y, firefly.radius, 0, Math.PI * 2, true);
-    });
-    ctx.fill();
-    moveFireflies();
-  };
-
-  const moveFireflies = () => {
-    fireflies.forEach((firefly) => {
-      firefly.x += firefly.speedX;
-      firefly.y += firefly.speedY;
-      if (firefly.x > canvas!.width || firefly.x < 0) {
-        firefly.speedX *= -1;
-      };
-      if (firefly.y > canvas!.height || firefly.y < 0) {
-        firefly.speedY *= -1;
-      };
-    });
-  };
-
-  const updateFireflies = () => {
-    drawFireflies();
-    animationFrameId = requestAnimationFrame(updateFireflies);
-  };
-
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
   createFireflies();
-  updateFireflies();
-
-  intervalId = setInterval(() => {
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
-      updateFireflies();
-    }
-  }, 1000 / 30);
-};
-
-// 检测设备类型
-const detectDevice = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (/mobile|android|iphone|ipad|ipod|windows phone/.test(userAgent)) {
-    if (/ipad|tablet|playbook|silk|kindle/.test(userAgent)) {
-      return 'tablet'; // 平板
-    } else {
-      return 'mobile'; // 手机
-    };
-  } else {
-    return 'pc'; // PC
-  };
+  render();
 };
 
 const closeFirefly = () => {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  };
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-  };
-  if (canvas && canvas.parentNode === document.body) {
-    document.body.removeChild(canvas);
-    canvas = null;
-  };
+  if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+  animationFrameId = null;
+  window.removeEventListener("resize", resizeCanvas);
+  canvas?.remove();
+  canvas = null;
+  context = null;
   fireflies.length = 0;
-  window.removeEventListener('resize', resizeCanvas);
-  const store = mainStore();
-  store.showFirefly = false;
+  mainStore().showFirefly = false;
 };
 
 export { initFirefly, closeFirefly };
