@@ -1,233 +1,220 @@
 <template>
-    <div v-if="store.footerProgressBar" class="progress-bar">
-        <div class="progress" :class="{ dragging: isDragging }"
-            :style="{ width: isDragging ? `${dragProgress}%` : `${progressBarWidth}%` }">
-            <img v-if="store.showProgressIcon" src="/images/icon/ProgressBar.ico" class="progress-icon" draggable="false"
-                @mousedown="handleMouseDown" @touchstart.prevent="handleTouchStart" ref="icon" />
-            <Icon v-if="!store.playerCanplay" size="32" color="black" class="ReloadCircle">
-                <ReloadCircle />
-            </Icon>
-        </div>
+  <div
+    v-if="store.footerProgressBar"
+    ref="track"
+    class="progress-bar"
+    :class="{ dragging: isDragging }"
+    role="slider"
+    tabindex="0"
+    aria-label="播放进度"
+    aria-valuemin="0"
+    :aria-valuemax="duration"
+    :aria-valuenow="Math.round(displayedTime)"
+    :aria-valuetext="ariaValueText"
+    @pointerdown="handlePointerDown"
+    @pointermove="handlePointerMove"
+    @pointerup="handlePointerUp"
+    @pointercancel="handlePointerCancel"
+    @keydown="handleKeydown"
+  >
+    <div class="track-line">
+      <div class="progress" :style="{ width: `${displayedProgress}%` }" />
+      <span class="progress-thumb" :style="{ left: `${displayedProgress}%` }" aria-hidden="true" />
+      <Icon v-if="showLoading" size="20" class="reload-circle"
+        :style="{ left: `${loadingPosition}%` }" aria-hidden="true">
+        <ReloadCircle />
+      </Icon>
     </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { MusicOne } from "@icon-park/vue-next";
 import { Icon } from "@vicons/utils";
-import { Paw, ReloadCircle } from "@vicons/ionicons5";
+import { ReloadCircle } from "@vicons/ionicons5";
 import { mainStore } from "@/store";
-import config from "@/../package.json";
-import { ref, watch, computed, onMounted, nextTick, onUpdated, onBeforeUnmount } from "vue";
-import { throttle } from "lodash-es";
-
 
 const store = mainStore();
-const isSeeking = ref(false);
-const audio = ref<HTMLAudioElement | null>(null);
-const icon = ref<HTMLElement | null>(null);
-const touchIdentifier = ref<number | null>(null);
+const track = ref<HTMLElement | null>(null);
 const isDragging = ref(false);
-const dragProgress = ref(0);
-let dragTimer: ReturnType<typeof setTimeout> | null = null;
+const activePointerId = ref<number | null>(null);
+const previewTime = ref(0);
 
-// 进度计算
-const progressBarWidth = computed(() => {
-    if (!store.playerState) return 0;
-    return (store.playerCurrentTime! / store.playerDuration!) * 100;
+const duration = computed(() => {
+  return Number.isFinite(store.playerDuration) && store.playerDuration > 0
+    ? store.playerDuration
+    : 0;
 });
 
-// 鼠标事件处理
-const handleMouseEnter = () => {
-    if (store.showProgressIconState === 2) {
-        store.showProgressIcon = true;
-    } else {
-        store.showProgressIconState = 1;
-        store.showProgressIcon = true;
-    };
-};
-
-const handleMouseLeave = () => {
-    if (store.showProgressIconState === 2) {
-        store.showProgressIcon = true;
-    } else {
-        store.showProgressIconState = 0;
-        store.showProgressIcon = false;
-    };
-};
-
-const handleMouseDown = (e: MouseEvent) => {
-    isDragging.value = true;
-    isSeeking.value = true;
-    const progressBar = document.querySelector('.progress-bar');
-    const rect = progressBar!.getBoundingClientRect();
-    const initialX = e.clientX - rect.left;
-    dragProgress.value = (initialX / rect.width) * 100;
-};
-
-const onMouseUp = () => {
-    if (!isDragging.value) return;
-    isDragging.value = false;
-    isSeeking.value = false;
-    if (dragTimer) clearTimeout(dragTimer);
-    if (audio.value && store.playerDuration) {
-        audio.value.currentTime = (dragProgress.value / 100) * store.playerDuration;
-    };
-    dragTimer = setTimeout(() => {
-        if (icon.value) icon.value.style.left = '';
-    }, 1000);
-};
-
-const onMouseMove = throttle((e: MouseEvent) => {
-    if (!isDragging.value) return;
-    const progressBar = document.querySelector('.progress-bar');
-    const rect = progressBar!.getBoundingClientRect();
-    let offsetX = e.clientX - rect.left;
-    offsetX = Math.max(0, Math.min(rect.width, offsetX));
-    dragProgress.value = (offsetX / rect.width) * 100;
-    if (icon.value) {
-        const newLeft = offsetX - icon.value.offsetWidth / 2;
-        icon.value.style.left = `${newLeft}px`;
-    };
-}, 16);
-
-// 触摸事件处理
-const handleTouchStart = (e: TouchEvent) => {
-    if (e.touches.length > 1) return;
-    isDragging.value = true;
-    isSeeking.value = true;
-    touchIdentifier.value = e.touches[0].identifier;
-    const progressBar = document.querySelector('.progress-bar');
-    const rect = progressBar!.getBoundingClientRect();
-    const initialX = e.touches[0].clientX - rect.left;
-    dragProgress.value = (initialX / rect.width) * 100;
-};
-
-const onTouchMove = throttle((e: TouchEvent) => {
-    if (!isDragging.value || touchIdentifier.value === null) return;
-    const touch = Array.from(e.touches).find(t => t.identifier === touchIdentifier.value);
-    if (!touch) return;
-    e.preventDefault();
-    const progressBar = document.querySelector('.progress-bar');
-    const rect = progressBar!.getBoundingClientRect();
-    let offsetX = touch.clientX - rect.left;
-    offsetX = Math.max(0, Math.min(rect.width, offsetX));
-    dragProgress.value = (offsetX / rect.width) * 100;
-    if (icon.value) {
-        const newLeft = offsetX - icon.value.offsetWidth / 2;
-        icon.value.style.left = `${newLeft}px`;
-    };
-}, 16);
-
-const onTouchEnd = () => {
-    if (!isDragging.value) return;
-    isDragging.value = false;
-    isSeeking.value = false;
-    touchIdentifier.value = null;
-    if (audio.value && store.playerDuration) {
-        audio.value.currentTime = (dragProgress.value / 100) * store.playerDuration;
-    };
-    if (dragTimer) clearTimeout(dragTimer);
-    dragTimer = setTimeout(() => {
-        if (icon.value) icon.value.style.left = '';
-    }, 1000);
-};
-
-// 数据处理
-watch(() => store.playerState, (_acc, _now) => {
-    audio.value = document.querySelector('audio');
+const actualTime = computed(() => {
+  if (!duration.value) return 0;
+  return Math.min(duration.value, Math.max(0, store.playerCurrentTime));
 });
 
-onMounted(() => nextTick(() => {
-    audio.value = document.querySelector('audio');
-    const progressBarShowCheck = document.querySelector('#footer');
-    if (progressBarShowCheck) {
-        progressBarShowCheck.addEventListener('mouseenter', handleMouseEnter);
-        progressBarShowCheck.addEventListener('mouseleave', handleMouseLeave);
-    };
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener("touchmove", onTouchMove);
-    document.addEventListener('touchend', onTouchEnd);
-    document.addEventListener('touchcancel', onTouchEnd);
-}));
+const displayedTime = computed(() => isDragging.value ? previewTime.value : actualTime.value);
+const displayedProgress = computed(() => duration.value ? (displayedTime.value / duration.value) * 100 : 0);
+const loadingPosition = computed(() => Math.min(99, Math.max(1, displayedProgress.value)));
+const showLoading = computed(() => !store.playerCanplay && store.playerStatus !== "error");
 
-onBeforeUnmount(() => {
-    document.removeEventListener('mouseup', onMouseUp);
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener("touchmove", onTouchMove);
-    document.removeEventListener('touchend', onTouchEnd);
-    document.removeEventListener('touchcancel', onTouchEnd);
-});
+const formatTime = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainder = safeSeconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+};
+
+const ariaValueText = computed(() => `${formatTime(displayedTime.value)} / ${formatTime(duration.value)}`);
+
+const setPreviewFromClientX = (clientX: number) => {
+  if (!track.value || !duration.value) return;
+  const rect = track.value.getBoundingClientRect();
+  if (rect.width <= 0) return;
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  previewTime.value = ratio * duration.value;
+};
+
+const commitTime = (time: number) => {
+  if (!duration.value) return;
+  const nextTime = Math.min(duration.value, Math.max(0, time));
+  const audio = document.querySelector("audio");
+  if (audio) audio.currentTime = nextTime;
+  store.playerCurrentTime = nextTime;
+  store.lyricSeekVersion++;
+};
+
+const handlePointerDown = (event: PointerEvent) => {
+  if (!duration.value || (event.pointerType === "mouse" && event.button !== 0)) return;
+  event.preventDefault();
+  activePointerId.value = event.pointerId;
+  isDragging.value = true;
+  setPreviewFromClientX(event.clientX);
+  track.value?.setPointerCapture(event.pointerId);
+};
+
+const handlePointerMove = (event: PointerEvent) => {
+  if (!isDragging.value || activePointerId.value !== event.pointerId) return;
+  event.preventDefault();
+  setPreviewFromClientX(event.clientX);
+};
+
+const finishPointer = (event: PointerEvent, commit: boolean) => {
+  if (!isDragging.value || activePointerId.value !== event.pointerId) return;
+  if (commit) {
+    setPreviewFromClientX(event.clientX);
+    commitTime(previewTime.value);
+  } else {
+    previewTime.value = actualTime.value;
+  }
+  if (track.value?.hasPointerCapture(event.pointerId)) {
+    track.value.releasePointerCapture(event.pointerId);
+  }
+  activePointerId.value = null;
+  isDragging.value = false;
+};
+
+const handlePointerUp = (event: PointerEvent) => finishPointer(event, true);
+const handlePointerCancel = (event: PointerEvent) => finishPointer(event, false);
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (!duration.value) return;
+  let nextTime: number | null = null;
+  switch (event.key) {
+    case "ArrowLeft":
+    case "ArrowDown":
+      nextTime = actualTime.value - 5;
+      break;
+    case "ArrowRight":
+    case "ArrowUp":
+      nextTime = actualTime.value + 5;
+      break;
+    case "Home":
+      nextTime = 0;
+      break;
+    case "End":
+      nextTime = duration.value;
+      break;
+  }
+  if (nextTime === null) return;
+  event.preventDefault();
+  commitTime(nextTime);
+};
 </script>
 
 <style lang="scss" scoped>
 .progress-bar {
-    // 进度条样式
+  position: absolute;
+  top: -11px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  z-index: 99;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+
+  .track-line {
     position: absolute;
-    top: 0;
+    top: 11px;
     left: 0;
     width: 100%;
-    height: 1.5px;
+    height: 2px;
+    background-color: rgb(240 240 240);
+  }
+
+  .progress {
+    height: 100%;
+    background-color: rgb(138 43 226);
+    transition: width 0.15s linear;
+  }
+
+  .progress-thumb {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgb(255 255 255 / 90%);
+    border-radius: 50%;
+    background-color: rgb(138 43 226);
+    box-shadow: 0 1px 5px rgb(0 0 0 / 35%);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+  }
+
+  .reload-circle {
+    position: absolute;
+    top: 50%;
+    color: black;
+    transform: translate(-50%, -50%);
+    animation: spin 1s linear infinite;
+  }
+
+  &:hover .progress-thumb,
+  &:focus-visible .progress-thumb,
+  &.dragging .progress-thumb {
     opacity: 1;
-    user-select: none;
-    background-color: rgba(240, 240, 240, 1);
-    z-index: 99;
+    transform: translate(-50%, -50%) scale(1);
+  }
 
-    .progress {
-        height: 100%;
-        width: 100%;
-        opacity: 1;
-        background-color: rgba(138, 43, 226, 1);
-        transition: width 0.2s linear;
-        position: relative;
-        user-select: none;
+  &:focus-visible {
+    outline: 2px solid rgb(138 43 226 / 70%);
+    outline-offset: -2px;
+  }
 
-        &.dragging {
-            transition: none !important;
-        }
+  &.dragging .progress {
+    transition: none;
+  }
+}
 
-        .ReloadCircle {
-            position: absolute;
-            user-select: none;
-            touch-action: none;
-            top: -16px;
-            right: -16px;
-            width: 32px;
-            height: 32px;
-            color: black;
-            animation: spin 1s linear infinite;
+@keyframes spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg) translateZ(0);
-                }
-
-                100% {
-                    transform: rotate(360deg) translateZ(0);
-                }
-            }
-        }
-
-
-        .progress-icon {
-            // 进度条图标，请勿修改宽高和边距，这些参数是定嘶的！除非你有大改动的能力
-            position: absolute;
-            user-select: none;
-            touch-action: none;
-            top: -16px;
-            right: -16px;
-            opacity: 1;
-            width: 32px;
-            height: 32px;
-            cursor: grab;
-            transform: translateX(var(--progress-icon-x, 0)) translateZ(0);
-            will-change: transform;
-            transition: width 0.2s linear;
-
-            &:active {
-                cursor: grabbing;
-            }
-        }
-    }
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar .progress,
+  .progress-bar .progress-thumb {
+    transition: none;
+  }
 }
 </style>

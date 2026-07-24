@@ -51,17 +51,17 @@
           <el-switch v-model="playerAutoplay" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
         <div class="item">
-          <span class="text">随机播放</span>
-          <el-switch v-model="playerOrder" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall"
-            active-value="random" inactive-value="list" />
+          <span class="text">播放顺序</span>
+          <el-radio-group v-model="playerOrder" size="small" text-color="#FFFFFF">
+            <el-radio value="list" border>列表循环</el-radio>
+            <el-radio value="single" border>单曲循环</el-radio>
+            <el-radio value="shuffle" border>随机播放</el-radio>
+          </el-radio-group>
         </div>
         <div class="item">
-          <span class="text">循环模式</span>
-          <el-radio-group v-model="playerLoop" size="small" text-color="#FFFFFF">
-            <el-radio value="all" border>列表</el-radio>
-            <el-radio value="one" border>单曲</el-radio>
-            <el-radio value="none" border>不循环</el-radio>
-          </el-radio-group>
+          <span class="text">全局播放器快捷键</span>
+          <el-switch v-model="playerKeyboardShortcuts" inline-prompt :active-icon="CheckSmall"
+            :inactive-icon="CloseSmall" />
         </div>
       </el-collapse-item>
       <el-collapse-item title="歌词设置" name="5">
@@ -124,7 +124,7 @@ const {
   footerBlur,
   playerAutoplay,
   playerOrder,
-  playerLoop,
+  playerKeyboardShortcuts,
   playerTrLrc,
   playerDWRCShow,
   playerDWRCShowPro,

@@ -24,18 +24,20 @@ export const storeState: MainState = {
   mobileFuncState: false, // 【状态】移动端功能区开启状态
   setOpenState: false, // 【状态】设置页面开启状态
   setV: false, // 【状态】开发者模式
-  playerState: false, // 【状态】当前播放状态
+  playerStatus: "idle", // 【状态】播放器状态
+  playerHasStarted: false, // 【状态】当前会话是否已经开始播放
+  playerError: null as string | null, // 【状态】播放器错误
   playerCanplay: false, // 【状态】当前音乐是否完成加载
   playerTitle: null as string | null, // 【缓存】当前播放歌曲名
   playerArtist: null as string | null, // 【缓存】当前播放歌手名
   playerAlbum: null as string | null, // 【缓存】当前播放专辑名
-  playerLrc: [[true, "歌词加载中..."]], // 【缓存】当前播放歌词
+  playerLrc: [[true, 1, 0, 0, ""]], // 【缓存】当前播放歌词
   playerLrcShow: true, // 【开关】是否显示底栏歌词
   footerBlur: true, // 【开关】底栏模糊
   footerProgressBar: true, // 【开关】是否显示底栏进度条
   playerAutoplay: true, // 【开关】是否自动播放
-  playerLoop: "all", // 【开关】循环播放 "all", "one", "none"
-  playerOrder: "random", // 【开关】循环顺序 "list", "random"
+  playerOrder: "shuffle", // 【开关】播放顺序 "list", "single", "shuffle"
+  playerKeyboardShortcuts: true, // 【开关】全局播放器快捷键
   playerTrLrc: false, // 【开关】逐行歌词调用翻译歌词开关
   playerDWRCShow: true, // 【开关】逐字歌词解析总开关
   playerDWRCShowPro: true, // 【开关】逐字效果增强开关
@@ -44,8 +46,8 @@ export const storeState: MainState = {
   playerDWRCPilfer: true, // 【开关】拆东墙补西墙
   /* 这个移除元数据功能暂只能对非直接从 API 获得的歌词有效，因为它不经由 APlayer 处理，可以被拦截并替换。所以也就只支持逐字。 */
   playerRMMetadata: false, // 【开关】移除歌词中的元数据
-  playerCurrentTime: null as number | null, // 【缓存】当前歌曲已播放时间
-  playerDuration: null as number | null, // 【缓存】当前歌曲总时长
+  playerCurrentTime: 0, // 【缓存】当前歌曲已播放时间
+  playerDuration: 0, // 【缓存】当前歌曲总时长
   dwrcIndex: -1 as number | null, // 【缓存】逐字歌词进度存储
   dwrcTemp: [] as any[], // 【缓存】逐字歌词
   dwrcEnable: true, // 【状态】调用逐字歌词
@@ -54,8 +56,6 @@ export const storeState: MainState = {
   showFirefly: false, // 【状态】萤火虫特效
   showSnowfall: false, // 【状态】雪花特效
   showLantern: false, // 【状态】灯笼特效
-  showProgressIcon: false, // 【状态】进度条图标显示状态
-  showProgressIconState: 0, // 【状态】进度条图标持续显示状态，0: 未悬停不显示，1: 已悬停显示，2: 始终显示
   theme: "system", // 【开关】主题，"system"/"time"/"bg"/"light"/"dark"。
 };
 
@@ -93,12 +93,15 @@ export const mainStore = defineStore("main", {
         this.mobileFuncState = false;
       }
     },
-    // 更改播放状态
-    setPlayerState(value) {
-      if (value) {
-        this.playerState = false;
-      } else {
-        this.playerState = true;
+    // 更改播放器状态
+    setPlayerStatus(value) {
+      this.playerStatus = value;
+      if (value === "playing") {
+        this.playerHasStarted = true;
+        this.playerError = null;
+      }
+      if (value === "error") {
+        this.playerCanplay = false;
       }
     },
     // 更改音乐加载状态
@@ -110,9 +113,10 @@ export const mainStore = defineStore("main", {
       this.playerLrc = value;
     },
     // 更改歌曲数据
-    setPlayerData(title, artist) {
+    setPlayerData(title, artist, album = null) {
       this.playerTitle = title;
       this.playerArtist = artist;
+      this.playerAlbum = album;
     },
     // 更改壁纸加载状态
     setImgLoadStatus(value) {
@@ -155,8 +159,8 @@ export const mainStore = defineStore("main", {
         'footerBlur',
         'footerProgressBar',
         'playerAutoplay',
-        'playerLoop',
         'playerOrder',
+        'playerKeyboardShortcuts',
         'playerTrLrc',
         'playerDWRCShow',
         'playerDWRCShowPro',

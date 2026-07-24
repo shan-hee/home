@@ -1,7 +1,7 @@
 <template>
   <footer id="footer" :class="store.footerBlur ? 'blur' : null">
     <Transition name="fade" mode="out-in">
-      <div v-if="!store.playerState || !store.playerLrcShow" class="power">
+      <div v-if="!shouldShowLyrics" class="power">
         <span>
           &copy;&nbsp;{{ currentYear }}
           &nbsp;&amp;&nbsp;by&nbsp;
@@ -14,15 +14,11 @@
           </a>
         </span>
       </div>
-      <div v-else class="lrc">
+      <div v-else class="lrc" aria-live="polite">
         <!-- 音乐进度条 -->
         <ProgressBar v-if="store.footerProgressBar" />
-        <Transition name="fade" mode="out-in" :id="`lrc-line-${store.playerLrc[0][2]}`"
-          v-if="!(!store.dwrcEnable || store.dwrcTemp.length == 0 || store.dwrcLoading)">
-          <!-- &amp; -->
-          <!-- 逐字模块山 -->
-          <div class="lrc-all"
-            :key="store.playerLrc.length != 0 ? `lrc-line-${store.playerLrc[0][2]}-${store.lyricSeekVersion}` : `lrc-line-null`">
+        <Transition name="fade" mode="out-in" v-if="useWordLyrics">
+          <div class="lrc-all" :key="`word-${lyricLineKey}-${store.lyricSeekVersion}`">
             <music-one theme="filled" size="18" fill="var(--footer-music-icon-color)" />
             &nbsp;
             <Icon size="20" style="transform: rotate(-18deg);" class="paws-1"
@@ -31,18 +27,19 @@
             </Icon>
             <span class="dwrc-box">
               <span class="dwrc-2 lrc-text text-truncate-ellipsis" id="dwrc-2-wrap">
-                <span v-for="(i, index) in store.playerLrc" :key="`lrc-over-char-${i[2]}-${i[3]}`" v-html="i[4]">
+                <span v-for="(item, index) in wordLyrics" :key="`lrc-over-char-${item[2]}-${item[3]}-${index}`"
+                  v-html="item[4]">
                 </span>
               </span>
               <span class="dwrc-1 lrc-text text-truncate-ellipsis" id="dwrc-1-wrap">
-                <span v-for="(i, index) in store.playerLrc" :key="`lrc-char-${i[2]}-${i[3]}`" :class="[
+                <span v-for="(item, index) in wordLyrics" :key="`lrc-char-${item[2]}-${item[3]}-${index}`" :class="[
                   'dwrc-char',
-                  i[0] && Number(i[6]) > 0 ? 'fade-in' : 'fade-in-start',
-                  i[0] && Number(i[5]) > 1019 && Number(i[6]) > 0 ? 'long-tone' : 'fade-in-start',
-                  i[0] && Number(i[6]) <= 0 ? 'fade-out' : '',
-                  i[0] && Number(i[5]) > 1019 && Number(i[6]) <= 0 ? 'long-tone-out' : '',
-                  i[1] ? 'dwrc-style-s2' : 'dwrc-style-s1'
-                ]" :id="`lrc-char-${i[2]}-${i[3]}`" v-html="i[4]">
+                  item[0] && Number(item[6]) > 0 ? 'fade-in' : 'fade-in-start',
+                  item[0] && Number(item[5]) > 600 && Number(item[6]) > 0 ? 'long-tone' : '',
+                  item[0] && Number(item[6]) <= 0 ? 'fade-out' : '',
+                  item[0] && Number(item[5]) > 600 && Number(item[6]) <= 0 ? 'long-tone-out' : '',
+                  item[1] ? 'dwrc-style-s2' : 'dwrc-style-s1'
+                ]" :id="`lrc-char-${item[2]}-${item[3]}`" v-html="item[4]">
                 </span>
               </span>
             </span>
@@ -55,15 +52,14 @@
         </Transition>
         <Transition name="fade" mode="out-in" v-else>
           <!-- 逐行模块 -->
-          <div class="lrc-all" :key="store.getPlayerLrc.length > 0 ?
-            `lrc-${store.getPlayerLrc[0][2]}-${store.getPlayerLrc.length}` : '歌词加载中...'">
+          <div class="lrc-all" :key="`line-${lyricLineKey}-${lineLyric}`">
             <music-one theme="filled" size="18" fill="var(--footer-music-icon-color)" />
             &nbsp;
             <Icon size="20" style="transform: rotate(-18deg);" class="paws-3"
               color="var(--footer-music-paw-icon-color)">
               <paw />
             </Icon>
-            <span class="lrc-text text-truncate-ellipsis" v-html="store.getPlayerLrc[0][4]" :class="`lrc-char`" />
+            <span class="lrc-text text-truncate-ellipsis lrc-char">{{ lineLyric }}</span>
             <Icon size="20" style="transform: rotate(18deg);" class="paws-4" color="var(--footer-music-paw-icon-color)">
               <paw />
             </Icon>
@@ -82,20 +78,62 @@ import { MusicOne } from "@icon-park/vue-next";
 import { Icon } from "@vicons/utils";
 import { Paw } from "@vicons/ionicons5";
 import { mainStore } from "@/store";
-import { watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, watch } from "vue";
 
 const store = mainStore();
 const currentYear = new Date().getFullYear();
 const repositoryUrl = "https://github.com/shan-hee/home";
-const siteIcp = envConfig.VITE_SITE_ICP;
+const siteIcp = envConfig.VITE_SITE_ICP.trim();
+
+type FooterLyricItem = [boolean, boolean | number, number, number, string, number?, number?];
+
+const shouldShowLyrics = computed(() => {
+  return store.playerLrcShow && store.playerHasStarted && store.playerStatus !== "error";
+});
+
+const wordLyrics = computed(() => {
+  return (store.playerLrc as FooterLyricItem[]).filter((item) => (
+    Array.isArray(item) &&
+    typeof item[4] === "string" &&
+    item[4].replace(/&nbsp;/g, " ").trim().length > 0 &&
+    Number.isFinite(Number(item[5])) &&
+    Number.isFinite(Number(item[6]))
+  ));
+});
+
+const useWordLyrics = computed(() => {
+  return store.dwrcEnable && !store.dwrcLoading && store.dwrcTemp.length > 0 && wordLyrics.value.length > 0;
+});
+
+const fallbackLyric = computed(() => {
+  return `${store.playerTitle || "未知歌曲"} · ${store.playerArtist || "未知歌手"}`;
+});
+
+const lineLyric = computed(() => {
+  const value = (store.playerLrc as FooterLyricItem[])?.[0]?.[4];
+  if (typeof value !== "string" || ["", "Loading", "Not available", "歌词加载中..."].includes(value.trim())) {
+    return fallbackLyric.value;
+  }
+  return value.replace(/&nbsp;/g, " ");
+});
+
+const lyricLineKey = computed(() => Number((store.playerLrc as FooterLyricItem[])?.[0]?.[2]) || 0);
+const activeAnimations = new Set<Animation>();
+
+const clearLyricAnimations = () => {
+  activeAnimations.forEach((animation) => animation.cancel());
+  activeAnimations.clear();
+};
 
 // dwrc part
-watch(() => store.getPlayerLrc, (_new, _old) => {
+watch(() => store.getPlayerLrc, async () => {
+  clearLyricAnimations();
   type DwrcItem = [number, number, any[]];
   const isLineByLine = !store.dwrcEnable || (store.dwrcTemp as DwrcItem[]).length === 0 || store.dwrcLoading;
-  if (!store.playerDWRCShowPro || isLineByLine) {
+  if (!store.playerDWRCShowPro || isLineByLine || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
   };
+  await nextTick();
   const audio = document.querySelector('audio');
   if (!audio) {
     return;
@@ -145,9 +183,11 @@ watch(() => store.getPlayerLrc, (_new, _old) => {
       ],
       animateOptions,
     );
+    activeAnimations.add(outputAnimate);
     outputAnimate.onfinish = () => {
+      activeAnimations.delete(outputAnimate);
       outputItem.style.transform = "translateY(1px)";
-      outputItem.animate(
+      const settleAnimation = outputItem.animate(
         [
           { transform: "translateY(-1px)" },
           { transform: "translateY(1px)" },
@@ -158,10 +198,14 @@ watch(() => store.getPlayerLrc, (_new, _old) => {
           easing: "linear",
         }
       );
+      activeAnimations.add(settleAnimation);
+      settleAnimation.onfinish = () => activeAnimations.delete(settleAnimation);
     };
     inputItem.setAttribute("data-start", "true");
   };
 });
+
+onBeforeUnmount(clearLyricAnimations);
 
 </script>
 
@@ -546,6 +590,18 @@ watch(() => store.getPlayerLrc, (_new, _old) => {
 
     &.blur {
       font-size: 0.9rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dwrc-char,
+    #dwrc-2-wrap > span,
+    .lrc-char,
+    .fade-enter-active,
+    .fade-leave-active {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
     }
   }
 

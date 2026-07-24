@@ -6,13 +6,9 @@ export const validationRules = {
         allowed: [0, 1, 2, 3],
         defaultValue: 0,
     },
-    playerLoop: {
-        allowed: ["all", "one", "none"],
-        defaultValue: "all",
-    },
     playerOrder: {
-        allowed: ["list", "random"],
-        defaultValue: "random",
+        allowed: ["list", "single", "shuffle"],
+        defaultValue: "shuffle",
     },
     theme: {
         allowed: ["system", "time", "bg", "light", "dark"],

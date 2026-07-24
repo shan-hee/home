@@ -1,27 +1,38 @@
 <template>
   <APlayer v-if="playList[0]" ref="player" :audio="playList" :autoplay="store.playerAutoplay" :theme="theme"
-    :autoSwitch="false" :loop="store.playerLoop" :order="store.playerOrder" :volume="volume" :showLrc="true"
+    :autoSwitch="false" :loop="aplayerLoop" :order="aplayerOrder" :volume="volume" :showLrc="true"
     :listFolded="listFolded" :listMaxHeight="listMaxHeight" :noticeSwitch="false" @play="onPlay" @pause="onPause"
     @Loadstart="onLoadStart" @timeupdate="onTimeUp" @error="loadMusicError" @canplay="onCanplay" @waiting="onWaiting" />
 </template>
 
 <script setup lang="ts">
-import { Float, MusicOne, PlayWrong } from "@icon-park/vue-next";
-import { getPlayerList, testGitHubConnectivity } from "@/api";
+import { MusicOne, PlayWrong } from "@icon-park/vue-next";
+import { getPlayerList } from "@/api";
+import type { PlaylistItem } from "@/api";
 import { mainStore } from "@/store";
 import APlayer from "@worstone/vue-aplayer";
-import type { APlayer as APlayerType } from '@worstone/vue-aplayer';
 import { decodeDWQYRC } from "@/utils/decodeDWQYRC";
 import { alignPilferedLyrics } from "@/utils/checkPilferDWRC";
 
 const store = mainStore();
-let showDWRCRunning = 0;
-let lastTimestamp = Date.now();
-let nowLineStart: number = -1;
-let nowLineIndex = ref(-1);
+const nowLineIndex = ref(-1);
+let lyricAnimationFrame: number | null = null;
+
+type APlayerOrder = "list" | "random";
+type APlayerLoop = "all" | "one" | "none";
+
+interface APlayerController {
+  index: number;
+  order: APlayerOrder;
+  loop: APlayerLoop;
+  audio: PlaylistItem[];
+  lyrics: Array<Array<[number, string]>>;
+  lyricIndex: number;
+  seek: (time: number) => void;
+}
 
 type PlayerInstance = {
-  aplayer: APlayerType;
+  aplayer: APlayerController;
   audioRef: HTMLAudioElement;
   audioStatus: {
     duration: number;
@@ -42,13 +53,30 @@ type DWRCItem = [
   Array<[[number, number], string, number, number]>
 ];
 
-interface PlaylistItem {
-  name: string;
-  artist: string;
-  album?: string;
-  url: string;
-  cover: string;
-  lrc: string;
+const parseWordLyrics = (source: string): DWRCItem[] => {
+  const decoded = decodeDWQYRC(source, store.playerRMMetadata) as DWRCItem[];
+  let previousLineStart = -1;
+  const valid = decoded.every(([lineStart, lineDuration, words]) => {
+    if (!Number.isFinite(lineStart) || !Number.isFinite(lineDuration) || lineStart < previousLineStart || lineDuration < 0) {
+      return false;
+    }
+    previousLineStart = lineStart;
+    return words.length > 0 && words.every(([[wordStart, wordDuration], text]) => {
+      const plainText = text.replace(/&nbsp;/g, " ").trim();
+      return (
+        Number.isFinite(wordStart) &&
+        Number.isFinite(wordDuration) &&
+        wordStart >= 0 &&
+        wordDuration >= 0 &&
+        wordStart <= lineStart + lineDuration + 1000 &&
+        plainText.length > 0
+      );
+    });
+  });
+  if (!valid) {
+    throw new Error("逐字歌词时间轴无效");
+  }
+  return decoded;
 };
 
 // 获取播放器 DOM
@@ -106,65 +134,69 @@ const listHeight = computed(() => {
   return props.listMaxHeight + "px";
 });
 
+const aplayerOrder = computed<APlayerOrder>(() => {
+  return store.playerOrder === "shuffle" ? "random" : "list";
+});
+
+const aplayerLoop = computed<APlayerLoop>(() => {
+  return store.playerOrder === "single" ? "one" : "all";
+});
+
 // 监听播放顺序
 watch(
   () => store.playerOrder,
-  (newOrder) => {
+  () => {
     if (!player.value) return;
-    if (player.value) {
-      player.value.aplayer.order = newOrder;
-    };
-  },
-);
-
-// 监听循环模式
-watch(
-  () => store.playerLoop,
-  (newLoop) => {
-    if (!player.value) return;
-    if (player.value) {
-      player.value.aplayer.loop = newLoop;
-    };
+    player.value.aplayer.order = aplayerOrder.value;
+    player.value.aplayer.loop = aplayerLoop.value;
   },
 );
 
 // 初始化播放器
-onMounted(() => {
-  nextTick(() => {
-    try {
-      getPlayerList(props.songServer, props.songType, props.songId, store.playerTrLrc).then((res) => {
-        // 更改播放器加载状态
-        store.musicIsOk = true;
-        // 生成歌单
-        playList.value = res as PlaylistItem[];
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: "Loading...",
-          });
-          // 设置 Media Session 操作
-          navigator.mediaSession.setActionHandler("play", () => { player.value!.play() });
-          navigator.mediaSession.setActionHandler("pause", () => { player.value!.pause() });
-          navigator.mediaSession.setActionHandler("nexttrack", () => { changeSong(1) });
-          navigator.mediaSession.setActionHandler("previoustrack", () => { changeSong(0) });
-          navigator.mediaSession.setActionHandler("seekbackward", () => { seekbackward(5) });
-          navigator.mediaSession.setActionHandler("seekforward", () => { seekforward(5) });
-        };
-        console.log("音乐加载完成");
-      });
-    } catch (err) {
-      console.error(err);
-      store.musicIsOk = false;
-      ElMessage({
-        message: "播放器加载失败",
-        grouping: true,
-        icon: h(PlayWrong, {
-          theme: "filled",
-          fill: "var(--music-aplayer-message-icon-color)",
-        }),
-      });
-    };
-  });
-});
+const setupMediaSession = () => {
+  if (!("mediaSession" in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({ title: "Loading..." });
+  navigator.mediaSession.setActionHandler("play", () => player.value?.play());
+  navigator.mediaSession.setActionHandler("pause", () => player.value?.pause());
+  navigator.mediaSession.setActionHandler("nexttrack", () => changeSong(1));
+  navigator.mediaSession.setActionHandler("previoustrack", () => changeSong(0));
+  navigator.mediaSession.setActionHandler("seekbackward", () => seekbackward(5));
+  navigator.mediaSession.setActionHandler("seekforward", () => seekforward(5));
+};
+
+const loadPlaylist = async () => {
+  store.setPlayerStatus("loading");
+  store.musicIsOk = false;
+  try {
+    const result = await getPlayerList(
+      props.songServer,
+      props.songType,
+      props.songId,
+      store.playerTrLrc,
+    );
+    if (result.length === 0) {
+      throw new Error("播放列表为空");
+    }
+    playList.value = result;
+    store.musicIsOk = true;
+    store.playerError = null;
+    store.setPlayerStatus("ready");
+    setupMediaSession();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "播放器加载失败";
+    console.error("播放器加载失败：", error);
+    store.playerError = message;
+    store.setPlayerStatus("error");
+    ElMessage({
+      message: "播放器加载失败，主页其它功能仍可使用",
+      grouping: true,
+      icon: h(PlayWrong, {
+        theme: "filled",
+        fill: "var(--music-aplayer-message-icon-color)",
+      }),
+    });
+  }
+};
 
 // 播放
 const onPlay = () => {
@@ -175,10 +207,10 @@ const onPlay = () => {
   if (!currentTrack) {
     return;
   };
-  // 播放状态
-  store.setPlayerState(player.value.audioRef.paused);
+  store.setPlayerStatus("playing");
+  startLyricSync();
   // 储存播放器信息
-  store.setPlayerData(playList.value[playIndex.value].name, playList.value[playIndex.value].artist);
+  store.setPlayerData(currentTrack.name, currentTrack.artist, currentTrack.album);
   ElMessage({
     message: store.getPlayerData.name + " - " + store.getPlayerData.artist,
     grouping: true,
@@ -209,8 +241,10 @@ const onPlay = () => {
 
 // 开始播放处理
 const onCanplay = () => {
-  // 播放状态
   store.setPlayerCanplay(true);
+  if (!store.playerHasStarted && store.playerStatus !== "error") {
+    store.setPlayerStatus("ready");
+  }
   updatePositionState();
 };
 
@@ -220,81 +254,69 @@ const onWaiting = () => {
 
 // 暂停
 const onPause = () => {
-  store.setPlayerState(player.value!.audioRef.paused);
+  stopLyricSync();
+  if (store.playerStatus === "error") return;
+  store.setPlayerStatus(store.playerHasStarted ? "paused" : "ready");
 };
 
 // 切换播放暂停事件
 const playToggle = () => {
-  player.value!.toggle();
+  if (!player.value || !store.musicIsOk) return;
+  player.value.toggle();
   updatePositionState();
 };
 
 // 切换音量事件
-const changeVolume = (value) => {
-  player.value!.setVolume(value, false);
+const changeVolume = (value: number) => {
+  if (!player.value) return;
+  const volume = Math.min(1, Math.max(0, value));
+  player.value.setVolume(volume, false);
 };
 
 // 切换上下曲
-const changeSong = (type) => {
-  type === 0 ? player.value!.skipBack() : player.value!.skipForward();
+const changeSong = (type: 0 | 1) => {
+  if (!player.value || !store.musicIsOk) return;
+  type === 0 ? player.value.skipBack() : player.value.skipForward();
   store.setPlayerCanplay(false);
-  updatePositionState();
+  store.setPlayerStatus("loading");
   nextTick(() => {
-    player.value!.play();
+    player.value?.play();
   });
 };
 
 // 切换歌曲列表状态
 const toggleList = () => {
-  player.value!.toggleList();
+  player.value?.toggleList();
 };
 
 // 快退
-const seekbackward = (value) => {
+const seekbackward = (value: number) => {
   if (!player.value) return;
-  const dur = player.value.audioStatus.duration;
   const currentTime = player.value.audioStatus.playedTime;
-  const ti = currentTime - value;
-  if (ti > dur) {
-    changeSong(1);
-  } else if (ti < dur) {
-    player.value.aplayer.seek(0);
-  } else {
-    player.value.aplayer.seek(ti);
-  };
+  player.value.aplayer.seek(Math.max(0, currentTime - value));
+  store.lyricSeekVersion++;
   updatePositionState();
 };
 
 // 快进
-const seekforward = (value) => {
-  const dur = player.value!.audioStatus.duration;
-  const currentTime = player.value!.audioStatus.playedTime;
-  const ti = currentTime + value;
-  if (ti > dur) {
+const seekforward = (value: number) => {
+  if (!player.value) return;
+  const duration = player.value.audioStatus.duration;
+  const nextTime = player.value.audioStatus.playedTime + value;
+  if (Number.isFinite(duration) && nextTime >= duration) {
     changeSong(1);
-  } else if (ti < dur) {
-    player.value!.aplayer.seek(0);
   } else {
-    player.value!.aplayer.seek(ti);
-  };
-  updatePositionState();
-};
-
-// 跳转
-const seektime = (value) => {
-  const dur = player.value!.audioStatus.duration;
-  if (value > dur) {
-    changeSong(1);
-  } else if (value < 0) {
-    player.value!.aplayer.seek(0);
-  } else {
-    player.value!.aplayer.seek(value);
+    player.value.aplayer.seek(nextTime);
+    store.lyricSeekVersion++;
   };
   updatePositionState();
 };
 
 // 加载音频错误
 const loadMusicError = () => {
+  stopLyricSync();
+  store.playerError = "当前歌曲加载失败";
+  store.setPlayerStatus("error");
   let notice = "";
   if (playList.value.length > 1) {
     notice = "播放歌曲出现错误，播放器将在 2s 后进行下一首";
@@ -310,9 +332,8 @@ const loadMusicError = () => {
       duration: 2000,
     }),
   });
-  console.error(
-    "播放歌曲: " + player.value!.aplayer.audio[player.value!.aplayer.index].name + " 出现错误",
-  );
+  const currentTrack = player.value?.aplayer.audio[player.value.aplayer.index];
+  console.error("播放歌曲失败：", currentTrack?.name || "未知歌曲");
 };
 
 // 音频时间更新事件
@@ -322,8 +343,7 @@ const fetchDWRC = async (dwrcUrl: string) => {
   const dwrcText = await dwrcSource.text();
   store.dwrcIndex = playIndex.value;
   try {
-    const decoded = decodeDWQYRC(dwrcText, store.playerRMMetadata);
-    store.dwrcTemp = Array.isArray(decoded) ? decoded as DWRCItem[] : [];
+    store.dwrcTemp = parseWordLyrics(dwrcText);
     store.dwrcLoading = false;
     store.dwrcEnable = true;
     return;
@@ -365,8 +385,7 @@ const fetchDWRC = async (dwrcUrl: string) => {
         throw new Error(`AMLL TTML Database 调用失败...`);
       } else {
         const amllText = await amllSource.text();
-        const decoded = decodeDWQYRC(amllText, store.playerRMMetadata);
-        store.dwrcTemp = Array.isArray(decoded) ? decoded as DWRCItem[] : [];
+        store.dwrcTemp = parseWordLyrics(amllText);
         store.dwrcLoading = false;
         store.dwrcEnable = true;
         return;
@@ -391,8 +410,7 @@ const fetchDWRC = async (dwrcUrl: string) => {
               store.dwrcEnable = false;
             } else {
               const amllTextse = await amllSourcese.text();
-              const decodedse = decodeDWQYRC(amllTextse, store.playerRMMetadata);
-              store.dwrcTemp = Array.isArray(decodedse) ? decodedse as DWRCItem[] : [];
+              store.dwrcTemp = parseWordLyrics(amllTextse);
               store.dwrcLoading = false;
               store.dwrcEnable = true;
               return;
@@ -469,8 +487,7 @@ const fetchDWRC = async (dwrcUrl: string) => {
           const sourceLrcText = await sourceLrcResp.text();
           const processedText = alignPilferedLyrics(pilferText, sourceLrcText);
           if (processedText) {
-            const decoded = decodeDWQYRC(processedText, store.playerRMMetadata);
-            store.dwrcTemp = Array.isArray(decoded) ? (decoded as DWRCItem[]) : [];
+            store.dwrcTemp = parseWordLyrics(processedText);
             store.dwrcLoading = false;
             store.dwrcEnable = true;
             console.log(`当前正在播放 ${songServer} 来源的《${store.getPlayerData.name}》- '${store.getPlayerData.artist}'，已成功从 ${currentServer} 偷到逐字歌词~`);
@@ -508,12 +525,18 @@ const fetchDWRC = async (dwrcUrl: string) => {
 function onLoadStart() {
   // 逐字获取模块
   if (!player.value) return;
+  playIndex.value = player.value.aplayer.index;
+  const currentTrack = playList.value[playIndex.value];
+  if (currentTrack) {
+    store.setPlayerData(currentTrack.name, currentTrack.artist, currentTrack.album);
+    store.setPlayerLrc([[true, 1, playIndex.value, 0, getTrackFallback()]]);
+  }
+  store.setPlayerCanplay(false);
   nowLineIndex.value = -1;
   try {
     if (player.value == null || player.value.aplayer == null) {
       return;
     };
-    const lyrics = player.value.aplayer.lyrics[playIndex.value];
     if (store.playerDWRCShow != true) {
       store.dwrcEnable = false;
       store.dwrcTemp = [];
@@ -523,7 +546,14 @@ function onLoadStart() {
     if (store.dwrcIndex == playIndex.value) {
       return;
     };
-    const dwrcUrl = player.value!.aplayer.audio[player.value!.aplayer.index]["lrc"] + "&dwrc=true";
+    const lyricUrl = player.value.aplayer.audio[player.value.aplayer.index]?.lrc;
+    if (!lyricUrl) {
+      store.dwrcEnable = false;
+      store.dwrcTemp = [];
+      store.dwrcLoading = false;
+      return;
+    }
+    const dwrcUrl = `${lyricUrl}${lyricUrl.includes("?") ? "&" : "?"}dwrc=true`;
     store.dwrcIndex = playIndex.value;
     store.dwrcLoading = true;
     fetchDWRC(dwrcUrl);
@@ -545,39 +575,56 @@ const onTimeUp = () => {
   };
   store.playerCurrentTime = newTime;
   store.playerDuration = player.value.audioStatus.duration;
-  if (showDWRCRunning == 0 && player.value != null && player.value.aplayer != null) {
-    requestAnimationFrame(syncDWRCLrc);
-  };
+  if (lyricAnimationFrame === null) syncDWRCLrc();
 };
 
 function updatePositionState() {
-  if (!player.value) return;
+  if (!player.value || !("mediaSession" in navigator)) return;
+  const duration = player.value.audioStatus.duration;
+  const position = player.value.audioStatus.playedTime;
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(position)) return;
   navigator.mediaSession.setPositionState({
-    duration: player.value!.audioStatus.duration,
-    position: player.value!.audioStatus.playedTime,
+    duration,
+    position: Math.min(duration, Math.max(0, position)),
   });
 };
 
+const getTrackFallback = () => {
+  const name = store.getPlayerData.name || "未知歌曲";
+  const artist = store.getPlayerData.artist || "未知歌手";
+  return `${name} · ${artist}`;
+};
+
+const isUsableLineLyric = (value: unknown): value is string => {
+  if (typeof value !== "string" || value.trim().length === 0) return false;
+  return !["loading", "not available", "歌词加载中..."].includes(value.trim().toLowerCase());
+};
+
+const setLyricsIfChanged = (nextLyrics: typeof store.playerLrc) => {
+  const currentLyrics = store.playerLrc;
+  const unchanged = currentLyrics.length === nextLyrics.length && currentLyrics.every((item, index) => (
+    item.length === nextLyrics[index].length && item.every((value, valueIndex) => value === nextLyrics[index][valueIndex])
+  ));
+  if (!unchanged) store.setPlayerLrc(nextLyrics);
+};
+
 function syncDWRCLrc() {
-  showDWRCRunning = 1;
   try {
-    if (!player.value || !player.value.aplayer) {
-      return requestAnimationFrame(syncDWRCLrc);
-    };
+    if (!player.value || !player.value.aplayer) return;
     const isLineByLine = !store.dwrcEnable || store.dwrcTemp.length === 0 || store.dwrcLoading;
     const now = player.value.audioStatus.playedTime * 1000;
     const lineSwitchNow = now + 200; // 提前 100ms 用于行切换
     if (isLineByLine) {
       const lyrics = player.value.aplayer.lyrics[playIndex.value];
       const playerLyricIndex = player.value.aplayer.lyricIndex;
-      if (!lyrics || !lyrics[playerLyricIndex]) {
-        const lrc = "歌词加载中...";
+      const rawLyric = lyrics?.[playerLyricIndex]?.[1];
+      if (!isUsableLineLyric(rawLyric)) {
+        const lrc = getTrackFallback();
         if (store.playerLrc.length !== 1 || store.playerLrc[0][4] !== lrc) {
           store.setPlayerLrc([[true, 1, 0, 0, lrc]]);
         };
       } else {
-        let lrc = lyrics[playerLyricIndex][1];
-        if (lrc === "Loading") lrc = "歌词加载中...";
+        const lrc = rawLyric;
         if (store.playerLrc.length !== 1 || store.playerLrc[0][4] !== lrc || store.playerLrc[0][2] !== playerLyricIndex) {
           store.setPlayerLrc([[true, 1, playerLyricIndex, 0, lrc]]);
         };
@@ -611,20 +658,61 @@ function syncDWRCLrc() {
           const isDuringFadeOut = now > start + duration && now <= start + duration + fadeOutDuration;
           const isCurrent = (now >= start && now <= start + duration) || isDuringFadeOut;
           const isSungLyrics = start + duration < now && !isDuringFadeOut;
-          const lessdur = start + duration - now;
-          return [isCurrent, isSungLyrics, line, row, word, duration, lessdur, "auto"];
+          const remainingState = isCurrent ? 1 : (isSungLyrics ? -1 : duration);
+          return [isCurrent, isSungLyrics, line, row, word, duration, remainingState];
         });
       } else {
-        dwrcLyric = [[true, 1, 0, 0, `${store.getPlayerData.name || 'Loading...'} - ${store.getPlayerData.artist || 'NanoRocky'}`]];
+        dwrcLyric = [[true, 1, 0, 0, getTrackFallback()]];
       };
-      store.setPlayerLrc(dwrcLyric);
+      setLyricsIfChanged(dwrcLyric as typeof store.playerLrc);
     };
   } catch (error) {
     console.error("Error in syncDWRCLrc:", error);
-  } finally {
-    requestAnimationFrame(syncDWRCLrc);
   };
 };
+
+const runLyricSync = () => {
+  if (store.playerStatus !== "playing" || document.hidden) {
+    lyricAnimationFrame = null;
+    return;
+  }
+  syncDWRCLrc();
+  lyricAnimationFrame = requestAnimationFrame(runLyricSync);
+};
+
+const startLyricSync = () => {
+  if (lyricAnimationFrame !== null || document.hidden) return;
+  lyricAnimationFrame = requestAnimationFrame(runLyricSync);
+};
+
+const stopLyricSync = () => {
+  if (lyricAnimationFrame === null) return;
+  cancelAnimationFrame(lyricAnimationFrame);
+  lyricAnimationFrame = null;
+};
+
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    stopLyricSync();
+  } else if (store.playerStatus === "playing") {
+    startLyricSync();
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  void loadPlaylist();
+});
+
+onBeforeUnmount(() => {
+  stopLyricSync();
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
+  if ("mediaSession" in navigator) {
+    for (const action of ["play", "pause", "nexttrack", "previoustrack", "seekbackward", "seekforward"] as MediaSessionAction[]) {
+      navigator.mediaSession.setActionHandler(action, null);
+    }
+  }
+});
 
 // 暴露子组件方法
 defineExpose({ playToggle, changeVolume, changeSong, toggleList });

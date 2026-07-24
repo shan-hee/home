@@ -1,3 +1,14 @@
+export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
+export type PlayerLyricItem = [
+    active: boolean,
+    played: boolean | number,
+    lineIndex: number,
+    wordIndex: number,
+    text: string,
+    duration?: number,
+    remaining?: number,
+];
+
 export interface MainState {
     imgLoadStatus: boolean;
     innerWidth: number | null;
@@ -18,18 +29,20 @@ export interface MainState {
     mobileFuncState: boolean;
     setOpenState: boolean;
     setV: boolean;
-    playerState: boolean;
+    playerStatus: PlayerStatus;
+    playerHasStarted: boolean;
+    playerError: string | null;
     playerCanplay: boolean;
     playerTitle: string | null;
     playerArtist: string | null;
     playerAlbum: string | null;
-    playerLrc: [boolean, string, string, string, string, string, string][] | [boolean, string, string, string, string, string][] | [boolean, string, string, string, string][] | [boolean, string][];
+    playerLrc: PlayerLyricItem[];
     playerLrcShow: boolean;
     footerBlur: boolean;
     footerProgressBar: boolean;
     playerAutoplay: boolean;
-    playerLoop: "all" | "one" | "none";
-    playerOrder: "list" | "random";
+    playerOrder: "list" | "single" | "shuffle";
+    playerKeyboardShortcuts: boolean;
     playerTrLrc: boolean;
     playerDWRCShow: boolean;
     playerDWRCShowPro: boolean;
@@ -37,8 +50,8 @@ export interface MainState {
     playerDWRCATDBF: boolean;
     playerDWRCPilfer: boolean;
     playerRMMetadata: boolean;
-    playerCurrentTime: number | null;
-    playerDuration: number | null;
+    playerCurrentTime: number;
+    playerDuration: number;
     dwrcIndex: number | null;
     dwrcTemp: any[];
     dwrcEnable: boolean;
@@ -47,7 +60,5 @@ export interface MainState {
     showFirefly: boolean;
     showSnowfall: boolean;
     showLantern: boolean;
-    showProgressIcon: boolean;
-    showProgressIconState: number;
     theme: "system" | "time" | "bg" | "light" | "dark";
 };

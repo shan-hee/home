@@ -11,21 +11,29 @@
       <span @click="store.musicOpenState = false">回到一言</span>
     </div>
     <div class="control">
-      <go-start theme="filled" size="30" fill="var(--player-control-color)" @click="changeMusicIndex(0)" />
+      <button type="button" aria-label="上一首" :disabled="!store.musicIsOk" @click="changeMusicIndex(0)">
+        <go-start theme="filled" size="30" fill="var(--player-control-color)" />
+      </button>
       <Transition name="fade" mode="out-in">
-        <div :key="String(store.playerState)" class="state" @click="changePlayState">
-          <play-one theme="filled" size="50" fill="var(--player-control-color)" v-show="!store.playerState" />
-          <pause theme="filled" size="50" fill="var(--player-control-color)" v-show="store.playerState" />
-        </div>
+        <button type="button" :key="store.playerStatus" class="state"
+          :aria-label="store.playerStatus === 'playing' ? '暂停' : '播放'" :disabled="!store.musicIsOk"
+          @click="changePlayState">
+          <play-one theme="filled" size="50" fill="var(--player-control-color)"
+            v-show="store.playerStatus !== 'playing'" />
+          <pause theme="filled" size="50" fill="var(--player-control-color)"
+            v-show="store.playerStatus === 'playing'" />
+        </button>
       </Transition>
-      <go-end theme="filled" size="30" fill="var(--player-control-color)" @click="changeMusicIndex(1)" />
+      <button type="button" aria-label="下一首" :disabled="!store.musicIsOk" @click="changeMusicIndex(1)">
+        <go-end theme="filled" size="30" fill="var(--player-control-color)" />
+      </button>
     </div>
     <div class="menu">
       <div class="name" v-show="!volumeShow">
         <span>{{
           store.getPlayerData.name
             ? store.getPlayerData.name + " - " + store.getPlayerData.artist
-            : "银趴未开始（？）"
+            : store.playerError || "播放器准备中"
         }}</span>
       </div>
       <div class="volume" v-show="volumeShow">
@@ -85,7 +93,7 @@ const store = mainStore();
 
 // 音量条数据
 const volumeShow = ref(false);
-const volumeNum = ref(store.musicVolume ? store.musicVolume : 0.7);
+const volumeNum = ref(store.musicVolume ?? 0.7);
 
 // 播放列表数据
 const musicListShow = ref(false);
@@ -99,48 +107,65 @@ const playerData = reactive({
 // 开启播放列表
 const openMusicList = () => {
   musicListShow.value = true;
-  playerRef.value!.toggleList();
+  playerRef.value?.toggleList();
 };
 
 // 关闭播放列表
 const closeMusicList = () => {
   musicListShow.value = false;
-  playerRef.value!.toggleList();
+  playerRef.value?.toggleList();
 };
 
 // 音乐播放暂停
 const changePlayState = () => {
-  playerRef.value!.playToggle();
+  playerRef.value?.playToggle();
 };
 
 // 音乐上下曲
-const changeMusicIndex = (type) => {
-  playerRef.value!.changeSong(type);
+const changeMusicIndex = (type: 0 | 1) => {
+  playerRef.value?.changeSong(type);
 };
 
 // 键盘事件处理逻辑
-const handleKeydown = (e) => {
-  if (!store.musicIsOk) {
-    return;
-  }
-  switch (e.code) {
-    case "Space": // 播放/暂停
-      e.preventDefault(); // 阻止页面默认滚动
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], [role='textbox']"));
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (!store.musicIsOk || !store.playerKeyboardShortcuts || isEditableTarget(event.target)) return;
+
+  if (event.code === "Space" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
       changePlayState();
-      break;
-    case "PageUp": // 上一曲
-      e.preventDefault();
+      return;
+  }
+  if (!event.ctrlKey || event.metaKey || event.altKey) return;
+
+  switch (event.code) {
+    case "ArrowUp":
+      event.preventDefault();
+      volumeNum.value = Math.min(1, Number((volumeNum.value + 0.05).toFixed(2)));
+      return;
+    case "ArrowDown":
+      event.preventDefault();
+      volumeNum.value = Math.max(0, Number((volumeNum.value - 0.05).toFixed(2)));
+      return;
+    case "ArrowLeft":
+      if (event.repeat) return;
+      event.preventDefault();
       changeMusicIndex(0);
-      break;
-    case "PageDown": // 下一曲
-      e.preventDefault();
+      return;
+    case "ArrowRight":
+      if (event.repeat) return;
+      event.preventDefault();
       changeMusicIndex(1);
-      break;
+      return;
   }
 };
 
 // 动态注册/移除监听器
-const toggleKeyListener = (add) => {
+const toggleKeyListener = (add: boolean) => {
   if (add) {
     window.addEventListener("keydown", handleKeydown);
   } else {
@@ -151,16 +176,13 @@ const toggleKeyListener = (add) => {
 // 页面焦点检测
 const handleFocus = () => toggleKeyListener(true);
 const handleBlur = () => toggleKeyListener(false);
+const handleVisibilityChange = () => {
+  toggleKeyListener(document.visibilityState === "visible");
+};
 
 onMounted(() => {
   // 检测页面是否在窗口前端
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      toggleKeyListener(true); // 页面可见时监听
-    } else {
-      toggleKeyListener(false); // 页面不可见时移除监听
-    }
-  });
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 
   // 检测窗口焦点
   window.addEventListener("focus", handleFocus);
@@ -177,7 +199,7 @@ onUnmounted(() => {
   toggleKeyListener(false);
   window.removeEventListener("focus", handleFocus);
   window.removeEventListener("blur", handleBlur);
-  document.removeEventListener("visibilitychange", handleFocus);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 
 // 监听音量变化
@@ -185,7 +207,7 @@ watch(
   () => volumeNum.value,
   (value) => {
     store.musicVolume = value;
-    playerRef.value!.changeVolume(store.musicVolume);
+    playerRef.value?.changeVolume(store.musicVolume);
   },
 );
 
@@ -238,6 +260,29 @@ watch(
     align-items: center;
     justify-content: space-evenly;
     width: 100%;
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      color: inherit;
+      background: transparent;
+      cursor: pointer;
+
+      &:focus-visible {
+        outline: 2px solid var(--player-slider-main-color);
+        outline-offset: 3px;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+    }
+
     .state {
       transition: opacity 0.1s;
       .i-icon {
