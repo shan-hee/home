@@ -45,6 +45,11 @@ interface WallpaperConfig {
   mobile: WallpaperCollection;
 }
 
+interface OnlineWallpaper {
+  imageUrl: string;
+  downloadUrl: string;
+}
+
 const defaultConfig: WallpaperConfig = {
   version: 1,
   desktop: {
@@ -70,6 +75,7 @@ const nextBgUrl = ref<string | null>(null);
 const isTransitioning = ref(false);
 const isBlurringIn = ref(false);
 const useSolidFallback = ref(false);
+const currentDownloadUrl = ref<string | null>(null);
 const config = ref<WallpaperConfig | null>(null);
 const isLoading = ref(false);
 const hasCompletedInitialLoad = ref(false);
@@ -79,6 +85,7 @@ let transitionStartTimer: number | null = null;
 let transitionEndTimer: number | null = null;
 let autoSwitchTimer: number | null = null;
 let effectRefreshTimer: number | null = null;
+let wallpaperController: AbortController | null = null;
 
 const deviceQuery = window.matchMedia("(max-width: 720px)");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -88,7 +95,7 @@ const activeCollection = computed(() => {
   return deviceQuery.matches ? resolvedConfig.mobile : resolvedConfig.desktop;
 });
 
-const downloadUrl = computed(() => useSolidFallback.value ? null : currentBgUrl.value);
+const downloadUrl = computed(() => useSolidFallback.value ? null : currentDownloadUrl.value);
 
 const isWallpaperCollection = (value: unknown): value is WallpaperCollection => {
   if (!value || typeof value !== "object") return false;
@@ -137,11 +144,21 @@ const resolveLocalCandidate = (temporaryId?: number) => {
   return localUrl(preferredId);
 };
 
-const resolveOnlineCandidate = (source: number) => {
-  const cacheBuster = Date.now();
-  if (source === 1) return "https://api.dujin.org/bing/1920.php";
-  if (source === 2) return `https://api.vvhan.com/api/wallpaper/views?time=${cacheBuster}`;
-  return `https://api.vvhan.com/api/wallpaper/acg?time=${cacheBuster}`;
+const resolveOnlineCandidate = async (source: number, signal: AbortSignal): Promise<OnlineWallpaper> => {
+  const sourceName = source === 1 ? "bing" : source === 2 ? "wallhaven" : "wallhaven-anime";
+  const response = await fetch(`/api/wallpaper?source=${sourceName}`, {
+    headers: { accept: "application/json" },
+    cache: "no-store",
+    signal,
+  });
+  if (!response.ok) throw new Error(`在线壁纸接口返回 ${response.status}`);
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object") throw new Error("在线壁纸响应格式无效");
+  const value = payload as Record<string, unknown>;
+  if (typeof value.imageUrl !== "string" || typeof value.downloadUrl !== "string") {
+    throw new Error("在线壁纸响应缺少图片地址");
+  }
+  return { imageUrl: value.imageUrl, downloadUrl: value.downloadUrl };
 };
 
 const preloadImage = (url: string, timeout = 12000) => {
@@ -185,9 +202,15 @@ const finishInitialLoad = () => {
   nextTick(() => emit("loadComplete"));
 };
 
-const commitImage = async (url: string, image: HTMLImageElement, sequence: number) => {
+const commitImage = async (
+  url: string,
+  image: HTMLImageElement,
+  sequence: number,
+  resolvedDownloadUrl = url,
+) => {
   if (sequence !== requestSequence) return;
   useSolidFallback.value = false;
+  currentDownloadUrl.value = resolvedDownloadUrl;
   emit("imageLoaded", image);
 
   if (!currentBgUrl.value || reducedMotionQuery.matches) {
@@ -224,16 +247,41 @@ const activateSolidFallback = (sequence: number) => {
   isTransitioning.value = false;
   isBlurringIn.value = false;
   useSolidFallback.value = true;
+  currentDownloadUrl.value = null;
   finishInitialLoad();
 };
 
 const loadWallpaper = async (source = Number(store.coverType), temporaryId?: number) => {
   const sequence = ++requestSequence;
+  wallpaperController?.abort();
+  const controller = new AbortController();
+  wallpaperController = controller;
   isLoading.value = true;
   if (!config.value) await loadConfig();
   store.wallpaperMaxId = activeCollection.value.count;
 
-  const candidate = source === 0 ? resolveLocalCandidate(temporaryId) : resolveOnlineCandidate(source);
+  let candidate: string;
+  let resolvedDownloadUrl: string;
+  if (source === 0) {
+    candidate = resolveLocalCandidate(temporaryId);
+    resolvedDownloadUrl = candidate;
+  } else {
+    try {
+      const online = await resolveOnlineCandidate(source, controller.signal);
+      if (sequence !== requestSequence) return;
+      candidate = online.imageUrl;
+      resolvedDownloadUrl = online.downloadUrl;
+    } catch (error) {
+      if (controller.signal.aborted || sequence !== requestSequence) return;
+      console.error("无法获取在线壁纸，使用本地 fallback：", error);
+      candidate = activeCollection.value.fallback;
+      resolvedDownloadUrl = candidate;
+      ElMessage({
+        message: "在线壁纸加载失败，已切换到本地壁纸",
+        icon: h(ErrorIcon, { theme: "filled", fill: "var(--el-message-icon-color)" }),
+      });
+    }
+  }
   let image = await preloadImage(candidate);
   let finalUrl = candidate;
 
@@ -241,6 +289,7 @@ const loadWallpaper = async (source = Number(store.coverType), temporaryId?: num
     const fallbackUrl = activeCollection.value.fallback;
     image = await preloadImage(fallbackUrl);
     finalUrl = fallbackUrl;
+    resolvedDownloadUrl = fallbackUrl;
     if (source !== 0) {
       ElMessage({
         message: "在线壁纸加载失败，已切换到本地壁纸",
@@ -251,7 +300,7 @@ const loadWallpaper = async (source = Number(store.coverType), temporaryId?: num
 
   if (sequence !== requestSequence) return;
   if (image) {
-    await commitImage(finalUrl, image, sequence);
+    await commitImage(finalUrl, image, sequence, resolvedDownloadUrl);
   } else {
     ElMessage({
       message: "本地壁纸也无法加载，已使用纯色背景",
@@ -376,6 +425,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   requestSequence++;
+  wallpaperController?.abort();
   clearTransitionTimers();
   clearAutoSwitch();
   if (effectRefreshTimer !== null) window.clearInterval(effectRefreshTimer);

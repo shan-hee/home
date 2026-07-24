@@ -1,5 +1,7 @@
 export interface WeatherApiResponse {
   city: string;
+  latitude: number;
+  longitude: number;
   weather: string;
   temperature: number;
   winddirection: string;

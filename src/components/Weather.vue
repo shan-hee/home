@@ -24,7 +24,7 @@
           @click="searchCities">
           <Search theme="outline" size="18" />
         </button>
-        <button type="button" aria-label="使用当前位置" :disabled="locating" @click="useBrowserLocation">
+        <button type="button" aria-label="使用 IP 定位" title="使用 IP 定位" :disabled="locating" @click="useIpLocation">
           <Gps theme="outline" size="18" />
         </button>
       </div>
@@ -67,6 +67,7 @@ import type {
   WeatherApiResponse,
   WeatherLocation,
 } from "@/typings/weather";
+import { SETTINGS_RESET_EVENT, STORAGE_KEYS } from "@/utils/storageKeys";
 
 type WeatherDisplay = WeatherApiResponse & { stale: boolean };
 
@@ -80,8 +81,8 @@ interface WeatherCacheStore {
   entries: Record<string, WeatherCacheEntry>;
 }
 
-const SAVED_LOCATION_KEY = "home:weather:location:v1";
-const WEATHER_CACHE_KEY = "home:weather:cache:v1";
+const SAVED_LOCATION_KEY = STORAGE_KEYS.weatherLocation;
+const WEATHER_CACHE_KEY = STORAGE_KEYS.weatherCache;
 
 const weatherData = ref<WeatherDisplay | null>(null);
 const alerts = ref<WeatherAlert[]>([]);
@@ -105,6 +106,10 @@ const isWeatherApiResponse = (value: unknown): value is WeatherApiResponse => {
   const weather = value as Record<string, unknown>;
   return (
     typeof weather.city === "string" &&
+    typeof weather.latitude === "number" && Number.isFinite(weather.latitude) &&
+    weather.latitude >= -90 && weather.latitude <= 90 &&
+    typeof weather.longitude === "number" && Number.isFinite(weather.longitude) &&
+    weather.longitude >= -180 && weather.longitude <= 180 &&
     typeof weather.weather === "string" &&
     typeof weather.temperature === "number" && Number.isFinite(weather.temperature) &&
     typeof weather.winddirection === "string" &&
@@ -177,6 +182,13 @@ const readCachedWeather = (location: WeatherLocation) => {
   return entry && isWeatherApiResponse(entry.data) ? entry : null;
 };
 
+const readLatestCachedWeather = () => {
+  const entries = Object.values(readCacheStore().entries)
+    .filter((entry) => isWeatherApiResponse(entry.data))
+    .sort((first, second) => Date.parse(second.savedAt) - Date.parse(first.savedAt));
+  return entries[0] || null;
+};
+
 const saveWeatherCache = (location: WeatherLocation, data: WeatherApiResponse) => {
   const cache = readCacheStore();
   cache.entries[cacheKey(location)] = { data, savedAt: new Date().toISOString() };
@@ -223,21 +235,22 @@ const loadAlerts = async (location: WeatherLocation) => {
   }
 };
 
-const loadWeather = async (location: WeatherLocation) => {
+const loadWeather = async (location?: WeatherLocation) => {
   weatherController?.abort();
   const controller = new AbortController();
   weatherController = controller;
   loading.value = true;
   errorMessage.value = "";
-  void loadAlerts(location);
-  const params = new URLSearchParams({
-    latitude: String(location.latitude),
-    longitude: String(location.longitude),
-    city: location.name,
-  });
+  const params = new URLSearchParams();
+  if (location) {
+    params.set("latitude", String(location.latitude));
+    params.set("longitude", String(location.longitude));
+    params.set("city", location.name);
+  }
+  const query = params.size > 0 ? `?${params}` : "";
 
   try {
-    const response = await fetch(`/api/weather?${params}`, {
+    const response = await fetch(`/api/weather${query}`, {
       headers: { accept: "application/json" },
       signal: controller.signal,
     });
@@ -245,10 +258,16 @@ const loadWeather = async (location: WeatherLocation) => {
     const payload: unknown = await response.json();
     if (!isWeatherApiResponse(payload)) throw new Error("天气接口响应格式无效");
     weatherData.value = { ...payload, stale: false };
-    saveWeatherCache(location, payload);
+    const resolvedLocation: WeatherLocation = {
+      name: payload.city,
+      latitude: payload.latitude,
+      longitude: payload.longitude,
+    };
+    saveWeatherCache(resolvedLocation, payload);
+    void loadAlerts(resolvedLocation);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") return;
-    const cached = readCachedWeather(location);
+    const cached = location ? readCachedWeather(location) : readLatestCachedWeather();
     if (cached) {
       weatherData.value = { ...cached.data, stale: true };
       errorMessage.value = "实时天气不可用，正在显示旧数据";
@@ -266,41 +285,21 @@ const loadWeather = async (location: WeatherLocation) => {
   }
 };
 
-const getBrowserLocation = () => {
-  return new Promise<WeatherLocation>((resolve, reject) => {
-    if (!("geolocation" in navigator)) {
-      reject(new Error("浏览器不支持定位"));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({
-        name: "当前位置",
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      }),
-      (error) => reject(error),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 },
-    );
-  });
-};
-
-const useBrowserLocation = async () => {
+const useIpLocation = async () => {
   const requestId = ++locationRequestId;
   locating.value = true;
   try {
-    const location = await getBrowserLocation();
-    if (requestId !== locationRequestId) return;
     try {
       localStorage.removeItem(SAVED_LOCATION_KEY);
     } catch {
-      // 无法访问本地存储时仍可使用本次定位。
+      // 无法访问本地存储时仍可使用本次 IP 定位。
     }
     dialogOpen.value = false;
-    await loadWeather(location);
+    await loadWeather();
   } catch (error) {
     if (requestId !== locationRequestId) return;
-    console.warn("浏览器定位不可用：", error);
-    errorMessage.value = "定位不可用，请选择城市";
+    console.warn("IP 定位不可用：", error);
+    errorMessage.value = "IP 定位不可用，请选择城市";
     dialogOpen.value = true;
   } finally {
     if (requestId === locationRequestId) locating.value = false;
@@ -374,16 +373,22 @@ const summaryAria = computed(() => {
   return `${weatherData.value.city}，${weatherData.value.weather}，${weatherData.value.temperature} 摄氏度${stale}`;
 });
 
+const handleSettingsReset = () => {
+  void useIpLocation();
+};
+
 onMounted(async () => {
+  window.addEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);
   const storedLocation = savedLocation();
   if (storedLocation) {
     await loadWeather(storedLocation);
   } else {
-    await useBrowserLocation();
+    await useIpLocation();
   }
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);
   locationRequestId += 1;
   if (searchTimer !== null) window.clearTimeout(searchTimer);
   searchController?.abort();
