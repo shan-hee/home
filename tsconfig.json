@@ -6,9 +6,9 @@
         "jsx": "preserve",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
-        "allowJs": true,
+        "allowJs": false,
         "skipLibCheck": true,
-        "noImplicitAny": false,
+        "noImplicitAny": true,
         "removeComments": false,
         "esModuleInterop": true,
         "preserveConstEnums": false,
@@ -24,19 +24,15 @@
             "vite/client",
             "@vitejs/plugin-vue",
             "unplugin-vue-components",
-            "element-plus/global"
+            "element-plus/global",
+            "vite-plugin-pwa/client"
         ],
         "noEmit": true
     },
     "include": [
         "./src/**/*",
-        "./src/**/*.ts",
-        "./src/**/*.d.ts",
-        "./src/**/*.vue",
-        "./src/**/*.js",
-        "./src/typings/**/*.d.ts",
-        "*",
-        "postcss.config.ts",
+        "./functions/**/*.ts",
+        "eslint.config.js",
         "vite.config.ts",
         "uno.config.ts"
     ],

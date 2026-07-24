@@ -125,7 +125,7 @@ export const checkDays = () => {
 };
 
 // 建站日期统计
-export const siteDateStatistics = (startDate) => {
+export const siteDateStatistics = (startDate: Date) => {
   const currentDate = new Date();
   let years = currentDate.getFullYear() - startDate.getFullYear();
   let months = currentDate.getMonth() - startDate.getMonth();

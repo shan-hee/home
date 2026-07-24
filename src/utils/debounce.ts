@@ -1,14 +1,14 @@
 // 防抖
-let timeout;
+let timeout: ReturnType<typeof setTimeout> | null = null;
 
-function debounce(func, wait = 300, immediate = false) {
+function debounce(func: () => void, wait = 300, immediate = false) {
   // 清除定时器
   if (timeout !== null) {
     clearTimeout(timeout);
   }
   // 立即执行
   if (immediate) {
-    var callNow = !timeout;
+    const callNow = !timeout;
     timeout = setTimeout(function () {
       timeout = null;
     }, wait);
