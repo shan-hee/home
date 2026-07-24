@@ -128,7 +128,7 @@ const siteIcon = {
 
 ### 社交链接
 
-在 `src/assets/socialLinks.json` 中可以自定义社交链接。
+在 `src/assets/socialLinks.json` 中可以自定义社交链接。内置 `icon` 值包括 `github`、`bilibili`、`qq`、`mail`、`twitter-x` 和 `telegram`，由 UnoCSS 和 Remix Icon 在构建时按需生成；增加其他图标时，需要同时在 `src/components/SocialLinks.vue` 的 `socialIconClasses` 中添加静态映射。
 
 ### 天气
 

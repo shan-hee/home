@@ -3,8 +3,9 @@
   <div class="social">
     <div class="link">
       <a v-for="item in socialLinks" :key="item.name" :href="item.url" target="_blank"
+        rel="noopener noreferrer" :aria-label="item.name"
         @mouseenter="socialTip = item.tip" @mouseleave="socialTip = '通过这里联系我吧'">
-        <img class="icon" :src="item.icon" height="24" />
+        <span class="icon" :class="item.iconClass" aria-hidden="true" />
       </a>
     </div>
     <span class="tip">{{ socialTip }}</span>
@@ -12,7 +13,30 @@
 </template>
 
 <script setup lang="ts">
-import socialLinks from "@/assets/socialLinks.json";
+import socialLinkConfig from "@/assets/socialLinks.json";
+
+const socialIconClasses = {
+  github: "i-ri-github-fill",
+  bilibili: "i-ri-bilibili-fill",
+  qq: "i-ri-qq-fill",
+  mail: "i-ri-mail-fill",
+  "twitter-x": "i-ri-twitter-x-fill",
+  telegram: "i-ri-telegram-fill",
+} as const;
+
+type SocialIcon = keyof typeof socialIconClasses;
+type SocialLinkConfig = {
+  name: string;
+  icon: SocialIcon;
+  tip: string;
+  url: string;
+};
+
+const socialLinks = (socialLinkConfig as SocialLinkConfig[]).map(({ icon, ...item }) => ({
+  ...item,
+  iconClass: socialIconClasses[icon],
+}));
+
 // 社交链接提示
 const socialTip = ref("通过这里联系我吧");
 </script>
@@ -56,19 +80,30 @@ const socialTip = ref("通过这里联系我吧");
     justify-content: center;
 
     a {
-      display: inherit;
+      display: flex;
+      align-items: center;
+      color: var(--social-font-color);
+
+      &:focus-visible {
+        border-radius: 4px;
+        outline: 2px solid currentColor;
+        outline-offset: 4px;
+      }
 
       .icon {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
         margin: 0 12px;
         transition: transform 0.3s;
+      }
 
-        &:hover {
-          transform: scale(1.1);
-        }
+      &:hover .icon {
+        transform: scale(1.1);
+      }
 
-        &:active {
-          transform: scale(1);
-        }
+      &:active .icon {
+        transform: scale(1);
       }
     }
   }

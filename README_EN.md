@@ -123,7 +123,7 @@ const siteIcon = {
 
 ### Social Links
 
-Social links can be customized in `src/assets/socialLinks.json`.
+Social links can be customized in `src/assets/socialLinks.json`. Built-in `icon` values are `github`, `bilibili`, `qq`, `mail`, `twitter-x`, and `telegram`; UnoCSS and Remix Icon generate them on demand at build time. When adding another icon, also add its static mapping to `socialIconClasses` in `src/components/SocialLinks.vue`.
 
 ### Weather
 
