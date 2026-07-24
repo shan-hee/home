@@ -38,9 +38,11 @@ declare module 'vue' {
     MoreContent: typeof import('./components/MoreContent.vue')['default']
     Music: typeof import('./components/Music.vue')['default']
     Player: typeof import('./components/Player.vue')['default']
+    PlayerSeekBar: typeof import('./components/PlayerSeekBar.vue')['default']
     ProgressBar: typeof import('./components/ProgressBar.vue')['default']
     Set: typeof import('./components/Set.vue')['default']
     SocialLinks: typeof import('./components/SocialLinks.vue')['default']
+    ThemeSwitcher: typeof import('./components/ThemeSwitcher.vue')['default']
     TimeCapsule: typeof import('./components/TimeCapsule.vue')['default']
     Weather: typeof import('./components/Weather.vue')['default']
   }

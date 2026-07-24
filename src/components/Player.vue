@@ -1,8 +1,26 @@
 <template>
-  <APlayer v-if="playList[0]" ref="player" :audio="playList" :autoplay="store.playerAutoplay" :theme="theme"
-    :autoSwitch="false" :loop="aplayerLoop" :order="aplayerOrder" :volume="volume" :showLrc="true"
-    :listFolded="listFolded" :listMaxHeight="listMaxHeight" :noticeSwitch="false" @play="onPlay" @pause="onPause"
-    @Loadstart="onLoadStart" @timeupdate="onTimeUp" @error="loadMusicError" @canplay="onCanplay" @waiting="onWaiting" />
+  <APlayer
+    v-if="playList[0]"
+    ref="player"
+    :audio="playList"
+    :autoplay="store.playerAutoplay"
+    :theme="theme"
+    :autoSwitch="false"
+    :loop="aplayerLoop"
+    :order="aplayerOrder"
+    :volume="volume"
+    :showLrc="true"
+    :listFolded="listFolded"
+    :listMaxHeight="listMaxHeight"
+    :noticeSwitch="false"
+    @play="onPlay"
+    @pause="onPause"
+    @Loadstart="onLoadStart"
+    @timeupdate="onTimeUp"
+    @error="loadMusicError"
+    @canplay="onCanplay"
+    @waiting="onWaiting"
+  />
 </template>
 
 <script setup lang="ts">
@@ -30,7 +48,6 @@ interface APlayerController {
   audio: PlaylistItem[];
   lyrics: Array<Array<[number, string]>>;
   lyricIndex: number;
-  seek: (time: number) => void;
 }
 
 type PlayerInstance = {
@@ -42,32 +59,46 @@ type PlayerInstance = {
   };
   toggle: () => void;
   setVolume: (volume: number, triggerEvent: boolean) => void;
+  seek: (time: number) => void;
   skipBack: () => void;
   skipForward: () => void;
-  toggleList: () => void;
+  switchList: (index: number) => void;
   play: () => void;
   pause: () => void;
 };
+
+const emit = defineEmits<{
+  playlistLoaded: [tracks: PlaylistItem[]];
+  trackChanged: [index: number];
+}>();
 
 const parseWordLyrics = (source: string): WordLyricLine[] => {
   const decoded = decodeDWQYRC(source, store.playerRMMetadata) as WordLyricLine[];
   let previousLineStart = -1;
   const valid = decoded.every(([lineStart, lineDuration, words]) => {
-    if (!Number.isFinite(lineStart) || !Number.isFinite(lineDuration) || lineStart < previousLineStart || lineDuration < 0) {
+    if (
+      !Number.isFinite(lineStart) ||
+      !Number.isFinite(lineDuration) ||
+      lineStart < previousLineStart ||
+      lineDuration < 0
+    ) {
       return false;
     }
     previousLineStart = lineStart;
-    return words.length > 0 && words.every(([[wordStart, wordDuration], text]) => {
-      const plainText = text.replace(/&nbsp;/g, " ").trim();
-      return (
-        Number.isFinite(wordStart) &&
-        Number.isFinite(wordDuration) &&
-        wordStart >= 0 &&
-        wordDuration >= 0 &&
-        wordStart <= lineStart + lineDuration + 1000 &&
-        plainText.length > 0
-      );
-    });
+    return (
+      words.length > 0 &&
+      words.every(([[wordStart, wordDuration], text]) => {
+        const plainText = text.replace(/&nbsp;/g, " ").trim();
+        return (
+          Number.isFinite(wordStart) &&
+          Number.isFinite(wordDuration) &&
+          wordStart >= 0 &&
+          wordDuration >= 0 &&
+          wordStart <= lineStart + lineDuration + 1000 &&
+          plainText.length > 0
+        );
+      })
+    );
   });
   if (!valid) {
     throw new Error("逐字歌词时间轴无效");
@@ -174,6 +205,7 @@ const loadPlaylist = async () => {
       throw new Error("播放列表为空");
     }
     playList.value = result;
+    emit("playlistLoaded", [...result]);
     store.musicIsOk = true;
     store.playerError = null;
     store.setPlayerStatus("ready");
@@ -198,10 +230,11 @@ const loadPlaylist = async () => {
 const onPlay = () => {
   if (!player.value) return;
   playIndex.value = player.value.aplayer.index;
+  emit("trackChanged", playIndex.value);
   const currentTrack = playList.value[playIndex.value];
   if (!currentTrack) {
     return;
-  };
+  }
   store.setPlayerStatus("playing");
   startLyricSync();
   // 储存播放器信息
@@ -230,8 +263,7 @@ const onPlay = () => {
       ],
     });
     updatePositionState();
-  };
-
+  }
 };
 
 // 开始播放处理
@@ -272,6 +304,8 @@ const changeVolume = (value: number) => {
 const changeSong = (type: 0 | 1) => {
   if (!player.value || !store.musicIsOk) return;
   type === 0 ? player.value.skipBack() : player.value.skipForward();
+  store.playerCurrentTime = 0;
+  store.playerDuration = 0;
   store.setPlayerCanplay(false);
   store.setPlayerStatus("loading");
   nextTick(() => {
@@ -279,16 +313,37 @@ const changeSong = (type: 0 | 1) => {
   });
 };
 
-// 切换歌曲列表状态
-const toggleList = () => {
-  player.value?.toggleList();
+const selectSong = (index: number) => {
+  if (!player.value || !store.musicIsOk || !playList.value[index]) return;
+  player.value.switchList(index);
+  playIndex.value = index;
+  emit("trackChanged", index);
+  store.playerCurrentTime = 0;
+  store.playerDuration = 0;
+  store.setPlayerCanplay(false);
+  store.setPlayerStatus("loading");
+  nextTick(() => {
+    player.value?.play();
+  });
+};
+
+const seekTo = (time: number) => {
+  if (!player.value || !Number.isFinite(time)) return;
+  player.value.seek(time);
+  store.playerCurrentTime = time;
+  store.lyricSeekVersion++;
+  updatePositionState();
+};
+
+const getCurrentLyrics = () => {
+  return player.value?.aplayer.lyrics[playIndex.value] ?? [];
 };
 
 // 快退
 const seekbackward = (value: number) => {
   if (!player.value) return;
   const currentTime = player.value.audioStatus.playedTime;
-  player.value.aplayer.seek(Math.max(0, currentTime - value));
+  player.value.seek(Math.max(0, currentTime - value));
   store.lyricSeekVersion++;
   updatePositionState();
 };
@@ -301,9 +356,9 @@ const seekforward = (value: number) => {
   if (Number.isFinite(duration) && nextTime >= duration) {
     changeSong(1);
   } else {
-    player.value.aplayer.seek(nextTime);
+    player.value.seek(nextTime);
     store.lyricSeekVersion++;
-  };
+  }
   updatePositionState();
 };
 
@@ -317,7 +372,7 @@ const loadMusicError = () => {
     notice = "播放歌曲出现错误，播放器将在 2s 后进行下一首";
   } else {
     notice = "播放歌曲出现错误";
-  };
+  }
   ElMessage({
     message: notice,
     grouping: true,
@@ -361,26 +416,29 @@ function onLoadStart() {
   // 逐字获取模块
   if (!player.value) return;
   playIndex.value = player.value.aplayer.index;
+  emit("trackChanged", playIndex.value);
   const currentTrack = playList.value[playIndex.value];
   if (currentTrack) {
     store.setPlayerData(currentTrack.name, currentTrack.artist, currentTrack.album);
     store.setPlayerLrc([[true, 1, playIndex.value, 0, getTrackFallback()]]);
   }
+  store.playerCurrentTime = 0;
+  store.playerDuration = 0;
   store.setPlayerCanplay(false);
   nowLineIndex.value = -1;
   try {
     if (player.value == null || player.value.aplayer == null) {
       return;
-    };
+    }
     if (store.playerDWRCShow != true) {
       store.dwrcEnable = false;
       store.dwrcTemp = [];
       store.dwrcLoading = false;
       return;
-    };
+    }
     if (store.dwrcIndex == playIndex.value) {
       return;
-    };
+    }
     store.dwrcTemp = [];
     store.dwrcEnable = false;
     const lyricUrl = player.value.aplayer.audio[player.value.aplayer.index]?.lrc;
@@ -398,8 +456,8 @@ function onLoadStart() {
     store.dwrcTemp = [];
     store.dwrcLoading = false;
     console.error(error);
-  };
-};
+  }
+}
 
 const onTimeUp = () => {
   if (!player.value) return;
@@ -408,7 +466,7 @@ const onTimeUp = () => {
   if (lastTime && Math.abs(newTime - lastTime) > 1) {
     store.lyricSeekVersion++;
     nowLineIndex.value = -1;
-  };
+  }
   store.playerCurrentTime = newTime;
   store.playerDuration = player.value.audioStatus.duration;
   if (lyricAnimationFrame === null) syncDWRCLrc();
@@ -423,7 +481,7 @@ function updatePositionState() {
     duration,
     position: Math.min(duration, Math.max(0, position)),
   });
-};
+}
 
 const getTrackFallback = () => {
   const name = store.getPlayerData.name || "未知歌曲";
@@ -438,9 +496,13 @@ const isUsableLineLyric = (value: unknown): value is string => {
 
 const setLyricsIfChanged = (nextLyrics: typeof store.playerLrc) => {
   const currentLyrics = store.playerLrc;
-  const unchanged = currentLyrics.length === nextLyrics.length && currentLyrics.every((item, index) => (
-    item.length === nextLyrics[index].length && item.every((value, valueIndex) => value === nextLyrics[index][valueIndex])
-  ));
+  const unchanged =
+    currentLyrics.length === nextLyrics.length &&
+    currentLyrics.every(
+      (item, index) =>
+        item.length === nextLyrics[index].length &&
+        item.every((value, valueIndex) => value === nextLyrics[index][valueIndex]),
+    );
   if (!unchanged) store.setPlayerLrc(nextLyrics);
 };
 
@@ -458,13 +520,17 @@ function syncDWRCLrc() {
         const lrc = getTrackFallback();
         if (store.playerLrc.length !== 1 || store.playerLrc[0][4] !== lrc) {
           store.setPlayerLrc([[true, 1, 0, 0, lrc]]);
-        };
+        }
       } else {
         const lrc = rawLyric;
-        if (store.playerLrc.length !== 1 || store.playerLrc[0][4] !== lrc || store.playerLrc[0][2] !== playerLyricIndex) {
+        if (
+          store.playerLrc.length !== 1 ||
+          store.playerLrc[0][4] !== lrc ||
+          store.playerLrc[0][2] !== playerLyricIndex
+        ) {
           store.setPlayerLrc([[true, 1, playerLyricIndex, 0, lrc]]);
-        };
-      };
+        }
+      }
     } else {
       const dwrc = store.dwrcTemp;
       if (nowLineIndex.value === -1) {
@@ -475,37 +541,40 @@ function syncDWRCLrc() {
             foundIndex = i;
           } else {
             break;
-          };
-        };
+          }
+        }
         nowLineIndex.value = foundIndex;
       } else {
-        if (nowLineIndex.value + 1 < dwrc.length && lineSwitchNow >= dwrc
-        [nowLineIndex.value + 1][0]) {
+        if (
+          nowLineIndex.value + 1 < dwrc.length &&
+          lineSwitchNow >= dwrc[nowLineIndex.value + 1][0]
+        ) {
           // now -> lineSwitchNow
           nowLineIndex.value++;
-        };
-      };
+        }
+      }
       const currentLine = nowLineIndex.value !== -1 ? dwrc[nowLineIndex.value] : null;
       let dwrcLyric: typeof store.playerLrc;
       if (currentLine) {
         const fadeOutDuration = 300;
         dwrcLyric = currentLine[2].map<PlayerLyricItem>((it: WordLyricToken) => {
           const [[start, duration], word, line, row] = it;
-          const isDuringFadeOut = now > start + duration && now <= start + duration + fadeOutDuration;
+          const isDuringFadeOut =
+            now > start + duration && now <= start + duration + fadeOutDuration;
           const isCurrent = (now >= start && now <= start + duration) || isDuringFadeOut;
           const isSungLyrics = start + duration < now && !isDuringFadeOut;
-          const remainingState = isCurrent ? 1 : (isSungLyrics ? -1 : duration);
+          const remainingState = isCurrent ? 1 : isSungLyrics ? -1 : duration;
           return [isCurrent, isSungLyrics, line, row, word, duration, remainingState];
         });
       } else {
         dwrcLyric = [[true, 1, 0, 0, getTrackFallback()]];
-      };
+      }
       setLyricsIfChanged(dwrcLyric);
-    };
+    }
   } catch (error) {
     console.error("Error in syncDWRCLrc:", error);
-  };
-};
+  }
+}
 
 const runLyricSync = () => {
   if (store.playerStatus !== "playing" || document.hidden) {
@@ -546,14 +615,28 @@ onBeforeUnmount(() => {
   stopLyricSync();
   document.removeEventListener("visibilitychange", handleVisibilityChange);
   if ("mediaSession" in navigator) {
-    for (const action of ["play", "pause", "nexttrack", "previoustrack", "seekbackward", "seekforward"] as MediaSessionAction[]) {
+    for (const action of [
+      "play",
+      "pause",
+      "nexttrack",
+      "previoustrack",
+      "seekbackward",
+      "seekforward",
+    ] as MediaSessionAction[]) {
       navigator.mediaSession.setActionHandler(action, null);
     }
   }
 });
 
 // 暴露子组件方法
-defineExpose({ playToggle, changeVolume, changeSong, toggleList });
+defineExpose({
+  playToggle,
+  changeVolume,
+  changeSong,
+  selectSong,
+  seekTo,
+  getCurrentLyrics,
+});
 </script>
 
 <style lang="scss" scoped>
@@ -593,14 +676,18 @@ defineExpose({ playToggle, changeVolume, changeSong, toggleList });
         text-align: left;
         margin: 7px 0 6px 6px;
         height: 44px;
-        -webkit-mask: linear-gradient(#fff 15%,
-            #fff 85%,
-            hsla(0deg, 0%, 100%, 0.6) 90%,
-            hsla(0deg, 0%, 100%, 0));
-        mask: linear-gradient(#fff 15%,
-            #fff 85%,
-            hsla(0deg, 0%, 100%, 0.6) 90%,
-            hsla(0deg, 0%, 100%, 0));
+        -webkit-mask: linear-gradient(
+          #fff 15%,
+          #fff 85%,
+          hsla(0deg, 0%, 100%, 0.6) 90%,
+          hsla(0deg, 0%, 100%, 0)
+        );
+        mask: linear-gradient(
+          #fff 15%,
+          #fff 85%,
+          hsla(0deg, 0%, 100%, 0.6) 90%,
+          hsla(0deg, 0%, 100%, 0)
+        );
 
         &::before,
         &::after {
