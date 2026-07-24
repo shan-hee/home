@@ -5,11 +5,8 @@ import { VitePWA } from "vite-plugin-pwa";
 import vue from "@vitejs/plugin-vue";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
-import viteCompression from "vite-plugin-compression2";
 import UnoCSS from 'unocss/vite';
 import type { UserConfig } from "vite";
-import postcssPresetEnv from 'postcss-preset-env';
-import cssnano from 'cssnano';
 
 // https://vitejs.dev/config/
 export default ({ mode }: { mode: string }): UserConfig => {
@@ -28,26 +25,52 @@ export default ({ mode }: { mode: string }): UserConfig => {
                 dts: "src/components.d.ts",
             }),
             VitePWA({
-                registerType: "autoUpdate",
+                registerType: "prompt",
                 // 酪灰的小批注：如果遇到了子页面自动跳转主页等问题，或不需要客户端浏览器缓存，可尝试取消注释这两行代码，而不需要完全移除 PWA ~
                 // selfDestroying: true,
                 // injectRegister: false,
                 workbox: {
-                    skipWaiting: true,
-                    clientsClaim: true,
+                    globIgnores: [
+                        "**/images/background*.jpg",
+                        "**/images/phone/backgroundphone*.jpg",
+                    ],
                     runtimeCaching: [
                         {
-                            urlPattern: /(.*?)\.(js|css|woff2|woff|ttf)/, // js / css 静态资源缓存
-                            handler: "CacheFirst",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/images/config.json",
+                            handler: "NetworkFirst",
                             options: {
-                                cacheName: "js-css-cache",
+                                cacheName: "wallpaper-config-v1",
+                                networkTimeoutSeconds: 3,
+                                expiration: {
+                                    maxEntries: 1,
+                                    maxAgeSeconds: 86400,
+                                },
                             },
                         },
                         {
-                            urlPattern: /(.*?)\.(png|jpe?g|svg|gif|bmp|psd|tiff|tga|eps)/, // 图片缓存
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/image",
                             handler: "CacheFirst",
                             options: {
-                                cacheName: "image-cache",
+                                cacheName: "online-wallpaper-v1",
+                                expiration: {
+                                    maxEntries: 12,
+                                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpe?g|svg|webp|gif|ico)$/i.test(url.pathname),
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "local-images-v1",
+                                expiration: {
+                                    maxEntries: 8,
+                                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: { statuses: [200] },
                             },
                         },
                     ],
@@ -99,7 +122,6 @@ export default ({ mode }: { mode: string }): UserConfig => {
                     ],
                 },
             }),
-            viteCompression(),
         ],
         server: {
             port: 3000,
@@ -115,15 +137,6 @@ export default ({ mode }: { mode: string }): UserConfig => {
             extensions: [".ts", ".js", ".vue", ".json"],
         },
         css: {
-            postcss: {
-                plugins: [
-                    postcssPresetEnv({
-                        stage: 3,
-                        features: { 'nesting-rules': true }
-                    }),
-                    cssnano()
-                ]
-            },
             preprocessorOptions: {
                 scss: {
                     charset: false,
@@ -137,18 +150,6 @@ export default ({ mode }: { mode: string }): UserConfig => {
                 compress: {
                     pure_funcs: ["console.debug"],
                 },
-            },
-            rollupOptions: {
-                output: {
-                    manualChunks(id) {
-                        if (id.includes('node_modules')) {
-                            return 'vendor';
-                        };
-                        if (id.includes('siteLinks.json') || id.includes('socialLinks.json')) {
-                            return 'custom_data';
-                        };
-                    }
-                }
             },
             chunkSizeWarningLimit: 1024,
         },

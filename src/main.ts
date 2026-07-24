@@ -12,6 +12,8 @@ import "element-plus/dist/index.css";
 // swiper
 import "swiper/css";
 import "uno.css";
+import { watch } from "vue";
+import { setupPwaUpdate } from "@/utils/pwaUpdate";
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -35,35 +37,40 @@ const mountApp = () => {
       dangerouslyUseHTMLString: true,
       message: `正在恢复默认配置，请稍后...`,
     });
-    store.resetStore();
+    void store.resetStore().then(() => {
+      window.history.replaceState({}, "", window.location.pathname);
+    });
   };
 
-  // PWA
-  navigator.serviceWorker.addEventListener("controllerchange", async () => {
-    // 弹出更新提醒
-    ElMessage("网站已更新，请刷新网页嗷！");
-  });
+  setupPwaUpdate(store);
 
-  const setupset = () => setTimeout(() => {
-    if (urlParams.get("set") != "reset" && store.imgLoadStatus === true) {
-      if (urlParams.get("bg")) {
-        store.coverType = Number(urlParams.get("bg"));
-      };
-      if (urlParams.get("bgc") && (store.coverType == 0 || urlParams.get("bg") == "0")) {
-        store.sBGCount = String(urlParams.get("bgc"));
-      };
-      if (urlParams.get("devs")) {
-        store.setV = Boolean(urlParams.get("devs"));
-      };
-      if (urlParams.get("pap")) {
-        store.playerAutoplay = Boolean(urlParams.get("pap"));
-      };
-    } else {
-      setupset();
-    };
-  }, 300);
+  const parseBooleanParam = (value: string | null) => {
+    if (value === "true" || value === "1") return true;
+    if (value === "false" || value === "0") return false;
+    return null;
+  };
 
-  setupset();
+  const applyUrlSettings = () => {
+    const backgroundType = urlParams.get("bg");
+    if (backgroundType !== null) store.coverType = Number(backgroundType);
+    const backgroundId = urlParams.get("bgc");
+    if (backgroundId && (store.coverType === 0 || backgroundType === "0")) store.sBGCount = backgroundId;
+    const developerMode = parseBooleanParam(urlParams.get("devs"));
+    if (developerMode !== null) store.setV = developerMode;
+    const autoplay = parseBooleanParam(urlParams.get("pap"));
+    if (autoplay !== null) store.playerAutoplay = autoplay;
+  };
+
+  if (urlParams.get("set") !== "reset") {
+    if (store.imgLoadStatus) applyUrlSettings();
+    else {
+      const stop = watch(() => store.imgLoadStatus, (ready) => {
+        if (!ready) return;
+        stop();
+        applyUrlSettings();
+      });
+    }
+  }
 };
 
 if (!import.meta.env.VITE_CONFIG_TURN || import.meta.env.VITE_CONFIG_TURN != "true") {
