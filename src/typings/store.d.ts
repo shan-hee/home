@@ -25,11 +25,9 @@ export interface MainState {
     selectedEffects: BackgroundEffect[];
     msgNameShow: boolean;
     siteStartShow: boolean;
-    musicClick: boolean;
     musicBoxOpenState: boolean;
     musicIsOk: boolean;
     musicVolume: number;
-    musicOpenState: boolean;
     backgroundShow: boolean;
     boxOpenState: boolean;
     mobileOpenState: boolean;

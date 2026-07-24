@@ -17,11 +17,9 @@ export const storeState: MainState = {
   selectedEffects: [] as MainState["selectedEffects"], // 【开关】手动背景特效
   msgNameShow: false, // 【开关】信息区域显示自定义名而非原本的 URL
   siteStartShow: true, // 【开关】建站日期显示
-  musicClick: true, // 【开关】音乐链接是否跳转
   musicBoxOpenState: false, // 【状态】音乐盒子开启状态
   musicIsOk: false, // 【状态】音乐是否加载完成
   musicVolume: 0.3 as number, // 【开关】音乐音量
-  musicOpenState: false, // 【状态】音乐面板开启状态
   backgroundShow: false, // 【状态】壁纸展示状态
   boxOpenState: false, // 【状态】盒子开启状态
   mobileOpenState: false, // 【状态】移动端开启状态
@@ -39,7 +37,7 @@ export const storeState: MainState = {
   playerLrcShow: true, // 【开关】是否显示底栏歌词
   footerBlur: true, // 【开关】底栏模糊
   footerProgressBar: true, // 【开关】是否显示底栏进度条
-  playerAutoplay: true, // 【开关】是否自动播放
+  playerAutoplay: false, // 【开关】是否自动播放
   playerOrder: "shuffle", // 【开关】播放顺序 "list", "single", "shuffle"
   playerKeyboardShortcuts: true, // 【开关】全局播放器快捷键
   playerTrLrc: false, // 【开关】逐行歌词调用翻译歌词开关
@@ -148,7 +146,7 @@ export const mainStore = defineStore("main", {
     async resetStore() {
       const persistedSettings = [
         "coverType", "wallpaperLocalId", "autoBGSwitchInterval", "musicVolume",
-        "siteStartShow", "musicClick", "playerLrcShow", "footerBlur",
+        "siteStartShow", "playerLrcShow", "footerBlur",
         "footerProgressBar", "playerAutoplay", "playerOrder", "playerKeyboardShortcuts",
         "playerTrLrc", "playerDWRCShow", "playerDWRCShowPro", "playerRMMetadata", "effectsMode",
         "selectedEffects", "theme", "setV", "msgNameShow",
@@ -183,13 +181,10 @@ export const mainStore = defineStore("main", {
         'autoBGSwitchInterval',
         'musicVolume',
         'siteStartShow',
-        'musicClick',
         'playerLrcShow',
         'footerBlur',
         'footerProgressBar',
-        'playerAutoplay',
         'playerOrder',
-        'playerKeyboardShortcuts',
         'playerTrLrc',
         'playerDWRCShow',
         'playerDWRCShowPro',

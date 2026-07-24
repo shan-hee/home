@@ -29,26 +29,10 @@
           </div>
         </div>
       </el-collapse-item>
-      <el-collapse-item title="主题设置" name="2">
-        <div class="item">
-          <span class="text">主题模式</span><br><br>
-          <el-radio-group v-model="theme" size="small" text-color="#FFFFFF">
-            <el-radio value="system" border>跟随系统</el-radio>
-            <el-radio value="time" border>跟随时间</el-radio>
-            <el-radio value="bg" border>跟随背景</el-radio>
-            <el-radio value="light" border>浅色模式</el-radio>
-            <el-radio value="dark" border>深色模式</el-radio>
-          </el-radio-group>
-        </div>
-      </el-collapse-item>
       <el-collapse-item title="个性化调整" name="3">
         <div class="item">
           <span class="text">建站日期显示</span>
           <el-switch v-model="siteStartShow" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div class="item">
-          <span class="text">音乐点击是否打开面板</span>
-          <el-switch v-model="musicClick" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
         <div class="item effect-settings">
           <span class="text">背景特效</span>
@@ -74,25 +58,6 @@
         <div class="item">
           <span class="text">显示底栏音乐进度条</span>
           <el-switch v-model="footerProgressBar" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-      </el-collapse-item>
-      <el-collapse-item title="播放器配置" name="4">
-        <div class="item">
-          <span class="text">自动播放</span>
-          <el-switch v-model="playerAutoplay" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div class="item">
-          <span class="text">播放顺序</span>
-          <el-radio-group v-model="playerOrder" size="small" text-color="#FFFFFF">
-            <el-radio value="list" border>列表循环</el-radio>
-            <el-radio value="single" border>单曲循环</el-radio>
-            <el-radio value="shuffle" border>随机播放</el-radio>
-          </el-radio-group>
-        </div>
-        <div class="item">
-          <span class="text">全局播放器快捷键</span>
-          <el-switch v-model="playerKeyboardShortcuts" inline-prompt :active-icon="CheckSmall"
-            :inactive-icon="CloseSmall" />
         </div>
       </el-collapse-item>
       <el-collapse-item title="歌词设置" name="5">
@@ -137,12 +102,8 @@ const store = mainStore();
 const {
   coverType,
   siteStartShow,
-  musicClick,
   playerLrcShow,
   footerBlur,
-  playerAutoplay,
-  playerOrder,
-  playerKeyboardShortcuts,
   playerTrLrc,
   playerDWRCShow,
   playerDWRCShowPro,
@@ -152,7 +113,6 @@ const {
   effectsMode,
   selectedEffects,
   setV,
-  theme,
 } = storeToRefs(store);
 
 // 默认选中项
