@@ -1,6 +1,6 @@
 export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
-export type SeasonalEffect = "snow" | "firefly" | "lantern";
-export type SeasonalEffectMode = "auto" | "off" | "manual";
+export type BackgroundEffect = "snow" | "firefly" | "lantern" | "meteor";
+export type BackgroundEffectMode = "auto" | "off" | "manual";
 export type WordLyricToken = [[start: number, duration: number], text: string, line: number, row: number];
 export type WordLyricLine = [start: number, duration: number, words: WordLyricToken[]];
 export type PlayerLyricItem = [
@@ -21,8 +21,8 @@ export interface MainState {
     autoBGSwitchInterval : number;
     wallpaperLocalId: number | null;
     wallpaperMaxId: number;
-    effectsMode: SeasonalEffectMode;
-    selectedEffects: SeasonalEffect[];
+    effectsMode: BackgroundEffectMode;
+    selectedEffects: BackgroundEffect[];
     msgNameShow: boolean;
     siteStartShow: boolean;
     musicClick: boolean;
@@ -64,5 +64,6 @@ export interface MainState {
     showFirefly: boolean;
     showSnowfall: boolean;
     showLantern: boolean;
+    showMeteor: boolean;
     theme: "system" | "time" | "bg" | "light" | "dark";
 };

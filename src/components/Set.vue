@@ -51,7 +51,7 @@
           <el-switch v-model="musicClick" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
         <div class="item effect-settings">
-          <span class="text">季节特效</span>
+          <span class="text">背景特效</span>
           <el-radio-group v-model="effectsMode" size="small" text-color="#FFFFFF">
             <el-radio value="auto" border>自动</el-radio>
             <el-radio value="off" border>关闭</el-radio>
@@ -64,6 +64,7 @@
             <el-checkbox value="snow">雪</el-checkbox>
             <el-checkbox value="firefly">萤火虫</el-checkbox>
             <el-checkbox value="lantern">灯笼</el-checkbox>
+            <el-checkbox value="meteor">流星</el-checkbox>
           </el-checkbox-group>
         </div>
         <div class="item">

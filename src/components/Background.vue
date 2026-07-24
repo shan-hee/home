@@ -28,10 +28,11 @@
 <script setup lang="ts">
 import { Error as ErrorIcon } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
-import type { SeasonalEffect } from "@/typings/store";
+import type { BackgroundEffect } from "@/typings/store";
 import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
 import { initFirefly, closeFirefly } from "@/utils/season/firefly";
 import { initLantern, closeLantern } from "@/utils/season/lantern";
+import { initMeteor, closeMeteor } from "@/utils/season/meteor";
 
 interface WallpaperCollection {
   count: number;
@@ -340,10 +341,11 @@ const lunarNewYearRanges: Record<number, [string, string]> = {
   2030: ["2030-01-27", "2030-02-17"],
 };
 
-const automaticEffects = (date = new Date()): SeasonalEffect[] => {
-  const effects: SeasonalEffect[] = [];
+const automaticEffects = (date = new Date()): BackgroundEffect[] => {
+  const effects: BackgroundEffect[] = [];
   const month = date.getMonth() + 1;
   const hour = date.getHours();
+  if (hour >= 19 || hour < 6) effects.push("meteor");
   if ([12, 1, 2].includes(month)) effects.push("snow");
   if ([6, 7, 8].includes(month) && (hour >= 19 || hour < 6)) effects.push("firefly");
   const range = lunarNewYearRanges[date.getFullYear()];
@@ -355,6 +357,7 @@ const automaticEffects = (date = new Date()): SeasonalEffect[] => {
 };
 
 const closeAllEffects = () => {
+  closeMeteor();
   closeSnowfall();
   closeFirefly();
   closeLantern();
@@ -365,9 +368,10 @@ const applyEffects = () => {
     closeAllEffects();
     return;
   }
-  const desired = new Set<SeasonalEffect>(
+  const desired = new Set<BackgroundEffect>(
     store.effectsMode === "manual" ? store.selectedEffects : automaticEffects(),
   );
+  desired.has("meteor") ? initMeteor() : closeMeteor();
   desired.has("snow") ? initSnowfall() : closeSnowfall();
   desired.has("firefly") ? initFirefly() : closeFirefly();
   desired.has("lantern") ? initLantern() : closeLantern();

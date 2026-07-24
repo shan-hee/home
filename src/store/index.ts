@@ -13,8 +13,8 @@ export const storeState: MainState = {
   autoBGSwitchInterval : 2 as number, // 【开关】自动切换壁纸设置
   wallpaperLocalId: null as number | null, // 【开关】默认本地壁纸 ID
   wallpaperMaxId: 0, // 【状态】当前设备本地壁纸数量
-  effectsMode: "auto", // 【开关】季节特效模式
-  selectedEffects: [] as Array<"snow" | "firefly" | "lantern">, // 【开关】手动季节特效
+  effectsMode: "auto", // 【开关】背景特效模式
+  selectedEffects: [] as MainState["selectedEffects"], // 【开关】手动背景特效
   msgNameShow: false, // 【开关】信息区域显示自定义名而非原本的 URL
   siteStartShow: true, // 【开关】建站日期显示
   musicClick: true, // 【开关】音乐链接是否跳转
@@ -56,6 +56,7 @@ export const storeState: MainState = {
   showFirefly: false, // 【状态】萤火虫特效
   showSnowfall: false, // 【状态】雪花特效
   showLantern: false, // 【状态】灯笼特效
+  showMeteor: false, // 【状态】流星特效
   theme: "system", // 【开关】主题，"system"/"time"/"bg"/"light"/"dark"。
 };
 
