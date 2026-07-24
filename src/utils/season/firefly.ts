@@ -28,7 +28,7 @@ const resizeCanvas = () => {
 };
 
 const createFireflies = () => {
-  const count = window.matchMedia("(max-width: 720px)").matches ? 20 : 42;
+  const count = window.matchMedia("(max-width: 720px)").matches ? 24 : 48;
   fireflies.length = 0;
   for (let index = 0; index < count; index++) {
     fireflies.push({
