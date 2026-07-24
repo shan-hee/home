@@ -10,12 +10,6 @@ interface ImportMetaEnv {
     readonly VITE_SITE_MAIN_LOGO: string;
     readonly VITE_SITE_APPLE_LOGO: string;
 
-    // 简介文本
-    readonly VITE_DESC_HELLO: string;
-    readonly VITE_DESC_TEXT: string;
-    readonly VITE_DESC_HELLO_OTHER: string;
-    readonly VITE_DESC_TEXT_OTHER: string;
-
     // 建站日期
     readonly VITE_SITE_START: string;
 

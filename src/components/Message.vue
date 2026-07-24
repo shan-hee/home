@@ -9,30 +9,24 @@
         <span class="sm">.{{ siteUrl[1] }}</span>
       </div>
     </div>
-    <!-- 简介 -->
-    <div class="description cards" @click="changeBox">
-      <div class="content">
-        <Icon size="16">
-          <QuoteLeft />
-        </Icon>
-        <Transition name="fade" mode="out-in">
-          <div :key="descriptionText.hello + descriptionText.text" class="text">
-            <p>{{ descriptionText.hello }}</p>
-            <p>{{ descriptionText.text }}</p>
-          </div>
-        </Transition>
-        <Icon size="16">
-          <QuoteRight />
-        </Icon>
-      </div>
+    <!-- 一言 -->
+    <div
+      class="description"
+      role="button"
+      tabindex="0"
+      title="切换拓展盒子"
+      @click="changeBox"
+      @keydown.enter="changeBox"
+      @keydown.space.prevent="changeBox"
+    >
+      <Hitokoto />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Icon } from "@vicons/utils";
-import { QuoteLeft, QuoteRight } from "@vicons/fa";
 import { Error } from "@icon-park/vue-next";
+import Hitokoto from "@/components/Hitokoto.vue";
 import { mainStore } from "@/store";
 const store = mainStore();
 
@@ -58,12 +52,6 @@ const siteUrl = computed(() => {
   return hostname.split(".");
 });
 
-// 简介区域文字
-const descriptionText = reactive({
-  hello: envConfig.VITE_DESC_HELLO,
-  text: envConfig.VITE_DESC_TEXT,
-});
-
 // 切换右侧功能区
 const changeBox = () => {
   if ((store.getInnerWidth ?? 0) >= 721) {
@@ -80,19 +68,6 @@ const changeBox = () => {
   };
 };
 
-// 监听状态变化
-watch(
-  () => store.boxOpenState,
-  (value) => {
-    if (value) {
-      descriptionText.hello = envConfig.VITE_DESC_HELLO_OTHER;
-      descriptionText.text = envConfig.VITE_DESC_TEXT_OTHER;
-    } else {
-      descriptionText.hello = envConfig.VITE_DESC_HELLO;
-      descriptionText.text = envConfig.VITE_DESC_TEXT;
-    };
-  },
-);
 </script>
 
 
@@ -153,36 +128,19 @@ watch(
   }
 
   .description {
-    padding: 1rem;
     margin-top: 3.5rem;
     max-width: 460px;
+    cursor: pointer;
     animation: fade 0.5s;
 
-    .content {
-      display: flex;
-      justify-content: space-between;
-
-      .text {
-        margin: 0.75rem 1rem;
-        line-height: 2rem;
-        margin-right: auto;
-        transition: opacity 0.2s;
-
-        p {
-          &:nth-of-type(1) {
-            font-family: "Pacifico-Regular";
-          }
-        }
-      }
-
-      .xicon:nth-of-type(2) {
-        align-self: flex-end;
-      }
+    &:focus-visible {
+      outline: 2px solid rgba(245, 245, 245, 0.55);
+      outline-offset: 5px;
+      border-radius: 8px;
     }
 
     @media (max-width: 720px) {
       max-width: 100%;
-      pointer-events: none;
     }
   }
 

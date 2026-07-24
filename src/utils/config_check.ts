@@ -26,14 +26,6 @@ export const envConfig: Env = {
         ? import.meta.env.VITE_SITE_MAIN_LOGO || exampleConfig.VITE_SITE_MAIN_LOGO : exampleConfig.VITE_SITE_MAIN_LOGO,
     VITE_SITE_APPLE_LOGO: import.meta.env.VITE_CONFIG_TURN == 'true'
         ? import.meta.env.VITE_SITE_APPLE_LOGO || exampleConfig.VITE_SITE_APPLE_LOGO : exampleConfig.VITE_SITE_APPLE_LOGO,
-    VITE_DESC_HELLO: import.meta.env.VITE_CONFIG_TURN == 'true'
-        ? import.meta.env.VITE_DESC_HELLO || exampleConfig.VITE_DESC_HELLO : exampleConfig.VITE_DESC_HELLO,
-    VITE_DESC_TEXT: import.meta.env.VITE_CONFIG_TURN == 'true'
-        ? import.meta.env.VITE_DESC_TEXT || exampleConfig.VITE_DESC_TEXT : exampleConfig.VITE_DESC_TEXT,
-    VITE_DESC_HELLO_OTHER: import.meta.env.VITE_CONFIG_TURN == 'true'
-        ? import.meta.env.VITE_DESC_HELLO_OTHER || exampleConfig.VITE_DESC_HELLO_OTHER : exampleConfig.VITE_DESC_HELLO_OTHER,
-    VITE_DESC_TEXT_OTHER: import.meta.env.VITE_CONFIG_TURN == 'true'
-        ? import.meta.env.VITE_DESC_TEXT_OTHER || exampleConfig.VITE_DESC_TEXT_OTHER : exampleConfig.VITE_DESC_TEXT_OTHER,
     VITE_SITE_START: import.meta.env.VITE_CONFIG_TURN == 'true'
         ? import.meta.env.VITE_SITE_START || exampleConfig.VITE_SITE_START : exampleConfig.VITE_SITE_START,
     VITE_SITE_ICP: import.meta.env.VITE_CONFIG_TURN == 'true'
