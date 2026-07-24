@@ -1,132 +1,163 @@
-import { isEqual } from "lodash-es";
+const POINTER_MEDIA_QUERY = "(pointer: fine)";
+const MOTION_MEDIA_QUERY = "(prefers-reduced-motion: no-preference)";
+const CURSOR_OFFSET = 9;
+const FOLLOW_SPEED = 0.35;
+const STOP_THRESHOLD = 0.1;
 
-let mainCursor: Cursor | null = null;
-
-const lerp = (a: number, b: number, n: number) => {
-  if (Math.round(a) === b) {
-    return b;
-  }
-  return (1 - n) * a + n * b;
-};
-
-const getStyle = (el: HTMLElement, attr: string) => {
-  try {
-    return window.getComputedStyle ? window.getComputedStyle(el)[attr as any] : (el as any).currentStyle[attr];
-  } catch (e) {
-    console.error(e);
-  }
-  return false;
-};
-
-const cursorInit = () => {
-  mainCursor = new Cursor();
-  return mainCursor;
-};
-
-class Cursor {
-  pos: {
-    curr: { x: number; y: number } | null;
-    prev: { x: number; y: number } | null;
-  };
-  pt: string[];
-  cursor: HTMLDivElement | null = null;
-  scr: HTMLStyleElement | null = null;
+class CursorController {
+  private readonly pointerMedia = window.matchMedia(POINTER_MEDIA_QUERY);
+  private readonly motionMedia = window.matchMedia(MOTION_MEDIA_QUERY);
+  private cursor: HTMLDivElement | null = null;
+  private frameId: number | null = null;
+  private currentX = 0;
+  private currentY = 0;
+  private targetX = 0;
+  private targetY = 0;
+  private hasPosition = false;
 
   constructor() {
-    this.pos = {
-      curr: null,
-      prev: null,
-    };
-    this.pt = [];
-    this.create();
-    this.init();
-    this.render();
+    this.pointerMedia.addEventListener("change", this.handleMediaChange);
+    this.motionMedia.addEventListener("change", this.handleMediaChange);
+    this.syncEnabledState();
   }
 
-  move(left: number, top: number) {
+  destroy() {
+    this.pointerMedia.removeEventListener("change", this.handleMediaChange);
+    this.motionMedia.removeEventListener("change", this.handleMediaChange);
+    this.disable();
+  }
+
+  private readonly handleMediaChange = () => {
+    this.syncEnabledState();
+  };
+
+  private readonly handlePointerMove = (event: PointerEvent) => {
+    if (event.pointerType !== "mouse" || !this.cursor) return;
+
+    this.targetX = event.clientX - CURSOR_OFFSET;
+    this.targetY = event.clientY - CURSOR_OFFSET;
+    this.cursor.classList.remove("hidden");
+
+    if (!this.hasPosition) {
+      this.currentX = this.targetX;
+      this.currentY = this.targetY;
+      this.hasPosition = true;
+      this.updatePosition();
+      return;
+    }
+
+    this.scheduleFrame();
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent) => {
+    if (event.pointerType === "mouse") {
+      this.cursor?.classList.add("active");
+    }
+  };
+
+  private readonly handlePointerUp = (event: PointerEvent) => {
+    if (event.pointerType === "mouse") {
+      this.cursor?.classList.remove("active");
+    }
+  };
+
+  private readonly hide = () => {
+    this.cursor?.classList.add("hidden");
+    this.cursor?.classList.remove("active");
+  };
+
+  private readonly render = () => {
+    this.frameId = null;
+
+    const distanceX = this.targetX - this.currentX;
+    const distanceY = this.targetY - this.currentY;
+
+    if (Math.abs(distanceX) <= STOP_THRESHOLD && Math.abs(distanceY) <= STOP_THRESHOLD) {
+      this.currentX = this.targetX;
+      this.currentY = this.targetY;
+      this.updatePosition();
+      return;
+    }
+
+    this.currentX += distanceX * FOLLOW_SPEED;
+    this.currentY += distanceY * FOLLOW_SPEED;
+    this.updatePosition();
+    this.scheduleFrame();
+  };
+
+  private syncEnabledState() {
+    if (this.pointerMedia.matches && this.motionMedia.matches) {
+      this.enable();
+    } else {
+      this.disable();
+    }
+  }
+
+  private enable() {
+    if (this.cursor) return;
+
+    document.getElementById("cursor")?.remove();
+
+    this.cursor = document.createElement("div");
+    this.cursor.id = "cursor";
+    this.cursor.classList.add("hidden");
+    this.cursor.setAttribute("aria-hidden", "true");
+    document.body.append(this.cursor);
+    document.documentElement.classList.add("has-custom-cursor");
+
+    window.addEventListener("pointermove", this.handlePointerMove, { passive: true });
+    window.addEventListener("pointerdown", this.handlePointerDown, { passive: true });
+    window.addEventListener("pointerup", this.handlePointerUp, { passive: true });
+    window.addEventListener("pointercancel", this.handlePointerUp, { passive: true });
+    window.addEventListener("blur", this.hide);
+    document.documentElement.addEventListener("pointerleave", this.hide);
+  }
+
+  private disable() {
+    if (this.frameId !== null) {
+      cancelAnimationFrame(this.frameId);
+      this.frameId = null;
+    }
+
+    window.removeEventListener("pointermove", this.handlePointerMove);
+    window.removeEventListener("pointerdown", this.handlePointerDown);
+    window.removeEventListener("pointerup", this.handlePointerUp);
+    window.removeEventListener("pointercancel", this.handlePointerUp);
+    window.removeEventListener("blur", this.hide);
+    document.documentElement.removeEventListener("pointerleave", this.hide);
+
+    this.cursor?.remove();
+    this.cursor = null;
+    this.hasPosition = false;
+    document.documentElement.classList.remove("has-custom-cursor");
+  }
+
+  private scheduleFrame() {
+    if (this.frameId === null) {
+      this.frameId = requestAnimationFrame(this.render);
+    }
+  }
+
+  private updatePosition() {
     if (!this.cursor) return;
-    this.cursor.style["left"] = `${left}px`;
-    this.cursor.style["top"] = `${top}px`;
-  }
-
-  create() {
-    if (!this.cursor) {
-      this.cursor = document.createElement("div");
-      this.cursor.id = "cursor";
-      this.cursor.classList.add("is-xs-hidden");
-      this.cursor.classList.add("hidden");
-      document.body.append(this.cursor);
-    }
-
-    const el = document.getElementsByTagName("*");
-    for (let i = 0; i < el.length; i++) {
-      if (getStyle(el[i] as HTMLElement, "cursor") === "pointer") {
-        this.pt.push(el[i].outerHTML);
-      };
-    };
-    this.scr = document.createElement("style");
-    document.body.appendChild(this.scr);
-    this.scr.innerHTML = `* {cursor: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' width='10px' height='10px'><circle cx='4' cy='4' r='4' fill='white' /></svg>") 4 4, auto !important}`;
-  }
-  refresh() {
-    if (this.scr) {
-      this.scr.remove();
-    }
-    if (this.cursor) {
-      this.cursor.classList.remove("active");
-    }
-    this.pos = {
-      curr: null,
-      prev: null,
-    };
-    this.pt = [];
-
-    this.create();
-    this.init();
-    this.render();
-  }
-
-  init() {
-    document.onmousemove = (e) => {
-      this.pos.curr == null && this.move(e.clientX - 8, e.clientY - 8);
-      this.pos.curr = {
-        x: e.clientX - 8,
-        y: e.clientY - 8,
-      };
-      if (this.cursor) {
-        this.cursor.classList.remove("is-xs-hidden");
-        this.cursor.classList.remove("hidden");
-      }
-      this.render();
-    };
-    document.onmouseenter = () => {
-      if (this.cursor) this.cursor.classList.remove("is-xs-hidden");
-      if (this.cursor) this.cursor.classList.remove("hidden");
-    };
-    document.onmouseleave = () => {
-      if (this.cursor) this.cursor.classList.add("is-xs-hidden");
-      if (this.cursor) this.cursor.classList.add("hidden");
-    };
-    document.onmousedown = () => {
-      if (this.cursor) this.cursor.classList.add("active");
-    };
-    document.onmouseup = () => {
-      if (this.cursor) this.cursor.classList.remove("active");
-    };
-  }
-
-  render() {
-    if (this.pos.prev && this.pos.curr) {
-      this.pos.prev.x = lerp(this.pos.prev.x, this.pos.curr.x, 0.35);
-      this.pos.prev.y = lerp(this.pos.prev.y, this.pos.curr.y, 0.35);
-      this.move(this.pos.prev.x, this.pos.prev.y);
-    } else if (this.pos.curr) {
-      this.pos.prev = this.pos.curr;
-    }
-    if (this.pos.prev && this.pos.curr && !isEqual(this.pos.curr, this.pos.prev)) {
-      requestAnimationFrame(() => this.render());
-    }
+    this.cursor.style.transform = `translate3d(${this.currentX}px, ${this.currentY}px, 0)`;
   }
 }
+
+let mainCursor: CursorController | null = null;
+
+const cursorInit = () => {
+  mainCursor?.destroy();
+
+  const controller = new CursorController();
+  mainCursor = controller;
+
+  return () => {
+    if (mainCursor === controller) {
+      mainCursor = null;
+    }
+    controller.destroy();
+  };
+};
 
 export default cursorInit;

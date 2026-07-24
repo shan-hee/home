@@ -41,11 +41,12 @@ import Background from "@/components/Background.vue";
 import Footer from "@/components/Footer.vue";
 import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
-import cursorInit from "@/utils/cursor.js";
-import { getColor } from "@/utils/getColor";
+import { useTheme } from "@/composables/useTheme";
+import cursorInit from "@/utils/cursor";
 
 const store = mainStore();
-const timeThemeInterval = ref<any>(null);
+const { applyBackgroundTheme } = useTheme(store);
+let disposeCursor: (() => void) | null = null;
 
 // 页面宽度
 const getWidth = () => {
@@ -73,81 +74,24 @@ watch(
   },
 );
 
-// 监听主题变化
-const darkThemeMq = window.matchMedia("(prefers-color-scheme: dark)");
-
-const handleThemeChange = (e?: any) => {
-  if (store.theme === "system") {
-    const isDark = e ? e.matches : darkThemeMq.matches;
-    document.documentElement.dataset.theme = isDark ? "dark" : "light";
-  }
-};
-
 const onImageLoaded = (img: HTMLImageElement) => {
-  if (store.theme === 'bg') {
-    getColor(img)
-      .then((theme) => {
-        document.documentElement.dataset.theme = theme;
-      })
-      .catch((err) => {
-        console.error(err);
-        ElMessage.error("背景主题切换失败，已回退到跟随系统");
-        store.theme = "system";
-      });
-  };
+  void applyBackgroundTheme(img);
 };
 
-watch(
-  () => store.theme,
-  (theme) => {
-    if (timeThemeInterval.value) {
-      clearInterval(timeThemeInterval.value);
-      timeThemeInterval.value = null;
-    };
-    if (theme === "light") {
-      document.documentElement.dataset.theme = "light";
-    } else if (theme === "dark") {
-      document.documentElement.dataset.theme = "dark";
-    } else if (theme === "system") {
-      handleThemeChange();
-    } else if (theme === "time") {
-      const setTimeTheme = () => {
-        const now = new Date();
-        const hour = now.getHours();
-        if (hour >= 19 || hour < 6) {
-          document.documentElement.dataset.theme = "dark";
-        } else {
-          document.documentElement.dataset.theme = "light";
-        };
-      };
-      setTimeTheme();
-      timeThemeInterval.value = setInterval(setTimeTheme, 60000);
-    } else if (theme === "bg") {
-      const bgImg = document.querySelector('.bg') as HTMLImageElement;
-      if (bgImg && bgImg.complete) {
-        onImageLoaded(bgImg);
-      };
-    };
-  },
-  { immediate: true }
-);
+const handleMiddleMouse = (event: MouseEvent) => {
+  if (event.button !== 1) return;
+  store.backgroundShow = !store.backgroundShow;
+  ElMessage({
+    message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
+    grouping: true,
+  });
+};
 
 onMounted(() => {
-  darkThemeMq.addEventListener("change", handleThemeChange);
-
-  // 自定义鼠标
-  cursorInit();
+  disposeCursor = cursorInit();
 
   // 鼠标中键事件
-  window.addEventListener("mousedown", (event) => {
-    if (event.button == 1) {
-      store.backgroundShow = !store.backgroundShow;
-      ElMessage({
-        message: `已${store.backgroundShow ? "开启" : "退出"}壁纸展示状态`,
-        grouping: true,
-      });
-    }
-  });
+  window.addEventListener("mousedown", handleMiddleMouse);
 
   // 监听当前页面宽度
   getWidth();
@@ -155,11 +99,10 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  disposeCursor?.();
+  disposeCursor = null;
   window.removeEventListener("resize", getWidth);
-  darkThemeMq.removeEventListener("change", handleThemeChange);
-  if (timeThemeInterval.value) {
-    clearInterval(timeThemeInterval.value);
-  }
+  window.removeEventListener("mousedown", handleMiddleMouse);
 });
 </script>
 

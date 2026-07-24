@@ -185,18 +185,33 @@ a:hover {
   }
 }
 
-// 自定义鼠标
+// 自定义鼠标：仅修改默认指针，保留链接、文本和缩放等原生光标语义
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  html.has-custom-cursor {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' width='10' height='10'%3E%3Ccircle cx='4' cy='4' r='4' fill='%23fff'/%3E%3C/svg%3E") 4 4, auto;
+  }
+}
+
 #cursor {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 18px;
   height: 18px;
-  background: #fff;
-  border-radius: 25px;
   opacity: 0.25;
-  z-index: 10086;
   pointer-events: none;
-  transition: 0.2s ease-in-out;
-  transition-property: background, opacity, transform;
+  z-index: 10086;
+  will-change: transform, opacity;
+  transition: opacity 0.2s ease-in-out;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease-in-out;
+  }
 
   &.hidden {
     opacity: 0;
@@ -204,7 +219,10 @@ a:hover {
 
   &.active {
     opacity: 0.5;
-    transform: scale(0.5);
+
+    &::after {
+      transform: scale(0.5);
+    }
   }
 }
 
@@ -221,4 +239,3 @@ scrollbar-thumb {
   border-radius: 10px;
   background-color: #eeeeee;
 }
-
