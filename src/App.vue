@@ -16,6 +16,7 @@
           <MoreSet />
         </section>
       </div>
+      <ThemeSwitcher v-show="!store.backgroundShow && !store.setOpenState" />
       <!-- 移动端菜单按钮 -->
       <Icon class="menu" size="24" v-show="!store.backgroundShow"
         @click="store.mobileOpenState = !store.mobileOpenState">
@@ -38,6 +39,7 @@ import Loading from "@/components/Loading.vue";
 import MainLeft from "@/views/Main/Left.vue";
 import MainRight from "@/views/Main/Right.vue";
 import Background from "@/components/Background.vue";
+import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 import Footer from "@/components/Footer.vue";
 import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
