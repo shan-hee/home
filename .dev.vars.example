@@ -2,3 +2,7 @@
 DEFAULT_LATITUDE = ""
 DEFAULT_LONGITUDE = ""
 DEFAULT_CITY = ""
+
+# 可选：中国天气预警。留空时 /api/alerts 返回空数组，不影响普通天气。
+QWEATHER_API_KEY = ""
+QWEATHER_API_HOST = "devapi.qweather.com"

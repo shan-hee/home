@@ -129,8 +129,10 @@ Social links can be customized in `src/assets/socialLinks.json`.
 
 Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 
-- Cloudflare request geolocation is used in production, so weather keys are not exposed in the browser bundle.
+- The app first requests browser geolocation. If it is unavailable, users can search for and save a city through `/api/geocoding`.
 - Open-Meteo is tried first, with MET Norway as a fallback; both are normalized before the UI receives the response.
+- If both providers fail, the latest successful response for that location is shown and marked as stale.
+- `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
 - When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
 
 ### Music

@@ -134,8 +134,10 @@ const siteIcon = {
 
 天气由同源 Cloudflare Pages Function `/api/weather` 提供：
 
-- 部署在 Cloudflare Pages 时使用 Cloudflare 的请求地理信息，不需要在浏览器暴露天气 Key。
+- 首次访问优先请求浏览器定位；定位不可用时可搜索并保存城市，城市搜索由 `/api/geocoding` 提供。
 - 首选 Open-Meteo，失败时自动回退到 MET Norway；两者返回统一格式后再交给页面展示。
+- 两个天气源都失败时，页面会显示该地点最近一次成功数据并标记为“旧数据”。
+- `/api/alerts` 是独立可选能力。未配置 `QWEATHER_API_KEY` 时返回空数组，不影响普通天气。
 - Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
 
 ### 音乐
