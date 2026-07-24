@@ -47,19 +47,7 @@ injectRegister: false,
 - [x] 移动端适配
 - [x] 逐字歌词兼容
 
-### ⚙️ 自动部署
-
-如果遇到构建环境或者打包过程出现错误，则可以采用 `Github Actions` 来进行自动构建
-
-- 在成功 `fork` 仓库后，前往 `Actions` 页面，若您是首次开启，则会出现下面的提示，点击开启
-
-  ![步骤1](/screenshots/step1.jpg)
-
-- 然后在仓库中进行任意修改后均会触发工作流的运行，在工作流完成后，会在下方生成一个可供下载的压缩包，这就是构建出的静态文件，可自行上传至服务器
-
-  ![步骤2](/screenshots/step2.jpg)
-
-### ⚙️ 手动部署
+### ⚙️ 本地开发
 
 - **安装** [node.js](https://nodejs.org/zh-cn/) **环境**
 
@@ -74,36 +62,27 @@ injectRegister: false,
 npm install -g pnpm
 
 # 安装依赖
-pnpm install
+pnpm install --frozen-lockfile
+# 只启动前端，适合页面与样式开发
+pnpm dev:web
 
-# 预览
-pnpm dev
-
-# 构建
-pnpm build
+# 启动 Cloudflare Pages 与 Functions 完整环境
+pnpm dev:cf
 ```
 
-> 构建完成后，静态资源会在 **`dist` 目录** 中生成，可将 **`dist` 文件夹下的文件**上传至服务器，也可使用 `Vercel` 等托管平台一键导入并自动部署
+`dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，并先访问 `/api/health`，确认返回 JSON。
 
-### ⚙️ Docker 部署
+### ⚙️ Cloudflare Pages 部署
 
-> 安装及配置 Docker 将不在此处说明，请自行解决
+首版只维护 Cloudflare Pages：
 
-```bash
-# 构建
-docker build -t home .
-# 运行
-docker run -p 12445:12445 -d home
-```
+1. 在 Cloudflare Pages 连接本仓库。
+2. 安装命令填写 `pnpm install --frozen-lockfile`。
+3. 构建命令填写 `pnpm build`。
+4. 输出目录填写 `dist`；根目录下的 `functions/` 会作为 Pages Functions 发布。
+5. 非敏感配置使用 Pages 环境变量，Secret 通过 Cloudflare 控制台配置，不要写入 `VITE_*`。
 
-### ⚙️ Vercel 部署
-
-> 其他部署平台大致相同，在此不做说明
-
-1. 点击本仓库右上角的 `Fork`，复制本仓库到你的 `GitHub` 账号
-2. 复制 `/.env.example` 文件并重命名为 `/.env`（ 重要 ）
-3. 按需修改 `/.env` 文件中的配置
-4. 点击 `Deploy`，即可成功部署
+仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
 
 ### 网站链接
 
@@ -153,16 +132,11 @@ const siteIcon = {
 
 ### 天气
 
-天气及地区获取需要 `腾讯位置服务` 与 `高德开放平台` 相关 API
+天气由同源 Cloudflare Pages Function `/api/weather` 提供：
 
-- 前往 [腾讯位置服务](https://lbs.qq.com/) 或 [高德开放平台控制台](https://console.amap.com/dev/index) 创建一个 `Web 服务` 类型的 `Key`，并将 `Key` 填入 `.env` 中对应参数中。
-- 注：高德开放平台的 FREE IP定位接口不支持 IPV6，如果遇到高德接口异常，请检查网络环境是否有 IPV6，系统是否使用 IPV6 优先。你也可以在浏览器开发者选项中看到“远程地址”是否为 IPV6 地址。腾讯接口同时支持 IPV4 和 IPV6。
-
-也可自行更换其他方式。
-
->[!WARNING]
->强烈建议自行注册天气 Token ，它们是免费且稳定的！<p>
->内置了三个免费接口，目前仅剩 小米天气 可正常工作。由于这些非公开接口没有 CORS 不允许跨域，必须使用中转。并且拥有较高的速率限制，所以经常失效。如果您希望使用这个接口，记得捐赠酪灰，帮助其承担服务器费用！<p>
+- 部署在 Cloudflare Pages 时使用 Cloudflare 的请求地理信息，不需要在浏览器暴露天气 Key。
+- 首选 Open-Meteo，失败时自动回退到 MET Norway；两者返回统一格式后再交给页面展示。
+- Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
 
 ### 音乐
 
@@ -176,14 +150,12 @@ const siteIcon = {
 VITE_SONG_API = "https://metingapi.nanorocky.top/"
 # 歌曲服务器 ( netease-网易云, tencent-qq音乐 )
 VITE_SONG_SERVER = "netease"
-VITE_SONG_SERVER_SECOND = "tencent"
 # 播放类型 ( song-歌曲, playlist-播放列表, album-专辑, search-搜索, artist-艺术家 )
 VITE_SONG_TYPE = "playlist"
 # 播放 ID
 VITE_SONG_ID = "3035221869"
-VITE_SONG_ID_SECOND = "9518088898"
 ```
->目前已支持设置两个歌单进行合并，如不需要，留空即可。<p>
+>首版只维护一个播放队列。<p>
 >如果需要使用网易云音乐逐字歌词，请使用 [修改版 Meting-Api](https://github.com/NanoRocky/meting-api/) ！<p>
 
 >[!WARNING]
@@ -232,15 +204,9 @@ coverType: "0", // 壁纸种类
 
 可以在 `public/images/icon` 中修改网站图标。
 
-#### 语音交互
-
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;语音交互区分 预生成 与 实时生成。<p>
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;预生成的语音需要提前生成并放在 `public/speechlocal/` 路径下，替换原有音频。预生成的音频是为固定不变的通知设计的，有更低的语音延迟（推荐使用 CDN 或对音频文件启用客户端缓存）。<p>
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;实时生成的语音用于音乐播放器歌名播报，需自行搭建并填写在 `.env` 内。如果也使用 Azure ，您可直接使用[AzureSpeechAPI-by-PHP](https://github.com/NanoRocky/AzureSpeechAPI-by-PHP) 完成 API 部署。
-
 #### 更多默认设置
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;自动播放，逐字开关，语音交互开关 等其它默认设置，请编辑 `src/store/index.js` ，但这些设置仅对编辑后首次打开网页的用户生效，覆盖用户设置需要清除网页数据
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;自动播放、逐字歌词等默认设置请编辑 `src/store/index.ts`，但这些设置仅对首次打开网页的用户生效，覆盖用户设置需要清除网页数据。
 
 ### 技术栈
 

@@ -41,7 +41,7 @@ injectRegister: false,
 - [x] Mobile adaptation
 - [x] Verbatim lyrics compatible
 
-### ⚙️ Deployment
+### ⚙️ Local development
 
 * **Installation** [node.js](https://nodejs.org/en-us/) **Environment**
 
@@ -56,37 +56,28 @@ injectRegister: false,
 npm install -g pnpm
 
 # Install the dependencies
-pnpm install
+pnpm install --frozen-lockfile
 
-# Preview
-pnpm dev
+# Frontend-only development
+pnpm dev:web
 
-# Build
-pnpm build
+# Cloudflare Pages and Functions development
+pnpm dev:cf
 ```
 
-> Once the build is complete, the files in the `dist` folder can be uploaded to the server or imported and automatically deployed with one click using a hosting platform such as `Vercel`.
+`dev:web` does not execute `/api/*`. Use `dev:cf` when validating Pages Functions and verify that `/api/health` returns JSON first.
 
+### ⚙️ Cloudflare Pages deployment
 
-### ⚙️ Docker Deploy
+Cloudflare Pages is the only deployment target maintained for the first release:
 
-> Installation and configuration of Docker will not be explained here, please solve it by yourself.
+1. Connect this repository in Cloudflare Pages.
+2. Set the install command to `pnpm install --frozen-lockfile`.
+3. Set the build command to `pnpm build`.
+4. Set the output directory to `dist`; the root `functions/` directory is deployed as Pages Functions.
+5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`.
 
-```bash
-# Build
-docker build -t home .
-# Run
-docker run -p 12445:12445 -d home
-```
-
-### ⚙️ Vercel Deploy
-
-> Other deployment platforms are roughly the same and will not be explained here.
-
-1. Click `Fork` in the upper right corner of this repository to copy this repository to your `GitHub` account,
-2. Copy the `/.env.example` file and rename it to `/.env` (Important)
-3. Modify the configuration in the `/.env` file as needed
-4. Click `Deploy` to successfully deploy
+The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
 
 ### Site Links
 
@@ -136,12 +127,11 @@ Social links can be customized in `src/assets/socialLinks.json`.
 
 ### Weather
 
-Weather and region acquisition requires `Tencent Location Service` and `AutoNavi Open Platform` related APIs
+Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 
-- Go to [Tencent Location Service](https://lbs.qq.com/) or [AutoNavi Open Platform Console](https://console.amap.com/dev/index) to create a `Key` of the `Web Service` type, and fill the `Key` into the corresponding parameter in `.env`.
-- Note: The FREE IP positioning interface of the AutoNavi Open Platform does not support IPV6. If you encounter an abnormality with the AutoNavi interface, please check whether the network environment has IPV6 and whether the system uses IPV6 first. You can also see whether the "remote address" is an IPV6 address in the browser developer options. The Tencent interface supports both IPV4 and IPV6.
-
-You can also change other methods by yourself.
+- Cloudflare request geolocation is used in production, so weather keys are not exposed in the browser bundle.
+- Open-Meteo is tried first, with MET Norway as a fallback; both are normalized before the UI receives the response.
+- When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
 
 ### Music
 
@@ -155,13 +145,13 @@ Please change the song related parameters in the `.env` file to customize the so
 VITE_SONG_API = "https://metingapi.nanorocky.top/"
 # Song server ( netease-netease, tencent-qq music )
 VITE_SONG_SERVER = "netease"
-VITE_SONG_SERVER_SECOND = "tencent"
 # Playback type ( song-song, playlist-playlist, album-album, search-search, artist-artist )
 VITE_SONG_TYPE = "playlist"
 # Playback ID
 VITE_SONG_ID = "3035221869"
-VITE_SONG_ID_SECOND = "9518088898"
 ```
+
+The first release maintains a single playback queue.
 
 ### Fonts
 
@@ -204,15 +194,9 @@ coverType: "0", // Wallpaper Type
 
 The website icon can be modified in `public/images/icon`.
 
-#### Voice Interaction
-
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Voice interaction is divided into pre-generation and real-time generation.<p>
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Pre-generated audio needs to be generated in advance and placed in the `public/speechlocal/` path to replace the original audio. Pre-generated audio is designed for fixed notifications and has lower voice latency (it is recommended to use CDN or enable client caching for audio files).<p>
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;The real-time generated voice is used for the music player to announce the song title. You need to build it yourself and fill it in `.env`. If you also use Azure, you can directly use [AzureSpeechAPI-by-PHP](https://github.com/NanoRocky/AzureSpeechAPI-by-PHP) to complete the API deployment.
-
 #### More default settings
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;For other default settings such as autoplay, word-by-word switch, voice interaction switch, etc., please edit `src/store/index.js`. However, these settings will only take effect for users who open the webpage for the first time after editing. To overwrite user settings, you need to clear the webpage data.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;For defaults such as autoplay and word-by-word lyrics, edit `src/store/index.ts`. These settings only apply to first-time visitors; clear the site's stored data to replace existing preferences.
 
 ### Technology Stack
 
