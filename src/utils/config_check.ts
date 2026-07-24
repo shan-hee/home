@@ -37,7 +37,7 @@ export const envConfig: Env = {
     VITE_SITE_START: import.meta.env.VITE_CONFIG_TURN == 'true'
         ? import.meta.env.VITE_SITE_START || exampleConfig.VITE_SITE_START : exampleConfig.VITE_SITE_START,
     VITE_SITE_ICP: import.meta.env.VITE_CONFIG_TURN == 'true'
-        ? import.meta.env.VITE_SITE_ICP || exampleConfig.VITE_SITE_ICP : exampleConfig.VITE_SITE_ICP,
+        ? import.meta.env.VITE_SITE_ICP ?? exampleConfig.VITE_SITE_ICP : exampleConfig.VITE_SITE_ICP,
     VITE_SITE_MPS: import.meta.env.VITE_CONFIG_TURN == 'true'
         ? import.meta.env.VITE_SITE_MPS || exampleConfig.VITE_SITE_MPS : exampleConfig.VITE_SITE_MPS,
     VITE_SITE_MICP: import.meta.env.VITE_CONFIG_TURN == 'true'

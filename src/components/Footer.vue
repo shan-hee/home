@@ -3,43 +3,15 @@
     <Transition name="fade" mode="out-in">
       <div v-if="!store.playerState || !store.playerLrcShow" class="power">
         <span>
-          <span :class="ShowStartYear ? 'c-hidden' : 'o-hidden'">Copyright&nbsp;</span>
-          &copy;
-          <span v-if="ShowStartYear" class="site-start">
-            {{ startYear }}
-            -
-          </span>
-          {{ fullYear }}
-          <a :href="siteUrl">{{ siteAuthor }}</a>
+          &copy;&nbsp;{{ currentYear }}
+          &nbsp;&amp;&nbsp;by&nbsp;
+          <a :href="repositoryUrl" target="_blank" rel="noopener noreferrer">shanhee</a>
         </span>
-        <!-- 以下信息请不要修改哦 -->
-        <span class="o-hidden">
-          &amp;&nbsp;Made&nbsp;by
-          <a :href="config.github" target="_blank">
-            {{ config.author }}
+        <span v-if="siteIcp">
+          &nbsp;&amp;&nbsp;
+          <a href="https://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer">
+            {{ siteIcp }}
           </a>
-        </span>
-        <span class="o-hidden">
-          &amp;&nbsp;Update&nbsp;by
-          <a :href="config.efug" target="_blank">
-            {{ config.efua }}
-          </a>
-        </span>
-        <!-- 站点备案 -->
-        <span>
-          <span v-if="siteIcp">
-            &amp;&nbsp;
-            <a v-if="siteIcp" href="https://beian.miit.gov.cn" target="_blank">
-              {{ siteIcp }}
-            </a>
-          </span>
-          <!-- 这备那备的真的很扫（bushi） -->
-          <span v-if="siteMps">
-            &amp;&nbsp;
-            <a v-if="siteMps" href="https://beian.mps.gov.cn" target="_blank">
-              {{ siteMps }}
-            </a>
-          </span>
         </span>
       </div>
       <div v-else class="lrc">
@@ -110,47 +82,12 @@ import { MusicOne } from "@icon-park/vue-next";
 import { Icon } from "@vicons/utils";
 import { Paw } from "@vicons/ionicons5";
 import { mainStore } from "@/store";
-import config from "@/../package.json";
-import { ref, watch, computed, onMounted, nextTick, onUpdated, onBeforeUnmount } from "vue";
-import { throttle } from "lodash-es";
+import { watch } from "vue";
 
 const store = mainStore();
-const fullYear = new Date().getFullYear();
-const lrcContainer = ref(null);
-const scrollPosition = ref(0);
-const currentLine = ref(0);
-const audio = ref(null);
-const icon = ref(null);
-
-// 加载配置数据
-// const siteStartDate = ref(envConfig.VITE_SITE_START);
-const startYear = ref<number | null>(
-  envConfig.VITE_SITE_START?.length >= 4 ?
-    parseInt(envConfig.VITE_SITE_START.substring(0, 4)) : null
-);
-const ShowStartYear = computed(() => {
-  return startYear.value !== null && startYear.value < fullYear;
-});
-const siteIcp = ref(envConfig.VITE_SITE_ICP);
-const siteMps = ref(envConfig.VITE_SITE_MPS);
-const siteMICP = ref(envConfig.VITE_SITE_MICP);
-const siteAuthor = ref(envConfig.VITE_SITE_AUTHOR);
-
-const siteUrl = computed(() => {
-  const url = envConfig.VITE_SITE_URL;
-  if (!url) return "https://www.imsyy.top/";
-  let fullUrl = url;
-  if (!/^https?:\/\//i.test(url)) {
-    fullUrl = "https://" + url;
-  };
-  fullUrl = fullUrl.replace(/^http:\/\//i, 'https://');
-  try {
-    const urlObj = new URL(fullUrl);
-    return urlObj.toString();
-  } catch (e) {
-    return "https://www.imsyy.top/";
-  };
-});
+const currentYear = new Date().getFullYear();
+const repositoryUrl = "https://github.com/shan-hee/home";
+const siteIcp = envConfig.VITE_SITE_ICP;
 
 // dwrc part
 watch(() => store.getPlayerLrc, (_new, _old) => {
@@ -612,16 +549,5 @@ watch(() => store.getPlayerLrc, (_new, _old) => {
     }
   }
 
-  @media (max-width: 560px) {
-    .c-hidden {
-      display: none;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .o-hidden {
-      display: none;
-    }
-  }
 }
 </style>
