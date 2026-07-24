@@ -75,7 +75,7 @@ Cloudflare Pages is the only deployment target maintained for the first release:
 2. Set the install command to `pnpm install --frozen-lockfile`.
 3. Set the build command to `pnpm build`.
 4. Set the output directory to `dist`; the root `functions/` directory is deployed as Pages Functions.
-5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`.
+5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `WALLHAVEN_API_KEY`, `GITHUB_REPOSITORY`, and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
 
 The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
 
@@ -129,11 +129,13 @@ Social links can be customized in `src/assets/socialLinks.json`.
 
 Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 
-- The app first requests browser geolocation. If it is unavailable, users can search for and save a city through `/api/geocoding`.
+- Cloudflare supplies an approximate location from the visitor IP through `request.cf`; the app no longer requests browser geolocation permission. Users can still save a searched city or restore IP location from the weather dialog.
 - Open-Meteo is tried first, with MET Norway as a fallback; both are normalized before the UI receives the response.
 - If both providers fail, the latest successful response for that location is shown and marked as stale.
 - `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
 - When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
+
+Online wallpaper metadata is provided by `/api/wallpaper`, remote images use the allowlisted same-origin `/api/image` proxy, and update checks use `/api/version`. These endpoints and the weather endpoints use short-lived Workers Cache entries.
 
 ### Music
 
@@ -208,7 +210,6 @@ The website icon can be modified in `public/images/icon`.
 
 ### API
 
-- [韩小韩 WebAPI 接口](https://api.vvhan.com/)
 - [搏天 API](https://api.btstu.cn/doc/sjbz.php)
 - [教书先生 API](https://api.oioweb.cn/doc/weather/GetWeather)
 - [高德开放平台](https://lbs.amap.com/)
@@ -222,7 +223,6 @@ The website icon can be modified in `public/images/icon`.
 [![Star History Chart](https://api.star-history.com/svg?repos=imsyy/home&type=Date)](https://star-history.com/#imsyy/home&Date)
 
 ## Special thanks
-- [AMLL TTML Database](https://github.com/Steve-xmh/amll-ttml-db)
 - [Meting API](https://github.com/injahow/meting-api)
 
 ### Thanks to the original author imsyy and the friends who helped with this project!

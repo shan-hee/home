@@ -1,5 +1,7 @@
+import { jsonResponse } from "../lib/http";
+
 export const onRequest = () => {
-  return Response.json({
+  return jsonResponse({
     ok: true,
     service: "home-pages-functions",
   });

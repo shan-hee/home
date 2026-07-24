@@ -80,7 +80,7 @@ pnpm dev:cf
 2. 安装命令填写 `pnpm install --frozen-lockfile`。
 3. 构建命令填写 `pnpm build`。
 4. 输出目录填写 `dist`；根目录下的 `functions/` 会作为 Pages Functions 发布。
-5. 非敏感配置使用 Pages 环境变量，Secret 通过 Cloudflare 控制台配置，不要写入 `VITE_*`。
+5. 非敏感配置使用 Pages 环境变量，Secret 通过 Cloudflare 控制台配置，不要写入 `VITE_*`。可选变量见 `.dev.vars.example`，包括 `WALLHAVEN_API_KEY`、`GITHUB_REPOSITORY` 和 `GITHUB_TOKEN`。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
 
@@ -134,11 +134,13 @@ const siteIcon = {
 
 天气由同源 Cloudflare Pages Function `/api/weather` 提供：
 
-- 首次访问优先请求浏览器定位；定位不可用时可搜索并保存城市，城市搜索由 `/api/geocoding` 提供。
+- 首次访问由 Cloudflare 根据访问 IP 的 `request.cf` 提供近似位置，不请求浏览器定位权限；用户仍可搜索并保存城市，或在天气面板恢复 IP 定位。
 - 首选 Open-Meteo，失败时自动回退到 MET Norway；两者返回统一格式后再交给页面展示。
 - 两个天气源都失败时，页面会显示该地点最近一次成功数据并标记为“旧数据”。
 - `/api/alerts` 是独立可选能力。未配置 `QWEATHER_API_KEY` 时返回空数组，不影响普通天气。
 - Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
+
+在线壁纸元数据由 `/api/wallpaper` 获取，远程图片经带域名白名单的 `/api/image` 同源代理；版本检查统一请求 `/api/version`。这些接口和天气、城市、预警接口都使用 Workers Cache 做短期边缘缓存。
 
 ### 音乐
 
@@ -218,7 +220,6 @@ VITE_SONG_ID = "3035221869"
 
 ### API
 
-- [韩小韩 WebAPI 接口](https://api.vvhan.com/)
 - [搏天 API](https://api.btstu.cn/doc/sjbz.php)
 - [教书先生 API](https://api.oioweb.cn/doc/weather/GetWeather)
 - [高德开放平台](https://lbs.amap.com/)
@@ -232,7 +233,6 @@ VITE_SONG_ID = "3035221869"
 [![Star History Chart](https://api.star-history.com/svg?repos=imsyy/home&type=Date)](https://star-history.com/#imsyy/home&Date)
 
 ## 特别鸣谢
-- [AMLL TTML Database](https://github.com/Steve-xmh/amll-ttml-db)
 - [Meting API](https://github.com/injahow/meting-api)
 
 ### 感谢原作者 imsyy 和帮助本项目的小伙伴们！

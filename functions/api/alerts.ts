@@ -1,3 +1,6 @@
+import { cacheCoordinate, cachedResponse } from "../lib/cache";
+import { fetchJson, jsonResponse } from "../lib/http";
+
 interface Environment {
   QWEATHER_API_KEY?: string;
   QWEATHER_API_HOST?: string;
@@ -22,6 +25,7 @@ interface QWeatherResponse {
 type PagesContext = {
   request: Request;
   env: Environment;
+  waitUntil?: (promise: Promise<unknown>) => void;
 };
 
 const coordinate = (value: string | null, min: number, max: number) => {
@@ -30,55 +34,47 @@ const coordinate = (value: string | null, min: number, max: number) => {
   return Number.isFinite(number) && number >= min && number <= max ? number : null;
 };
 
-export const onRequestGet = async ({ request, env }: PagesContext) => {
+export const onRequestGet = async (context: PagesContext) => {
+  const { request, env } = context;
   if (!env.QWEATHER_API_KEY) {
-    return Response.json({ alerts: [], configured: false }, {
-      headers: { "cache-control": "public, max-age=300" },
-    });
+    return jsonResponse({ alerts: [], configured: false }, {}, "public, max-age=300");
   }
 
   const url = new URL(request.url);
   const latitude = coordinate(url.searchParams.get("latitude"), -90, 90);
   const longitude = coordinate(url.searchParams.get("longitude"), -180, 180);
   if (latitude === null || longitude === null) {
-    return Response.json({ error: "缺少有效坐标" }, { status: 400 });
+    return jsonResponse({ error: "缺少有效坐标" }, { status: 400 });
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
-    const host = env.QWEATHER_API_HOST?.trim() || "devapi.qweather.com";
-    const params = new URLSearchParams({
-      location: `${longitude.toFixed(2)},${latitude.toFixed(2)}`,
-      key: env.QWEATHER_API_KEY,
-      lang: "zh",
-    });
-    const response = await fetch(`https://${host}/v7/warning/now?${params}`, {
-      headers: { accept: "application/json" },
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`预警上游返回 ${response.status}`);
-    const payload = await response.json() as QWeatherResponse;
-    if (payload.code !== "200") throw new Error(`预警上游状态 ${payload.code || "unknown"}`);
+    const cacheUrl = new URL(
+      `/__edge-cache/alerts?latitude=${cacheCoordinate(latitude)}&longitude=${cacheCoordinate(longitude)}`,
+      request.url,
+    ).toString();
+    return await cachedResponse(cacheUrl, 300, context, async () => {
+      const host = env.QWEATHER_API_HOST?.trim() || "devapi.qweather.com";
+      const params = new URLSearchParams({
+        location: `${longitude.toFixed(2)},${latitude.toFixed(2)}`,
+        key: env.QWEATHER_API_KEY!,
+        lang: "zh",
+      });
+      const payload = await fetchJson<QWeatherResponse>(`https://${host}/v7/warning/now?${params}`);
+      if (payload.code !== "200") throw new Error(`预警上游状态 ${payload.code || "unknown"}`);
 
-    const alerts = (payload.warning || []).map((warning, index) => ({
-      id: warning.id || String(index),
-      title: warning.title || warning.typeName || "天气预警",
-      type: warning.typeName || "天气预警",
-      level: warning.severityColor || warning.severity || "",
-      text: warning.text || "",
-      startAt: warning.startTime || null,
-      endAt: warning.endTime || null,
-    }));
-    return Response.json({ alerts, configured: true }, {
-      headers: { "cache-control": "public, max-age=300" },
+      const alerts = (payload.warning || []).map((warning, index) => ({
+        id: warning.id || String(index),
+        title: warning.title || warning.typeName || "天气预警",
+        type: warning.typeName || "天气预警",
+        level: warning.severityColor || warning.severity || "",
+        text: warning.text || "",
+        startAt: warning.startTime || null,
+        endAt: warning.endTime || null,
+      }));
+      return jsonResponse({ alerts, configured: true }, {}, "public, max-age=300");
     });
   } catch (error) {
     console.error("可选天气预警请求失败：", error);
-    return Response.json({ alerts: [], configured: true }, {
-      headers: { "cache-control": "no-store" },
-    });
-  } finally {
-    clearTimeout(timeoutId);
+    return jsonResponse({ alerts: [], configured: true });
   }
 };

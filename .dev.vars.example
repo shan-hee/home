@@ -6,3 +6,10 @@ DEFAULT_CITY = ""
 # 可选：中国天气预警。留空时 /api/alerts 返回空数组，不影响普通天气。
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"
+
+# 可选：Wallhaven API Key。留空时只请求公开 SFW 壁纸。
+WALLHAVEN_API_KEY = ""
+
+# 版本检查目标仓库与可选 GitHub Token。
+GITHUB_REPOSITORY = "shan-hee/home"
+GITHUB_TOKEN = ""

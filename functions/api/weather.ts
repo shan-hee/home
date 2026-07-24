@@ -1,3 +1,6 @@
+import { cacheCoordinate, cachedResponse } from "../lib/cache";
+import { fetchJson, jsonResponse } from "../lib/http";
+
 interface Environment {
   DEFAULT_LATITUDE?: string;
   DEFAULT_LONGITUDE?: string;
@@ -14,6 +17,7 @@ type PagesRequest = Request & { cf?: CloudflareLocation };
 type PagesContext = {
   request: PagesRequest;
   env: Environment;
+  waitUntil?: (promise: Promise<unknown>) => void;
 };
 
 interface OpenMeteoResponse {
@@ -121,30 +125,11 @@ const getWindLevel = (speed: number) => {
   ).toString();
 };
 
-const fetchJson = async <ResponseBody>(url: string, headers: HeadersInit = {}) => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-  const requestHeaders = new Headers(headers);
-  requestHeaders.set("accept", "application/json");
-  try {
-    const response = await fetch(url, {
-      headers: requestHeaders,
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`上游天气接口返回 ${response.status}`);
-    }
-    return await response.json() as ResponseBody;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-};
-
 const resolveLocation = (request: PagesRequest, env: Environment) => {
   const url = new URL(request.url);
   const latitude = toNumber(url.searchParams.get("latitude") || request.cf?.latitude || env.DEFAULT_LATITUDE);
   const longitude = toNumber(url.searchParams.get("longitude") || request.cf?.longitude || env.DEFAULT_LONGITUDE);
-  const city = url.searchParams.get("city") || request.cf?.city || env.DEFAULT_CITY || "当前位置";
+  const city = (url.searchParams.get("city") || request.cf?.city || env.DEFAULT_CITY || "IP 所在地").trim().slice(0, 80);
 
   if (latitude === null || longitude === null || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     throw new Error("缺少有效的定位信息");
@@ -174,6 +159,8 @@ const loadOpenMeteo = async (location: ReturnType<typeof resolveLocation>) => {
 
   return {
     city: location.city,
+    latitude: location.latitude,
+    longitude: location.longitude,
     weather: weatherCodeMap[weatherCode] || "未知天气",
     temperature: Math.round(temperature),
     winddirection: getWindDirection(windDirection),
@@ -186,7 +173,7 @@ const loadOpenMeteo = async (location: ReturnType<typeof resolveLocation>) => {
 const loadMetNorway = async (location: ReturnType<typeof resolveLocation>) => {
   const data = await fetchJson<MetNorwayResponse>(
     `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${location.latitude}&lon=${location.longitude}`,
-    { "user-agent": "home-pages-functions/1.0" },
+    { headers: { "user-agent": "home-pages-functions/1.0" } },
   );
   const point = data.properties?.timeseries?.[0];
   const details = point?.data?.instant?.details;
@@ -201,6 +188,8 @@ const loadMetNorway = async (location: ReturnType<typeof resolveLocation>) => {
 
   return {
     city: location.city,
+    latitude: location.latitude,
+    longitude: location.longitude,
     weather: metSymbolMap[symbol] || "未知天气",
     temperature: Math.round(temperature),
     winddirection: getWindDirection(windDirection),
@@ -213,23 +202,24 @@ const loadMetNorway = async (location: ReturnType<typeof resolveLocation>) => {
 export const onRequestGet = async (context: PagesContext) => {
   try {
     const location = resolveLocation(context.request, context.env);
-    let weather;
-    try {
-      weather = await loadOpenMeteo(location);
-    } catch (error) {
-      console.error("Open-Meteo 请求失败，尝试 MET Norway：", error);
-      weather = await loadMetNorway(location);
-    }
-
-    return Response.json(weather, {
-      headers: {
-        "cache-control": "private, max-age=300",
-      },
+    const cacheUrl = new URL(
+      `/__edge-cache/weather?latitude=${cacheCoordinate(location.latitude)}&longitude=${cacheCoordinate(location.longitude)}&city=${encodeURIComponent(location.city)}`,
+      context.request.url,
+    ).toString();
+    return await cachedResponse(cacheUrl, 300, context, async () => {
+      let weather;
+      try {
+        weather = await loadOpenMeteo(location);
+      } catch (error) {
+        console.error("Open-Meteo 请求失败，尝试 MET Norway：", error);
+        weather = await loadMetNorway(location);
+      }
+      return jsonResponse(weather, {}, "public, max-age=300");
     });
   } catch (error) {
-    return Response.json(
+    return jsonResponse(
       { error: error instanceof Error ? error.message : "天气服务暂时不可用" },
-      { status: 503, headers: { "cache-control": "no-store" } },
+      { status: 503 },
     );
   }
 };
