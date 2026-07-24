@@ -42,7 +42,6 @@ import Footer from "@/components/Footer.vue";
 import Box from "@/views/Box/index.vue";
 import MoreSet from "@/views/MoreSet/index.vue";
 import cursorInit from "@/utils/cursor.js";
-import config from "@/../package.json";
 import { getColor } from "@/utils/getColor";
 
 const store = mainStore();
@@ -153,21 +152,6 @@ onMounted(() => {
   // 监听当前页面宽度
   getWidth();
   window.addEventListener("resize", getWidth);
-
-  // 控制台输出
-  const styleTitle1 = "font-size: 20px;font-weight: 600;color: rgb(244,167,89);";
-  const styleTitle2 = "font-size:12px;color: rgb(244,167,89);";
-  const styleContent = "color: rgb(30,152,255);";
-  const title1 = "無名の主页";
-  const title2 = `
- _____ __  __  _______     ____     __
-|_   _|  \\/  |/ ____\\ \\   / /\\ \\   / /
-  | | | \\  / | (___  \\ \\_/ /  \\ \\_/ /
-  | | | |\\/| |\\___ \\  \\   /    \\   /
- _| |_| |  | |____) |  | |      | |
-|_____|_|  |_|_____/   |_|      |_|`;
-  const content = `\n\n版本: ${config.version}\n主页: ${config.home}\nGithub: ${config.github}\nUpdate: ${config.efug}\n当前为酪灰维护版本。`;
-  console.info(`%c${title1} %c${title2} %c${content}`, styleTitle1, styleTitle2, styleContent);
 });
 
 onBeforeUnmount(() => {

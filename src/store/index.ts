@@ -149,10 +149,8 @@ export const mainStore = defineStore("main", {
     // 重置所有设置
     resetStore() {
       this.$reset = () => {
-        console.log('正在恢复默认配置...');
         setTimeout(() => {
           this.$state = JSON.parse(JSON.stringify(storeState));
-          console.log('重置完成，页面即将刷新...');
           setTimeout(() => {
             window.location.href = window.location.pathname;
           }, 1200);

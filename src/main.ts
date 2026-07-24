@@ -41,7 +41,6 @@ const mountApp = () => {
   // PWA
   navigator.serviceWorker.addEventListener("controllerchange", async () => {
     // 弹出更新提醒
-    console.log("网站已更新，请刷新网页嗷！");
     ElMessage("网站已更新，请刷新网页嗷！");
   });
 

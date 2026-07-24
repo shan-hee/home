@@ -201,7 +201,6 @@ const loadPlaylist = async () => {
 // 播放
 const onPlay = () => {
   if (!player.value) return;
-  console.log("播放");
   playIndex.value = player.value.aplayer.index;
   const currentTrack = playList.value[playIndex.value];
   if (!currentTrack) {
@@ -490,7 +489,6 @@ const fetchDWRC = async (dwrcUrl: string) => {
             store.dwrcTemp = parseWordLyrics(processedText);
             store.dwrcLoading = false;
             store.dwrcEnable = true;
-            console.log(`当前正在播放 ${songServer} 来源的《${store.getPlayerData.name}》- '${store.getPlayerData.artist}'，已成功从 ${currentServer} 偷到逐字歌词~`);
             return;
           } else {
             store.dwrcTemp = [];
