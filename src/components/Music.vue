@@ -212,6 +212,13 @@ watch(
 );
 
 watch(
+  () => store.musicVolume,
+  (value) => {
+    if (value !== volumeNum.value) volumeNum.value = value;
+  },
+);
+
+watch(
   () => store.musicBoxOpenState,
   (value) => {
     if (value) {

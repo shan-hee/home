@@ -1,6 +1,8 @@
 export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 export type SeasonalEffect = "snow" | "firefly" | "lantern";
 export type SeasonalEffectMode = "auto" | "off" | "manual";
+export type WordLyricToken = [[start: number, duration: number], text: string, line: number, row: number];
+export type WordLyricLine = [start: number, duration: number, words: WordLyricToken[]];
 export type PlayerLyricItem = [
     active: boolean,
     played: boolean | number,
@@ -51,14 +53,11 @@ export interface MainState {
     playerTrLrc: boolean;
     playerDWRCShow: boolean;
     playerDWRCShowPro: boolean;
-    playerDWRCATDB: boolean;
-    playerDWRCATDBF: boolean;
-    playerDWRCPilfer: boolean;
     playerRMMetadata: boolean;
     playerCurrentTime: number;
     playerDuration: number;
     dwrcIndex: number | null;
-    dwrcTemp: any[];
+    dwrcTemp: WordLyricLine[];
     dwrcEnable: boolean;
     dwrcLoading: boolean;
     lyricSeekVersion: number;

@@ -100,15 +100,6 @@
           <el-switch v-model="playerLrcShow" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
         <div v-if="playerLrcShow" class="item">
-          <span class="text" white-space="pre">允许调用 AMLL TTML Database 加载网易云没有的歌词<br>&nbsp;&nbsp;&nbsp;（在 Github
-            不稳定的网络中可能导致歌词载入速度变慢）</span>
-          <el-switch v-model="playerDWRCATDB" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div v-if="playerLrcShow && playerDWRCATDB" class="item">
-          <span class="text" white-space="pre">调用 AMLL TTML Database 时使用镜像加速</span>
-          <el-switch v-model="playerDWRCATDBF" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div v-if="playerLrcShow" class="item">
           <span class="text">逐字歌词解析总开关</span>
           <el-switch v-model="playerDWRCShow" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
@@ -119,10 +110,6 @@
         <div class="item">
           <span class="text">移除逐字歌词中的元数据</span>
           <el-switch v-model="playerRMMetadata" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div class="item">
-          <span class="text">拆东墙补西墙</span>
-          <el-switch v-model="playerDWRCPilfer" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
         <div class="item">
           <span class="text">逐行歌词翻译显示开关</span>
@@ -158,9 +145,6 @@ const {
   playerTrLrc,
   playerDWRCShow,
   playerDWRCShowPro,
-  playerDWRCATDB,
-  playerDWRCATDBF,
-  playerDWRCPilfer,
   playerRMMetadata,
   footerProgressBar,
   autoBGSwitchInterval,

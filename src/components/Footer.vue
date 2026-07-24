@@ -78,6 +78,7 @@ import { MusicOne } from "@icon-park/vue-next";
 import { Icon } from "@vicons/utils";
 import { Paw } from "@vicons/ionicons5";
 import { mainStore } from "@/store";
+import type { WordLyricLine, WordLyricToken } from "@/typings/store";
 import { computed, nextTick, onBeforeUnmount, watch } from "vue";
 
 const store = mainStore();
@@ -128,8 +129,7 @@ const clearLyricAnimations = () => {
 // dwrc part
 watch(() => store.getPlayerLrc, async () => {
   clearLyricAnimations();
-  type DwrcItem = [number, number, any[]];
-  const isLineByLine = !store.dwrcEnable || (store.dwrcTemp as DwrcItem[]).length === 0 || store.dwrcLoading;
+  const isLineByLine = !store.dwrcEnable || store.dwrcTemp.length === 0 || store.dwrcLoading;
   if (!store.playerDWRCShowPro || isLineByLine || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
   };
@@ -148,7 +148,7 @@ watch(() => store.getPlayerLrc, async () => {
   if (inputDom.length == 0 || outputDom.length == 0) {
     return;
   };
-  const dwrcFiltered = (store.dwrcTemp as DwrcItem[]).filter(
+  const dwrcFiltered = (store.dwrcTemp as WordLyricLine[]).filter(
     (i) => i[0] < now && now < i[0] + i[1]
   );
   if (dwrcFiltered.length == 0) {
@@ -156,7 +156,7 @@ watch(() => store.getPlayerLrc, async () => {
   };
   const nowLine = dwrcFiltered[dwrcFiltered.length - 1][2];
   for (let i = 0; i < nowLine.length; i++) {
-    const item = nowLine[i] as [[number, number], any, any, any];
+    const item = nowLine[i] as WordLyricToken;
     const [[start, duration], _a, _b, _c] = item;
     const inputItem = inputDom[i] as HTMLElement;
     if (!inputItem || inputItem.hasAttribute('data-start')) {

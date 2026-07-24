@@ -10,13 +10,15 @@ import { MusicOne, PlayWrong } from "@icon-park/vue-next";
 import { getPlayerList } from "@/api";
 import type { PlaylistItem } from "@/api";
 import { mainStore } from "@/store";
+import type { PlayerLyricItem, WordLyricLine, WordLyricToken } from "@/typings/store";
 import APlayer from "@worstone/vue-aplayer";
 import { decodeDWQYRC } from "@/utils/decodeDWQYRC";
-import { alignPilferedLyrics } from "@/utils/checkPilferDWRC";
 
 const store = mainStore();
 const nowLineIndex = ref(-1);
 let lyricAnimationFrame: number | null = null;
+let lyricRequestController: AbortController | null = null;
+let lyricRequestSequence = 0;
 
 type APlayerOrder = "list" | "random";
 type APlayerLoop = "all" | "one" | "none";
@@ -47,14 +49,8 @@ type PlayerInstance = {
   pause: () => void;
 };
 
-type DWRCItem = [
-  number,
-  number,
-  Array<[[number, number], string, number, number]>
-];
-
-const parseWordLyrics = (source: string): DWRCItem[] => {
-  const decoded = decodeDWQYRC(source, store.playerRMMetadata) as DWRCItem[];
+const parseWordLyrics = (source: string): WordLyricLine[] => {
+  const decoded = decodeDWQYRC(source, store.playerRMMetadata) as WordLyricLine[];
   let previousLineStart = -1;
   const valid = decoded.every(([lineStart, lineDuration, words]) => {
     if (!Number.isFinite(lineStart) || !Number.isFinite(lineDuration) || lineStart < previousLineStart || lineDuration < 0) {
@@ -336,188 +332,29 @@ const loadMusicError = () => {
 };
 
 // 音频时间更新事件
-const fetchDWRC = async (dwrcUrl: string) => {
-  // 逐字接入模块
-  const dwrcSource = await fetch(dwrcUrl);
-  const dwrcText = await dwrcSource.text();
-  store.dwrcIndex = playIndex.value;
+const fetchDWRC = async (dwrcUrl: string, targetIndex: number) => {
+  lyricRequestController?.abort();
+  const controller = new AbortController();
+  lyricRequestController = controller;
+  const sequence = ++lyricRequestSequence;
+  const timeoutId = window.setTimeout(() => controller.abort(), 8000);
   try {
-    store.dwrcTemp = parseWordLyrics(dwrcText);
-    store.dwrcLoading = false;
+    const response = await fetch(dwrcUrl, { signal: controller.signal });
+    if (!response.ok) throw new Error(`逐字歌词接口返回 ${response.status}`);
+    const lyrics = parseWordLyrics(await response.text());
+    if (sequence !== lyricRequestSequence || targetIndex !== playIndex.value) return;
+    store.dwrcIndex = targetIndex;
+    store.dwrcTemp = lyrics;
     store.dwrcEnable = true;
-    return;
-  } catch (e) {
+  } catch {
+    if (sequence !== lyricRequestSequence) return;
+    store.dwrcIndex = null;
     store.dwrcTemp = [];
-    store.dwrcLoading = false;
     store.dwrcEnable = false;
-  };
-  // 额外处理
-  const songUrlInf = new URLSearchParams(new URL(dwrcUrl).search);
-  const songId = songUrlInf.get("id");
-  const songServer = songUrlInf.get("server");
-  const baseUrl = `${new URL(dwrcUrl).origin}${new URL(dwrcUrl).pathname}`;
-  if (!songId) {
-    return;
-  };
-  // 接入 AMLL TTML Database
-  if (store.playerDWRCATDB) {
-    const songUrlInfUrl = store.playerDWRCATDBF
-      ? {
-        netease: `https://ghfast.top/https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/ncm-lyrics/${songId}.yrc`,
-        tencent: `https://ghfast.top/https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/qq-lyrics/${songId}.qrc`,
-      }
-      : {
-        netease: `https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/ncm-lyrics/${songId}.yrc`,
-        tencent: `https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/qq-lyrics/${songId}.qrc`,
-      };
-    if (!songServer || !["netease", "tencent"].includes(songServer)) {
-      return;
-    };
-    try {
-      const amllUrl = songUrlInfUrl[songServer].replace("${songIdlrc}", songId);
-      const amllSource = await fetch(amllUrl);
-      if (amllSource.status === 404) {
-        store.dwrcTemp = [];
-        store.dwrcLoading = false;
-        store.dwrcEnable = false;
-      } else if (!amllSource.ok) {
-        throw new Error(`AMLL TTML Database 调用失败...`);
-      } else {
-        const amllText = await amllSource.text();
-        store.dwrcTemp = parseWordLyrics(amllText);
-        store.dwrcLoading = false;
-        store.dwrcEnable = true;
-        return;
-      };
-    } catch (e) {
-      if (store.playerDWRCATDBF) {
-        const songUrlInfUrlse = {
-          netease: `https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/ncm-lyrics/${songId}.yrc`,
-          tencent: `https://raw.githubusercontent.com/Steve-xmh/amll-ttml-db/main/qq-lyrics/${songId}.qrc`,
-        };
-        if (songServer || ["netease", "tencent"].includes(songServer)) {
-          try {
-            const amllUrlse = songUrlInfUrlse[songServer].replace("${songIdlrc}", songId);
-            const amllSourcese = await fetch(amllUrlse);
-            if (amllSourcese.status === 404) {
-              store.dwrcTemp = [];
-              store.dwrcLoading = false;
-              store.dwrcEnable = false;
-            } else if (!amllSourcese.ok) {
-              store.dwrcTemp = [];
-              store.dwrcLoading = false;
-              store.dwrcEnable = false;
-            } else {
-              const amllTextse = await amllSourcese.text();
-              store.dwrcTemp = parseWordLyrics(amllTextse);
-              store.dwrcLoading = false;
-              store.dwrcEnable = true;
-              return;
-            };
-          } catch (e) {
-            store.dwrcTemp = [];
-            store.dwrcLoading = false;
-            store.dwrcEnable = false;
-          };
-        };
-      };
-    };
-  } else {
-    store.dwrcTemp = [];
-    store.dwrcLoading = false;
-    store.dwrcEnable = false;
-  };
-  // 偷东西
-  if (store.playerDWRCPilfer && baseUrl && store.dwrcEnable != true) {
-    try {
-      const currentAudio = player.value!.aplayer.audio[player.value!.aplayer.index];
-      const currentName = currentAudio.name?.trim();
-      const currentArtist = currentAudio.artist?.trim();
-      const currentServer = songServer === "netease" ? "tencent" : "netease";
-      const pilferUrl = `${baseUrl}?server=${currentServer}&type=search&id=0&dwrc=true&keyword=${encodeURIComponent(currentName)}`;
-      const resp = await fetch(pilferUrl);
-      const data = await resp.json();
-      const list = Array.isArray(data)
-        ? data
-        : (data && typeof data === "object" ? Object.values(data) : []);
-      if (list.length > 0) {
-        const stripBrackets = (title?: string) => {
-          if (!title) return '';
-          let result = String(title);
-          const pairRegex = /[（(\[{<【《][^（(\[{<【《）)\]}>】》]*[）)\]}>】》]/g;
-          let depth = 0;
-          const MAX_DEPTH = 10;
-          while (depth < MAX_DEPTH) {
-            const previousResult = result;
-            result = result.replace(pairRegex, '');
-            if (result.length === previousResult.length) {
-              break;
-            };
-            depth++;
-          };
-          result = result.replace(/[（(\[{<【《）)\]}>】》]/g, '');
-          return result.replace(/\s+/g, ' ').trim();
-        };
-        const normalizeArtist = (name?: string) => {
-          if (!name) return '';
-          return stripBrackets(name);
-        };
-        const normalizedCurrentName = stripBrackets(currentName);
-        const normalizedCurrentArtist = normalizeArtist(currentArtist);
-        const match = list.find(
-          (item) =>
-            stripBrackets(item.name) === normalizedCurrentName &&
-            normalizeArtist(item.artist) === normalizedCurrentArtist
-        );
-        if (match && match.lrc) {
-          let lrcUrl = match.lrc;
-          const urlObj = new URL(lrcUrl);
-          const dwrcParam = urlObj.searchParams.get("dwrc");
-          if (dwrcParam === null) {
-            urlObj.searchParams.append("dwrc", "true");
-          } else if (dwrcParam === "false") {
-            urlObj.searchParams.set("dwrc", "true");
-          };
-          lrcUrl = urlObj.toString();
-          const pilferSource = await fetch(lrcUrl);
-          const pilferText = await pilferSource.text();
-          const originalLrcUrl = player.value!.aplayer.audio[player.value!.aplayer.index]["lrc"];
-          const sourceLrcResp = await fetch(originalLrcUrl);
-          const sourceLrcText = await sourceLrcResp.text();
-          const processedText = alignPilferedLyrics(pilferText, sourceLrcText);
-          if (processedText) {
-            store.dwrcTemp = parseWordLyrics(processedText);
-            store.dwrcLoading = false;
-            store.dwrcEnable = true;
-            return;
-          } else {
-            store.dwrcTemp = [];
-            store.dwrcLoading = false;
-            store.dwrcEnable = false;
-          };
-        } else {
-          store.dwrcTemp = [];
-          store.dwrcLoading = false;
-          store.dwrcEnable = false;
-        };
-      } else {
-        store.dwrcTemp = [];
-        store.dwrcLoading = false;
-        store.dwrcEnable = false;
-      };
-    } catch (e) {
-      store.dwrcTemp = [];
-      store.dwrcLoading = false;
-      store.dwrcEnable = false;
-    }
-  } else {
-    store.dwrcTemp = [];
-    store.dwrcLoading = false;
-    store.dwrcEnable = false;
-  };
-  store.dwrcTemp = [];
-  store.dwrcLoading = false;
-  store.dwrcEnable = false;
+  } finally {
+    window.clearTimeout(timeoutId);
+    if (sequence === lyricRequestSequence) store.dwrcLoading = false;
+  }
 };
 
 function onLoadStart() {
@@ -544,6 +381,8 @@ function onLoadStart() {
     if (store.dwrcIndex == playIndex.value) {
       return;
     };
+    store.dwrcTemp = [];
+    store.dwrcEnable = false;
     const lyricUrl = player.value.aplayer.audio[player.value.aplayer.index]?.lrc;
     if (!lyricUrl) {
       store.dwrcEnable = false;
@@ -552,9 +391,8 @@ function onLoadStart() {
       return;
     }
     const dwrcUrl = `${lyricUrl}${lyricUrl.includes("?") ? "&" : "?"}dwrc=true`;
-    store.dwrcIndex = playIndex.value;
     store.dwrcLoading = true;
-    fetchDWRC(dwrcUrl);
+    void fetchDWRC(dwrcUrl, playIndex.value);
   } catch (error) {
     store.dwrcEnable = false;
     store.dwrcTemp = [];
@@ -648,10 +486,10 @@ function syncDWRCLrc() {
         };
       };
       const currentLine = nowLineIndex.value !== -1 ? dwrc[nowLineIndex.value] : null;
-      let dwrcLyric: any[];
+      let dwrcLyric: typeof store.playerLrc;
       if (currentLine) {
         const fadeOutDuration = 300;
-        dwrcLyric = currentLine[2].map((it: any) => {
+        dwrcLyric = currentLine[2].map<PlayerLyricItem>((it: WordLyricToken) => {
           const [[start, duration], word, line, row] = it;
           const isDuringFadeOut = now > start + duration && now <= start + duration + fadeOutDuration;
           const isCurrent = (now >= start && now <= start + duration) || isDuringFadeOut;
@@ -662,7 +500,7 @@ function syncDWRCLrc() {
       } else {
         dwrcLyric = [[true, 1, 0, 0, getTrackFallback()]];
       };
-      setLyricsIfChanged(dwrcLyric as typeof store.playerLrc);
+      setLyricsIfChanged(dwrcLyric);
     };
   } catch (error) {
     console.error("Error in syncDWRCLrc:", error);
@@ -703,6 +541,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  lyricRequestSequence += 1;
+  lyricRequestController?.abort();
   stopLyricSync();
   document.removeEventListener("visibilitychange", handleVisibilityChange);
   if ("mediaSession" in navigator) {

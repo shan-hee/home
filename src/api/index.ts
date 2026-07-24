@@ -83,22 +83,3 @@ export const getHitokoto = async () => {
   const response = await fetch("https://v1.hitokoto.cn");
   return await response.json();
 };
-
-export const testGitHubConnectivity = async (): Promise<number> => {
-  const testUrl =
-    "https://raw.githubusercontent.com/NanoRocky/home/EFU/public/images/icon/github.png";
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-  try {
-    const response = await fetch(testUrl, {
-      method: "HEAD",
-      signal: controller.signal,
-    });
-    return response.ok ? 1 : 0;
-  } catch {
-    return 0;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-};

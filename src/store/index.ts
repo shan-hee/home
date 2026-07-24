@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import type { MainState } from "@/typings/store";
-import { validationPlugin, validationRules } from "@/store/plugins/validation";
+import { nextTick } from "vue";
+import { removeStorageKeys, SETTINGS_RESET_EVENT, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export const storeState: MainState = {
   // 这些变量，非有能力的开发者请只操作【开关】项来实现个性化的默认设置，其余变量勿动！
@@ -44,15 +45,11 @@ export const storeState: MainState = {
   playerTrLrc: false, // 【开关】逐行歌词调用翻译歌词开关
   playerDWRCShow: true, // 【开关】逐字歌词解析总开关
   playerDWRCShowPro: true, // 【开关】逐字效果增强开关
-  playerDWRCATDB: true, // 【开关】允许接入 AMLL TTML Database
-  playerDWRCATDBF: true, // 【开关】接入 AMLL TTML Database 时使用镜像加速
-  playerDWRCPilfer: true, // 【开关】拆东墙补西墙
-  /* 这个移除元数据功能暂只能对非直接从 API 获得的歌词有效，因为它不经由 APlayer 处理，可以被拦截并替换。所以也就只支持逐字。 */
   playerRMMetadata: false, // 【开关】移除歌词中的元数据
   playerCurrentTime: 0, // 【缓存】当前歌曲已播放时间
   playerDuration: 0, // 【缓存】当前歌曲总时长
   dwrcIndex: -1 as number | null, // 【缓存】逐字歌词进度存储
-  dwrcTemp: [] as any[], // 【缓存】逐字歌词
+  dwrcTemp: [], // 【缓存】逐字歌词
   dwrcEnable: true, // 【状态】调用逐字歌词
   dwrcLoading: false, // 【状态】逐字歌词加载
   lyricSeekVersion: 0, // 【状态】歌词跳转版本，用于重置动画
@@ -89,7 +86,7 @@ export const mainStore = defineStore("main", {
   },
   actions: {
     // 更改当前页面宽度
-    setInnerWidth(value) {
+    setInnerWidth(value: number) {
       this.innerWidth = value;
       if (value >= 720) {
         this.mobileOpenState = false;
@@ -97,7 +94,7 @@ export const mainStore = defineStore("main", {
       }
     },
     // 更改播放器状态
-    setPlayerStatus(value) {
+    setPlayerStatus(value: MainState["playerStatus"]) {
       this.playerStatus = value;
       if (value === "playing") {
         this.playerHasStarted = true;
@@ -108,25 +105,25 @@ export const mainStore = defineStore("main", {
       }
     },
     // 更改音乐加载状态
-    setPlayerCanplay(value) {
+    setPlayerCanplay(value: boolean) {
       this.playerCanplay = value;
     },
     // 更改歌词
-    setPlayerLrc(value) {
+    setPlayerLrc(value: MainState["playerLrc"]) {
       this.playerLrc = value;
     },
     // 更改歌曲数据
-    setPlayerData(title, artist, album = null) {
+    setPlayerData(title: string, artist: string, album: string | null = null) {
       this.playerTitle = title;
       this.playerArtist = artist;
       this.playerAlbum = album;
     },
     // 更改壁纸加载状态
-    setImgLoadStatus(value) {
+    setImgLoadStatus(value: boolean) {
       this.imgLoadStatus = value;
     },
     // 使用内置壁纸时用于临时指定壁纸的接口
-    setSBGCount(value) {
+    setSBGCount(value: string | number) {
       const wallpaperId = Number(value);
       if (this.coverType !== 0 || !Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > this.wallpaperMaxId) {
         return false;
@@ -134,7 +131,7 @@ export const mainStore = defineStore("main", {
       this.sBGCount = String(wallpaperId);
       return true;
     },
-    setWallpaperLocalId(value) {
+    setWallpaperLocalId(value: string | number | null) {
       if (value === null || value === "") {
         this.wallpaperLocalId = null;
         return true;
@@ -147,16 +144,31 @@ export const mainStore = defineStore("main", {
       return true;
     },
     // 重置所有设置
-    resetStore() {
-      this.$reset = () => {
-        setTimeout(() => {
-          this.$state = JSON.parse(JSON.stringify(storeState));
-          setTimeout(() => {
-            window.location.href = window.location.pathname;
-          }, 1200);
-        }, 2500);
-      };
-      this.$reset();
+    async resetStore() {
+      const persistedSettings = [
+        "coverType", "wallpaperLocalId", "autoBGSwitchInterval", "musicVolume",
+        "siteStartShow", "musicClick", "playerLrcShow", "footerBlur",
+        "footerProgressBar", "playerAutoplay", "playerOrder", "playerKeyboardShortcuts",
+        "playerTrLrc", "playerDWRCShow", "playerDWRCShowPro", "playerRMMetadata", "effectsMode",
+        "selectedEffects", "theme", "setV", "msgNameShow",
+      ] as const satisfies ReadonlyArray<keyof MainState>;
+      const defaults = Object.fromEntries(
+        persistedSettings.map((key) => [key, structuredClone(storeState[key])]),
+      ) as Partial<MainState>;
+      this.$patch(defaults);
+      await nextTick();
+      try {
+        removeStorageKeys(localStorage, [
+          STORAGE_KEYS.pinia,
+          STORAGE_KEYS.weatherLocation,
+          STORAGE_KEYS.weatherCache,
+        ]);
+        removeStorageKeys(sessionStorage, [STORAGE_KEYS.pinia]);
+        window.dispatchEvent(new Event(SETTINGS_RESET_EVENT));
+      } catch (error) {
+        console.error("清理本项目设置失败：", error);
+        throw error;
+      }
     },
   },
   persist: [
@@ -180,9 +192,6 @@ export const mainStore = defineStore("main", {
         'playerTrLrc',
         'playerDWRCShow',
         'playerDWRCShowPro',
-        'playerDWRCATDB',
-        'playerDWRCATDBF',
-        'playerDWRCPilfer',
         'playerRMMetadata',
         'effectsMode',
         'selectedEffects',

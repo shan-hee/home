@@ -102,7 +102,7 @@ const form = reactive({
 const resetSettings = async () => {
     try {
         await ElMessageBox.confirm(
-            '将恢复所有默认设置并刷新页面，是否继续？',
+            '将恢复所有默认设置，并清除本项目的天气缓存，是否继续？',
             '重置设置',
             {
                 confirmButtonText: '重置',
@@ -114,7 +114,8 @@ const resetSettings = async () => {
             dangerouslyUseHTMLString: true,
             message: `正在恢复默认配置，请稍后...`,
         });
-        store.resetStore();
+        await store.resetStore();
+        ElMessage.success('已恢复默认设置');
     } catch {
         // 用户取消重置。
     }
