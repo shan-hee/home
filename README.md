@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > ## 致大家
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;嘿！恭喜你看到这里~ 这是酪灰基于原作者 imsyy 主页的修改版本！修改版本添加了更多的功能，但是也会带来更高的性能占用！（主要来自逐字歌词以及季节效果渲染），也添加了安全更新，增强安全性。<p>
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;嘿！恭喜你看到这里~ 这是酪灰基于原作者 imsyy 主页的修改版本！修改版本添加了更多的功能，但是也会带来更高的性能占用！（主要来自季节效果渲染），也添加了安全更新，增强安全性。<p>
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;酪灰作为 Vue 初学者，因为热爱，拉着同学 Pizero 完善了这个项目，因此这些代码可能会很 shi，并可能充斥着不少 BUG。欢迎在遇到 BUG 时进行反馈，也欢迎各位大佬帮助！<p>
 >#### 关于问题反馈以及求助
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;遇到问题请在 Github 上提 issue ，需要帮助请在 Github 上发 discussion ，看到了会回复。除特殊情况外，<b>请不要直接通过其它社交方式联系酪灰！</b>酪灰不是客服，不提供售后服务，并没有那么多的时间来回复私聊。还请谅解！<p>
@@ -45,7 +45,7 @@ injectRegister: false,
 - [x] 时光进度条
 - [x] 音乐播放器
 - [x] 移动端适配
-- [x] 逐字歌词兼容
+- [x] 逐行歌词显示
 
 ### ⚙️ 本地开发
 
@@ -160,7 +160,6 @@ VITE_SONG_TYPE = "playlist"
 VITE_SONG_ID = "3035221869"
 ```
 >首版只维护一个播放队列。<p>
->如果需要使用网易云音乐逐字歌词，请使用 [修改版 Meting-Api](https://github.com/NanoRocky/meting-api/) ！<p>
 
 >[!WARNING]
 >这里提供的 api 有较高的速率限制，且不太稳定，强烈建议自行搭建 Meting-API！你也可以赞助酪灰帮助他承担服务费用！阿里嘎多！<p>
@@ -206,7 +205,7 @@ VITE_SONG_ID = "3035221869"
 
 #### 更多默认设置
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;自动播放、逐字歌词等默认设置请编辑 `src/store/index.ts`，但这些设置仅对首次打开网页的用户生效，覆盖用户设置需要清除网页数据。
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;自动播放、背景特效等默认设置请编辑 `src/store/index.ts`，但这些设置仅对首次打开网页的用户生效，覆盖用户设置需要清除网页数据。
 
 ### 技术栈
 

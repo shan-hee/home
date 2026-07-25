@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="store.footerProgressBar"
     ref="track"
     class="progress-bar"
     :class="{ dragging: isDragging }"
@@ -78,7 +77,6 @@ const commitTime = (time: number) => {
   const audio = document.querySelector("audio");
   if (audio) audio.currentTime = nextTime;
   store.playerCurrentTime = nextTime;
-  store.lyricSeekVersion++;
 };
 
 const handlePointerDown = (event: PointerEvent) => {
@@ -157,24 +155,26 @@ const handleKeydown = (event: KeyboardEvent) => {
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: rgb(240 240 240);
+    border-radius: 999px;
+    background-color: var(--player-slider-runway-color);
   }
 
   .progress {
     height: 100%;
-    background-color: rgb(138 43 226);
+    border-radius: inherit;
+    background-color: var(--player-slider-main-color);
     transition: width 0.15s linear;
   }
 
   .progress-thumb {
     position: absolute;
     top: 50%;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgb(255 255 255 / 90%);
+    width: 12px;
+    height: 12px;
+    border: 0;
     border-radius: 50%;
-    background-color: rgb(138 43 226);
-    box-shadow: 0 1px 5px rgb(0 0 0 / 35%);
+    background-color: var(--player-slider-main-color);
+    box-shadow: none;
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.75);
     transition: opacity 0.15s ease, transform 0.15s ease;
@@ -184,7 +184,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   .reload-circle {
     position: absolute;
     top: 50%;
-    color: black;
+    color: var(--player-slider-main-color);
     transform: translate(-50%, -50%);
     animation: spin 1s linear infinite;
   }
@@ -197,7 +197,7 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 
   &:focus-visible {
-    outline: 2px solid rgb(138 43 226 / 70%);
+    outline: 2px solid rgba(from var(--player-slider-main-color) r g b / 0.7);
     outline-offset: -2px;
   }
 

@@ -3,12 +3,28 @@
   <section class="music" aria-label="音乐播放器">
     <button
       type="button"
+      class="footer-player-button"
+      :class="{ 'is-active': store.footerPlayerShow }"
+      :aria-pressed="store.footerPlayerShow"
+      :aria-label="store.footerPlayerShow ? '隐藏底栏歌词和进度' : '显示底栏歌词和进度'"
+      :title="store.footerPlayerShow ? '隐藏底栏歌词和进度' : '显示底栏歌词和进度'"
+      @click="store.footerPlayerShow = !store.footerPlayerShow"
+    >
+      <TextMessage
+        theme="outline"
+        size="20"
+        stroke-width="4"
+        fill="currentColor"
+      />
+    </button>
+    <button
+      type="button"
       class="fullscreen-button"
       aria-label="打开全屏播放器"
       title="全屏播放器"
       @click="fullscreenOpen = true"
     >
-      <FullScreen theme="outline" size="20" fill="currentColor" />
+      <FullScreen theme="filled" size="20" stroke-width="5" fill="currentColor" />
     </button>
 
     <div class="compact-controls">
@@ -18,7 +34,7 @@
         title="播放列表"
         @click="store.musicBoxOpenState = true"
       >
-        <MusicList theme="outline" size="24" fill="currentColor" />
+        <MusicList theme="filled" size="24" stroke-width="5" fill="currentColor" />
       </button>
       <button
         type="button"
@@ -26,7 +42,7 @@
         :disabled="!store.musicIsOk"
         @click="changeMusicIndex(0)"
       >
-        <GoStart theme="filled" size="27" fill="currentColor" />
+        <GoStart theme="filled" size="27" stroke-width="5" fill="currentColor" />
       </button>
       <button
         type="button"
@@ -35,8 +51,20 @@
         :disabled="!store.musicIsOk"
         @click="changePlayState"
       >
-        <Pause v-if="isPlaying" theme="filled" size="34" fill="currentColor" />
-        <PlayOne v-else theme="filled" size="34" fill="currentColor" />
+        <Pause
+          v-if="isPlaying"
+          theme="filled"
+          size="34"
+          stroke-width="5"
+          fill="currentColor"
+        />
+        <PlayOne
+          v-else
+          theme="filled"
+          size="34"
+          stroke-width="5"
+          fill="currentColor"
+        />
       </button>
       <button
         type="button"
@@ -44,7 +72,7 @@
         :disabled="!store.musicIsOk"
         @click="changeMusicIndex(1)"
       >
-        <GoEnd theme="filled" size="27" fill="currentColor" />
+        <GoEnd theme="filled" size="27" stroke-width="5" fill="currentColor" />
       </button>
       <div class="volume-control">
         <button
@@ -53,22 +81,34 @@
           title="音量"
           @click="toggleMute"
         >
-          <VolumeMute v-if="volumeNum === 0" theme="outline" size="23" fill="currentColor" />
-          <VolumeSmall v-else-if="volumeNum < 0.7" theme="outline" size="23" fill="currentColor" />
-          <VolumeNotice v-else theme="outline" size="23" fill="currentColor" />
+          <VolumeMute
+            v-if="volumeNum === 0"
+            theme="filled"
+            size="23"
+            stroke-width="5"
+            fill="currentColor"
+          />
+          <VolumeSmall
+            v-else-if="volumeNum < 0.7"
+            theme="filled"
+            size="23"
+            stroke-width="5"
+            fill="currentColor"
+          />
+          <VolumeNotice
+            v-else
+            theme="filled"
+            size="23"
+            stroke-width="5"
+            fill="currentColor"
+          />
         </button>
         <div class="volume-popover" aria-label="音量调节">
-          <el-slider
-            v-model="volumeNum"
-            vertical
-            height="88px"
-            :show-tooltip="false"
-            :min="0"
-            :max="1"
-            :step="0.01"
-            aria-label="音量"
+          <VolumeSlider
+            :model-value="volumeNum"
+            @preview="previewVolume"
+            @commit="saveVolume"
           />
-          <span>{{ volumePercent }}%</span>
         </div>
       </div>
     </div>
@@ -78,13 +118,16 @@
       <span v-if="currentTrack?.artist" class="track-artist">{{ currentTrack.artist }}</span>
     </div>
 
-    <PlayerSeekBar
-      class="compact-seek"
-      :current-time="store.playerCurrentTime"
-      :duration="store.playerDuration"
-      :loading="playerLoading"
-      @seek="seekTo"
-    />
+    <Transition name="compact-seek-slide">
+      <PlayerSeekBar
+        v-if="!footerPlayerActive"
+        class="compact-seek"
+        :current-time="store.playerCurrentTime"
+        :duration="store.playerDuration"
+        :loading="playerLoading"
+        @seek="seekTo"
+      />
+    </Transition>
   </section>
 
   <!-- 隐藏的播放引擎，所有自定义界面共用这一实例 -->
@@ -94,7 +137,7 @@
       :song-server="playerData.server"
       :song-type="playerData.type"
       :song-id="playerData.id"
-      :volume="volumeNum"
+      :volume="initialVolume"
       @playlist-loaded="handlePlaylistLoaded"
       @track-changed="handleTrackChanged"
     />
@@ -220,17 +263,11 @@
               <VolumeNotice v-else theme="outline" size="22" fill="currentColor" />
             </button>
             <div class="volume-popover" aria-label="音量调节">
-              <el-slider
-                v-model="volumeNum"
-                vertical
-                height="88px"
-                :show-tooltip="false"
-                :min="0"
-                :max="1"
-                :step="0.01"
-                aria-label="音量"
+              <VolumeSlider
+                :model-value="volumeNum"
+                @preview="previewVolume"
+                @commit="saveVolume"
               />
-              <span>{{ volumePercent }}%</span>
             </div>
           </div>
 
@@ -358,6 +395,7 @@ import {
   PlayCycle,
   PlayOne,
   Shuffle,
+  TextMessage,
   VolumeMute,
   VolumeNotice,
   VolumeSmall,
@@ -365,6 +403,7 @@ import {
 import type { PlaylistItem } from "@/api";
 import Player from "@/components/Player.vue";
 import PlayerSeekBar from "@/components/PlayerSeekBar.vue";
+import VolumeSlider from "@/components/VolumeSlider.vue";
 import { mainStore } from "@/store";
 import type { MainState } from "@/typings/store";
 
@@ -382,8 +421,11 @@ const playlist = ref<PlaylistItem[]>([]);
 const currentIndex = ref(0);
 const fullscreenOpen = ref(false);
 const lyricsPanel = ref<HTMLElement | null>(null);
-const volumeNum = ref(store.musicVolume ?? 0.3);
+const initialVolume = store.musicVolume ?? 0.3;
+const volumeNum = ref(initialVolume);
 const previousVolume = ref(volumeNum.value > 0 ? volumeNum.value : 0.3);
+let volumeUpdateFrame: number | null = null;
+let pendingVolume = volumeNum.value;
 
 const playerData = reactive({
   server: envConfig.VITE_SONG_SERVER,
@@ -402,8 +444,8 @@ const displayTrackName = computed(
   () => currentTrack.value?.name || store.playerTitle || store.playerError || "播放器准备中",
 );
 const isPlaying = computed(() => store.playerStatus === "playing");
+const footerPlayerActive = computed(() => store.footerPlayerShow && isPlaying.value);
 const playerLoading = computed(() => !store.playerCanplay && store.playerStatus !== "error");
-const volumePercent = computed(() => Math.round(volumeNum.value * 100));
 const queuedTracks = computed(() =>
   playlist.value
     .map((track, index) => ({ track, index }))
@@ -428,10 +470,7 @@ const lineLyrics = computed<LyricLine[]>(() => {
       (line) => Array.isArray(line) && Number.isFinite(line[0]) && line[1]?.trim(),
     );
   }
-  return store.dwrcTemp.map(([start, , words]) => [
-    start / 1000,
-    words.map((word) => word[1].replace(/&nbsp;/g, " ")).join(""),
-  ]);
+  return [];
 });
 
 const fullLyrics = computed(() => lineLyrics.value.filter((line) => line[1].trim().length > 0));
@@ -444,9 +483,11 @@ const activeLyricIndex = computed(() => {
   return activeIndex;
 });
 
-const handlePlaylistLoaded = (tracks: PlaylistItem[]) => {
+const handlePlaylistLoaded = async (tracks: PlaylistItem[]) => {
   playlist.value = tracks;
   if (currentIndex.value >= tracks.length) currentIndex.value = 0;
+  await nextTick();
+  playerRef.value?.changeVolume(volumeNum.value);
 };
 
 const handleTrackChanged = (index: number) => {
@@ -470,12 +511,20 @@ const seekTo = (time: number) => {
 };
 
 const toggleMute = () => {
+  let nextVolume: number;
   if (volumeNum.value > 0) {
     previousVolume.value = volumeNum.value;
-    volumeNum.value = 0;
+    nextVolume = 0;
   } else {
-    volumeNum.value = previousVolume.value || 0.3;
+    nextVolume = previousVolume.value || 0.3;
   }
+  saveVolume(nextVolume);
+};
+
+const saveVolume = (value: number) => {
+  const nextVolume = Math.min(1, Math.max(0, value));
+  if (volumeNum.value !== nextVolume) volumeNum.value = nextVolume;
+  if (store.musicVolume !== nextVolume) store.musicVolume = nextVolume;
 };
 
 const cyclePlaybackMode = () => {
@@ -516,11 +565,11 @@ const handleKeydown = (event: KeyboardEvent) => {
   switch (event.code) {
     case "ArrowUp":
       event.preventDefault();
-      volumeNum.value = Math.min(1, Number((volumeNum.value + 0.05).toFixed(2)));
+      saveVolume(Math.min(1, Number((volumeNum.value + 0.05).toFixed(2))));
       break;
     case "ArrowDown":
       event.preventDefault();
-      volumeNum.value = Math.max(0, Number((volumeNum.value - 0.05).toFixed(2)));
+      saveVolume(Math.max(0, Number((volumeNum.value - 0.05).toFixed(2))));
       break;
     case "ArrowLeft":
       if (!event.repeat) {
@@ -546,9 +595,17 @@ const handleFocus = () => toggleKeyListener(true);
 const handleBlur = () => toggleKeyListener(false);
 const handleVisibilityChange = () => toggleKeyListener(document.visibilityState === "visible");
 
+const previewVolume = (value: number) => {
+  pendingVolume = value;
+  if (volumeUpdateFrame !== null) return;
+  volumeUpdateFrame = requestAnimationFrame(() => {
+    playerRef.value?.changeVolume(pendingVolume);
+    volumeUpdateFrame = null;
+  });
+};
+
 watch(volumeNum, (value) => {
-  store.musicVolume = value;
-  playerRef.value?.changeVolume(value);
+  previewVolume(value);
 });
 
 watch(
@@ -574,6 +631,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (volumeUpdateFrame !== null) cancelAnimationFrame(volumeUpdateFrame);
   toggleKeyListener(false);
   window.removeEventListener("focus", handleFocus);
   window.removeEventListener("blur", handleBlur);
@@ -630,6 +688,7 @@ button {
   }
 }
 
+.footer-player-button,
 .fullscreen-button {
   position: absolute;
   top: 9px;
@@ -639,14 +698,23 @@ button {
   opacity: 0.72;
 }
 
+.footer-player-button {
+  left: 10px;
+  opacity: 0.48;
+
+  &.is-active {
+    opacity: 0.92;
+  }
+}
+
 .fullscreen-button {
   right: 10px;
 }
 
 .compact-controls {
-  width: calc(100% - 34px);
-  min-height: 45px;
-  margin-right: 34px;
+  width: 100%;
+  min-height: 52px;
+  padding-top: 7px;
   display: flex;
   align-items: center;
   justify-content: space-evenly;
@@ -677,7 +745,6 @@ button {
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
-      transform: translate(-50%, 0);
     }
   }
 }
@@ -685,7 +752,7 @@ button {
 .volume-popover {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 7px);
+  bottom: 100%;
   z-index: 10;
   width: 42px;
   height: 126px;
@@ -694,31 +761,16 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  border-radius: 8px;
   color: var(--text-color);
-  background: rgba(from var(--background-color) r g b / 0.8);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.18);
+  background: transparent;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translate(-50%, 8px);
+  transform: translateX(-50%);
   transition:
     opacity 0.2s ease,
-    visibility 0.2s ease,
-    transform 0.2s ease;
+    visibility 0.2s ease;
 
-  span {
-    font-size: 0.66rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  :deep(.el-slider) {
-    --el-slider-main-bg-color: var(--player-slider-main-color);
-    --el-slider-runway-bg-color: var(--player-slider-runway-color);
-    --el-slider-button-size: 12px;
-  }
 }
 
 .compact-meta {
@@ -754,7 +806,27 @@ button {
 }
 
 .compact-seek {
+  max-height: 22px;
   margin-top: 2px;
+  overflow: hidden;
+  transform-origin: center top;
+}
+
+.compact-seek-slide-enter-active,
+.compact-seek-slide-leave-active {
+  transition:
+    max-height 0.28s ease,
+    margin-top 0.28s ease,
+    opacity 0.2s ease,
+    transform 0.28s ease;
+}
+
+.compact-seek-slide-enter-from,
+.compact-seek-slide-leave-to {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(-3px) scaleY(0.75);
 }
 
 .audio-engine {
@@ -1266,6 +1338,8 @@ button {
   .lyric-line,
   .fullscreen-fade-enter-active,
   .fullscreen-fade-leave-active,
+  .compact-seek-slide-enter-active,
+  .compact-seek-slide-leave-active,
   .queue-slide-enter-active,
   .queue-slide-leave-active,
   .queue-slide-enter-active .queue-panel,

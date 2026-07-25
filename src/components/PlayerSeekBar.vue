@@ -221,9 +221,10 @@ const handleKeydown = (event: KeyboardEvent) => {
   top: 50%;
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(from var(--background-color) r g b / 0.88);
+  border: 0;
   border-radius: 50%;
   background: var(--player-slider-main-color);
+  box-shadow: none;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.75);
   transition:

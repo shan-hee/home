@@ -2,7 +2,7 @@ English | [简体中文](./README.md)
 
 > [!IMPORTANT]
 > ## To everyone
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Hey! Congratulations on reading this~ This is a modified version of NanoRocky based on the original author imsyy's homepage! The modified version adds more features, but also brings higher performance usage! (mainly from verbatim lyrics and seasonal effect rendering), and also adds security updates to enhance security.<p>
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Hey! Congratulations on reading this~ This is a modified version of NanoRocky based on the original author imsyy's homepage! The modified version adds more features, but also brings higher performance usage! (mainly from seasonal effect rendering), and also adds security updates to enhance security.<p>
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;NanoRocky is a Vue beginner. Because of his passion, he worked with his classmate Pizero to perfect this project. Therefore, the code may be very bad and may be full of bugs. You are welcome to give feedback when you encounter bugs, and you are also welcome to help!<p>
 >#### About feedback and help
 > &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;If you encounter any problems, please raise an issue on Github. If you need help, please post a discussion on Github. We will reply to you when we see it. Except for special circumstances, <b>please do not contact NanoRocky directly through other social contact! </b>NanoRocky is not a customer service, does not provide after-sales service, and does not have that much time to reply to private chats. Please understand!<p>
@@ -39,7 +39,7 @@ injectRegister: false,
 - [x] Time progress bar
 - [x] Music player
 - [x] Mobile adaptation
-- [x] Verbatim lyrics compatible
+- [x] Line-by-line lyrics
 
 ### ⚙️ Local development
 
@@ -196,7 +196,7 @@ The website icon can be modified in `public/images/icon`.
 
 #### More default settings
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;For defaults such as autoplay and word-by-word lyrics, edit `src/store/index.ts`. These settings only apply to first-time visitors; clear the site's stored data to replace existing preferences.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;For defaults such as autoplay and background effects, edit `src/store/index.ts`. These settings only apply to first-time visitors; clear the site's stored data to replace existing preferences.
 
 ### Technology Stack
 

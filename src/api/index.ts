@@ -15,11 +15,6 @@ const asText = (value: unknown, fallback = "") => {
   return typeof value === "string" ? value : fallback;
 };
 
-const appendTranslationFlag = (url: string, enabled: boolean) => {
-  if (!enabled || !url) return url;
-  return `${url}${url.includes("?") ? "&" : "?"}trlrc=true`;
-};
-
 /**
  * 获取单一音乐播放队列。
  */
@@ -27,7 +22,6 @@ export const getPlayerList = async (
   server: string,
   type: string,
   id: string,
-  playerTrLrc: boolean,
 ): Promise<PlaylistItem[]> => {
   const response = await fetch(
     `${envConfig.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
@@ -62,7 +56,7 @@ export const getPlayerList = async (
         album: asText(item.album, envConfig.VITE_SITE_NAME),
         url: domain + asText(jsonpData.req_0?.data?.midurlinfo[index]?.purl),
         cover: asText(item.cover, asText(item.pic)),
-        lrc: appendTranslationFlag(asText(item.lrc), playerTrLrc),
+        lrc: asText(item.lrc),
       }))
       .filter((item) => item.url.length > 0);
   }
@@ -74,7 +68,7 @@ export const getPlayerList = async (
       album: asText(item.album, envConfig.VITE_SITE_NAME),
       url: asText(item.url),
       cover: asText(item.cover, asText(item.pic)),
-      lrc: appendTranslationFlag(asText(item.lrc), playerTrLrc),
+      lrc: asText(item.lrc),
     }))
     .filter((item) => item.url.length > 0);
 };

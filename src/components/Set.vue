@@ -55,32 +55,6 @@
           <span class="text">底栏背景模糊</span>
           <el-switch v-model="footerBlur" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
         </div>
-        <div class="item">
-          <span class="text">显示底栏音乐进度条</span>
-          <el-switch v-model="footerProgressBar" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-      </el-collapse-item>
-      <el-collapse-item title="歌词设置" name="5">
-        <div class="item">
-          <span class="text">显示底栏歌词</span>
-          <el-switch v-model="playerLrcShow" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div v-if="playerLrcShow" class="item">
-          <span class="text">逐字歌词解析总开关</span>
-          <el-switch v-model="playerDWRCShow" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div v-if="playerLrcShow && playerDWRCShow" class="item">
-          <span class="text">逐字效果增强开关</span>
-          <el-switch v-model="playerDWRCShowPro" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div class="item">
-          <span class="text">移除逐字歌词中的元数据</span>
-          <el-switch v-model="playerRMMetadata" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
-        <div class="item">
-          <span class="text">逐行歌词翻译显示开关</span>
-          <el-switch v-model="playerTrLrc" inline-prompt :active-icon="CheckSmall" :inactive-icon="CloseSmall" />
-        </div>
       </el-collapse-item>
       <el-collapse-item title="其他设置" name="6">
         <div class="text">暂时没有其它啦qwq</div>
@@ -102,13 +76,7 @@ const store = mainStore();
 const {
   coverType,
   siteStartShow,
-  playerLrcShow,
   footerBlur,
-  playerTrLrc,
-  playerDWRCShow,
-  playerDWRCShowPro,
-  playerRMMetadata,
-  footerProgressBar,
   autoBGSwitchInterval,
   effectsMode,
   selectedEffects,

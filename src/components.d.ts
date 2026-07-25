@@ -44,6 +44,7 @@ declare module 'vue' {
     SocialLinks: typeof import('./components/SocialLinks.vue')['default']
     ThemeSwitcher: typeof import('./components/ThemeSwitcher.vue')['default']
     TimeCapsule: typeof import('./components/TimeCapsule.vue')['default']
+    VolumeSlider: typeof import('./components/VolumeSlider.vue')['default']
     Weather: typeof import('./components/Weather.vue')['default']
   }
 }

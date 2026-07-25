@@ -33,24 +33,14 @@ export const storeState: MainState = {
   playerTitle: null as string | null, // 【缓存】当前播放歌曲名
   playerArtist: null as string | null, // 【缓存】当前播放歌手名
   playerAlbum: null as string | null, // 【缓存】当前播放专辑名
-  playerLrc: [[true, 1, 0, 0, ""]], // 【缓存】当前播放歌词
-  playerLrcShow: true, // 【开关】是否显示底栏歌词
+  playerLyric: "", // 【缓存】当前播放歌词
+  footerPlayerShow: false, // 【开关】底栏是否显示播放器信息
   footerBlur: true, // 【开关】底栏模糊
-  footerProgressBar: true, // 【开关】是否显示底栏进度条
   playerAutoplay: false, // 【开关】是否自动播放
   playerOrder: "shuffle", // 【开关】播放顺序 "list", "single", "shuffle"
   playerKeyboardShortcuts: true, // 【开关】全局播放器快捷键
-  playerTrLrc: false, // 【开关】逐行歌词调用翻译歌词开关
-  playerDWRCShow: true, // 【开关】逐字歌词解析总开关
-  playerDWRCShowPro: true, // 【开关】逐字效果增强开关
-  playerRMMetadata: false, // 【开关】移除歌词中的元数据
   playerCurrentTime: 0, // 【缓存】当前歌曲已播放时间
   playerDuration: 0, // 【缓存】当前歌曲总时长
-  dwrcIndex: -1 as number | null, // 【缓存】逐字歌词进度存储
-  dwrcTemp: [], // 【缓存】逐字歌词
-  dwrcEnable: true, // 【状态】调用逐字歌词
-  dwrcLoading: false, // 【状态】逐字歌词加载
-  lyricSeekVersion: 0, // 【状态】歌词跳转版本，用于重置动画
   showFirefly: false, // 【状态】萤火虫特效
   showSnowfall: false, // 【状态】雪花特效
   showLantern: false, // 【状态】灯笼特效
@@ -66,10 +56,6 @@ export const mainStore = defineStore("main", {
     )
   ),
   getters: {
-    // 获取歌词
-    getPlayerLrc(state) {
-      return state.playerLrc;
-    },
     // 获取歌曲信息
     getPlayerData(state) {
       return {
@@ -107,9 +93,9 @@ export const mainStore = defineStore("main", {
     setPlayerCanplay(value: boolean) {
       this.playerCanplay = value;
     },
-    // 更改歌词
-    setPlayerLrc(value: MainState["playerLrc"]) {
-      this.playerLrc = value;
+    // 更改当前歌词
+    setPlayerLyric(value: string) {
+      this.playerLyric = value;
     },
     // 更改歌曲数据
     setPlayerData(title: string, artist: string, album: string | null = null) {
@@ -146,9 +132,8 @@ export const mainStore = defineStore("main", {
     async resetStore() {
       const persistedSettings = [
         "coverType", "wallpaperLocalId", "autoBGSwitchInterval", "musicVolume",
-        "siteStartShow", "playerLrcShow", "footerBlur",
-        "footerProgressBar", "playerAutoplay", "playerOrder", "playerKeyboardShortcuts",
-        "playerTrLrc", "playerDWRCShow", "playerDWRCShowPro", "playerRMMetadata", "effectsMode",
+        "siteStartShow", "footerPlayerShow", "footerBlur",
+        "playerAutoplay", "playerOrder", "playerKeyboardShortcuts", "effectsMode",
         "selectedEffects", "theme", "setV", "msgNameShow",
       ] as const satisfies ReadonlyArray<keyof MainState>;
       const defaults = Object.fromEntries(
@@ -181,14 +166,9 @@ export const mainStore = defineStore("main", {
         'autoBGSwitchInterval',
         'musicVolume',
         'siteStartShow',
-        'playerLrcShow',
+        'footerPlayerShow',
         'footerBlur',
-        'footerProgressBar',
         'playerOrder',
-        'playerTrLrc',
-        'playerDWRCShow',
-        'playerDWRCShowPro',
-        'playerRMMetadata',
         'effectsMode',
         'selectedEffects',
         'theme',
