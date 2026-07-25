@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import { resolve } from "path";
 import { VitePWA } from "vite-plugin-pwa";
@@ -9,14 +9,14 @@ import UnoCSS from 'unocss/vite';
 import type { UserConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default ({ mode }: { mode: string }): UserConfig => {
+export default (): UserConfig => {
     const env = loadEnv(mode, process.cwd());
     return defineConfig({
         plugins: [
             vue(),
             UnoCSS(),
             AutoImport({
-                imports: ["vue", { "@/utils/config_check.ts": ["envConfig"] }],
+                imports: ["vue"],
                 resolvers: [ElementPlusResolver()],
                 dts: "src/auto-imports.d.ts",
             }),
@@ -36,10 +36,10 @@ export default ({ mode }: { mode: string }): UserConfig => {
                     ],
                     runtimeCaching: [
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/images/config.json",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config",
                             handler: "NetworkFirst",
                             options: {
-                                cacheName: "wallpaper-config-v1",
+                                cacheName: "site-config-v1",
                                 networkTimeoutSeconds: 3,
                                 expiration: {
                                     maxEntries: 1,
@@ -76,9 +76,9 @@ export default ({ mode }: { mode: string }): UserConfig => {
                     ],
                 },
                 manifest: {
-                    name: loadEnv(mode, process.cwd()).VITE_SITE_NAME,
-                    short_name: loadEnv(mode, process.cwd()).VITE_SITE_NAME,
-                    description: loadEnv(mode, process.cwd()).VITE_SITE_DES,
+                    name: "Home",
+                    short_name: "Home",
+                    description: "个人主页",
                     display: "standalone",
                     start_url: "/",
                     theme_color: "#424242",

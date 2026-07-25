@@ -28,11 +28,13 @@
 <script setup lang="ts">
 import ProgressBar from "@/components/ProgressBar.vue";
 import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 
 const store = mainStore();
+const siteContent = useSiteContentStore();
 const currentYear = new Date().getFullYear();
-const repositoryUrl = "https://github.com/shan-hee/home";
-const siteIcp = envConfig.VITE_SITE_ICP.trim();
+const repositoryUrl = computed(() => siteContent.profile.repositoryUrl);
+const siteIcp = computed(() => siteContent.profile.icp.trim());
 
 const shouldShowPlayer = computed(() => {
   return (

@@ -10,7 +10,6 @@ const autoImportGlobals = {
   defineProps: "readonly",
   ElMessage: "readonly",
   ElMessageBox: "readonly",
-  envConfig: "readonly",
   h: "readonly",
   nextTick: "readonly",
   onBeforeUnmount: "readonly",

@@ -1,0 +1,62 @@
+import type { SiteContentSnapshot } from "@/typings/siteContent";
+
+export const siteContentFallback: SiteContentSnapshot = {
+  schemaVersion: 1,
+  revision: "build-fallback",
+  generatedAt: "",
+  etag: "",
+  sectionRevisions: {
+    profile: 0,
+    siteLinks: 0,
+    socialLinks: 0,
+    music: 0,
+    wallpaper: 0,
+    hitokoto: 0,
+  },
+  sections: {
+    profile: {
+      siteName: "Home",
+      author: "shanhee",
+      keywords: "个人主页",
+      description: "个人主页",
+      siteUrl: "https://localhost/",
+      mainName: "Home",
+      siteLogo: "/images/icon/favicon.ico",
+      mainLogo: "/images/icon/logo.png",
+      appleLogo: "/images/icon/apple-touch-icon.png",
+      startDate: "",
+      icp: "",
+      mps: "",
+      repositoryUrl: "https://github.com/shan-hee/home",
+    },
+    siteLinks: [],
+    socialLinks: [],
+    music: {
+      enabled: false,
+      server: "netease",
+      type: "playlist",
+      id: "",
+    },
+    wallpaper: {
+      version: 1,
+      desktop: {
+        count: 10,
+        pattern: "/images/background{id}.jpg",
+        fallback: "/images/background1.jpg",
+      },
+      mobile: {
+        count: 2,
+        pattern: "/images/phone/backgroundphone{id}.jpg",
+        fallback: "/images/phone/backgroundphone1.jpg",
+      },
+    },
+    hitokoto: {
+      mode: "remote",
+      categories: [],
+      fixedText: "",
+      fixedFrom: "",
+      fallbackText: "这里应该显示一句话",
+      fallbackFrom: "shanhee",
+    },
+  },
+};

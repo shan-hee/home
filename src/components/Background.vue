@@ -28,30 +28,20 @@
 <script setup lang="ts">
 import { Error as ErrorIcon } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 import type { BackgroundEffect } from "@/typings/store";
+import type { WallpaperContentConfig } from "@/typings/siteContent";
 import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
 import { initFirefly, closeFirefly } from "@/utils/season/firefly";
 import { initLantern, closeLantern } from "@/utils/season/lantern";
 import { initMeteor, closeMeteor } from "@/utils/season/meteor";
-
-interface WallpaperCollection {
-  count: number;
-  pattern: string;
-  fallback: string;
-}
-
-interface WallpaperConfig {
-  version: number;
-  desktop: WallpaperCollection;
-  mobile: WallpaperCollection;
-}
 
 interface OnlineWallpaper {
   imageUrl: string;
   downloadUrl: string;
 }
 
-const defaultConfig: WallpaperConfig = {
+const defaultConfig: WallpaperContentConfig = {
   version: 1,
   desktop: {
     count: 10,
@@ -66,6 +56,7 @@ const defaultConfig: WallpaperConfig = {
 };
 
 const store = mainStore();
+const siteContent = useSiteContentStore();
 const emit = defineEmits<{
   loadComplete: [];
   imageLoaded: [image: HTMLImageElement];
@@ -77,7 +68,7 @@ const isTransitioning = ref(false);
 const isBlurringIn = ref(false);
 const useSolidFallback = ref(false);
 const currentDownloadUrl = ref<string | null>(null);
-const config = ref<WallpaperConfig | null>(null);
+const config = computed(() => siteContent.sections.wallpaper || defaultConfig);
 const isLoading = ref(false);
 const hasCompletedInitialLoad = ref(false);
 
@@ -92,42 +83,10 @@ const deviceQuery = window.matchMedia("(max-width: 720px)");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const activeCollection = computed(() => {
-  const resolvedConfig = config.value || defaultConfig;
-  return deviceQuery.matches ? resolvedConfig.mobile : resolvedConfig.desktop;
+  return deviceQuery.matches ? config.value.mobile : config.value.desktop;
 });
 
 const downloadUrl = computed(() => useSolidFallback.value ? null : currentDownloadUrl.value);
-
-const isWallpaperCollection = (value: unknown): value is WallpaperCollection => {
-  if (!value || typeof value !== "object") return false;
-  const collection = value as Record<string, unknown>;
-  return (
-    Number.isInteger(collection.count) &&
-    Number(collection.count) > 0 &&
-    typeof collection.pattern === "string" &&
-    collection.pattern.includes("{id}") &&
-    typeof collection.fallback === "string" &&
-    collection.fallback.length > 0
-  );
-};
-
-const loadConfig = async () => {
-  try {
-    const response = await fetch("/images/config.json", { cache: "no-cache" });
-    if (!response.ok) throw new Error(`壁纸配置返回 ${response.status}`);
-    const payload: unknown = await response.json();
-    if (!payload || typeof payload !== "object") throw new Error("壁纸配置格式无效");
-    const value = payload as Record<string, unknown>;
-    if (value.version !== 1 || !isWallpaperCollection(value.desktop) || !isWallpaperCollection(value.mobile)) {
-      throw new Error("壁纸配置字段无效");
-    }
-    config.value = payload as WallpaperConfig;
-  } catch (error) {
-    console.error("无法加载壁纸配置，使用内置 fallback：", error);
-    config.value = defaultConfig;
-  }
-  store.wallpaperMaxId = activeCollection.value.count;
-};
 
 const localUrl = (id: number) => activeCollection.value.pattern.replace("{id}", String(id));
 
@@ -258,7 +217,6 @@ const loadWallpaper = async (source = Number(store.coverType), temporaryId?: num
   const controller = new AbortController();
   wallpaperController = controller;
   isLoading.value = true;
-  if (!config.value) await loadConfig();
   store.wallpaperMaxId = activeCollection.value.count;
 
   let candidate: string;
@@ -415,12 +373,19 @@ watch(() => store.wallpaperLocalId, () => {
 
 watch(() => store.autoBGSwitchInterval, scheduleAutoSwitch);
 watch([() => store.effectsMode, () => [...store.selectedEffects]], applyEffects);
+watch(
+  () => siteContent.snapshot.sectionRevisions.wallpaper,
+  async () => {
+    store.wallpaperMaxId = activeCollection.value.count;
+    await loadWallpaper();
+  },
+);
 
 onMounted(async () => {
   document.addEventListener("visibilitychange", handleVisibilityChange);
   deviceQuery.addEventListener("change", handleDeviceChange);
   reducedMotionQuery.addEventListener("change", applyEffects);
-  await loadConfig();
+  store.wallpaperMaxId = activeCollection.value.count;
   await loadWallpaper();
   applyEffects();
   scheduleEffectRefresh();

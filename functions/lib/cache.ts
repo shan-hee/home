@@ -7,6 +7,12 @@ const getEdgeCache = () => {
   return (caches as unknown as { default?: Cache }).default || null;
 };
 
+export const deleteCachedResponse = async (cacheUrl: string) => {
+  const cache = getEdgeCache();
+  if (!cache) return false;
+  return cache.delete(new Request(cacheUrl, { method: "GET" }));
+};
+
 export const cachedResponse = async (
   cacheUrl: string,
   ttlSeconds: number,

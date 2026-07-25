@@ -16,11 +16,13 @@
 
 <script setup lang="ts">
 import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 
 const store = mainStore();
+const siteContent = useSiteContentStore();
 
 // 配置
-const siteName = envConfig.VITE_SITE_NAME;
+const siteName = computed(() => siteContent.profile.siteName);
 </script>
 
 <style lang="scss" scoped>

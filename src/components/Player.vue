@@ -89,21 +89,6 @@ const props = defineProps({
       return value >= 0 && value <= 1;
     },
   },
-  // 歌曲服务器 ( netease-网易云, tencent-qq音乐 )
-  songServer: {
-    type: String,
-    default: "netease", //'netease' | 'tencent'
-  },
-  // 播放类型 ( song-歌曲, playlist-播放列表, album-专辑, search-搜索, artist-艺术家 )
-  songType: {
-    type: String,
-    default: "playlist",
-  },
-  // id
-  songId: {
-    type: String,
-    default: "7452421335",
-  },
   // 列表是否默认折叠
   listFolded: {
     type: Boolean,
@@ -154,7 +139,7 @@ const loadPlaylist = async () => {
   store.setPlayerStatus("loading");
   store.musicIsOk = false;
   try {
-    const result = await getPlayerList(props.songServer, props.songType, props.songId);
+    const result = await getPlayerList();
     if (result.length === 0) {
       throw new Error("播放列表为空");
     }

@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import socialLinkConfig from "@/assets/socialLinks.json";
+import { useSiteContentStore } from "@/stores/siteContent";
 
 const socialIconClasses = {
   github: "i-ri-github-fill",
@@ -24,18 +24,13 @@ const socialIconClasses = {
   telegram: "i-ri-telegram-fill",
 } as const;
 
-type SocialIcon = keyof typeof socialIconClasses;
-type SocialLinkConfig = {
-  name: string;
-  icon: SocialIcon;
-  tip: string;
-  url: string;
-};
-
-const socialLinks = (socialLinkConfig as SocialLinkConfig[]).map(({ icon, ...item }) => ({
-  ...item,
-  iconClass: socialIconClasses[icon],
-}));
+const siteContent = useSiteContentStore();
+const socialLinks = computed(() => siteContent.sections.socialLinks
+  .filter((item) => item.enabled)
+  .map(({ icon, ...item }) => ({
+    ...item,
+    iconClass: socialIconClasses[icon],
+  })));
 
 // 社交链接提示
 const socialTip = ref("通过这里联系我吧");

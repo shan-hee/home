@@ -4,9 +4,7 @@
       <Icon size="20" class="iconl">
         <Link />
       </Icon>
-      <span class="title text-truncate-ellipsis" v-if="store.mobileOpenState"
-        @click="store.setOpenState = !store.setOpenState">网站列表</span>
-      <span class="title" v-else>网站列表</span>
+      <span class="title text-truncate-ellipsis">网站列表</span>
     </div>
     <!-- 网站列表 -->
     <Swiper v-if="siteLinks[0]" :modules="[Pagination, Mousewheel]" :slides-per-view="1" :space-between="40"
@@ -36,26 +34,19 @@
 import { Icon } from "@vicons/utils";
 // 可前往 https://www.xicons.org 自行挑选并在此处引入
 import { Link, Blog, Cloud, Compass, Book, Fire, LaptopCode } from "@vicons/fa"; // 注意使用正确的类别
-import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import { Pagination, Mousewheel } from "swiper/modules";
-import siteLinks from "@/assets/siteLinks.json";
+import type { SiteLinkConfig } from "@/typings/siteContent";
 
-const store = mainStore();
-const siteLinksData = siteLinks as SiteLink[];
-declare const $openList: () => void;
-
-interface SiteLink {
-  icon: keyof typeof siteIcon;
-  name: string;
-  link: string;
-}
+const siteContent = useSiteContentStore();
+const siteLinks = computed(() => siteContent.sections.siteLinks.filter((item) => item.enabled));
 
 // 计算网站链接
 const siteLinksList = computed(() => {
-  const result: SiteLink[][] = [];
-  for (let i = 0; i < siteLinksData.length; i += 6) {
-    result.push(siteLinksData.slice(i, i + 6));
+  const result: SiteLinkConfig[][] = [];
+  for (let i = 0; i < siteLinks.value.length; i += 6) {
+    result.push(siteLinks.value.slice(i, i + 6));
   };
   return result;
 });
@@ -71,7 +62,7 @@ const siteIcon = {
 };
 
 // 链接跳转
-const jumpLink = (data: SiteLink) => {
+const jumpLink = (data: SiteLinkConfig) => {
   window.open(data.link, "_blank");
 };
 </script>

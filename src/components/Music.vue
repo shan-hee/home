@@ -134,9 +134,6 @@
   <div class="audio-engine" aria-hidden="true">
     <Player
       ref="playerRef"
-      :song-server="playerData.server"
-      :song-type="playerData.type"
-      :song-id="playerData.id"
       :volume="initialVolume"
       @playlist-loaded="handlePlaylistLoaded"
       @track-changed="handleTrackChanged"
@@ -405,6 +402,7 @@ import Player from "@/components/Player.vue";
 import PlayerSeekBar from "@/components/PlayerSeekBar.vue";
 import VolumeSlider from "@/components/VolumeSlider.vue";
 import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 import type { MainState } from "@/typings/store";
 
 type LyricLine = [time: number, text: string];
@@ -416,6 +414,7 @@ interface PlaybackMode {
 }
 
 const store = mainStore();
+const siteContent = useSiteContentStore();
 const playerRef = ref<InstanceType<typeof Player> | null>(null);
 const playlist = ref<PlaylistItem[]>([]);
 const currentIndex = ref(0);
@@ -427,11 +426,7 @@ const previousVolume = ref(volumeNum.value > 0 ? volumeNum.value : 0.3);
 let volumeUpdateFrame: number | null = null;
 let pendingVolume = volumeNum.value;
 
-const playerData = reactive({
-  server: envConfig.VITE_SONG_SERVER,
-  type: envConfig.VITE_SONG_TYPE,
-  id: envConfig.VITE_SONG_ID,
-});
+const playerData = computed(() => siteContent.sections.music);
 
 const playbackModes: PlaybackMode[] = [
   { value: "list", label: "列表循环", icon: PlayCycle },

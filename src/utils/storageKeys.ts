@@ -1,6 +1,7 @@
 export const STORAGE_KEYS = {
-  pinia: "main",
-  weatherLocation: "home:weather:location:v1",
+  ownerDeviceId: "home:owner:device-id:v1",
+  ownerSettings: "home:owner-settings:v1",
+  siteContent: "home:site-content:v1",
   weatherCache: "home:weather:cache:v1",
 } as const;
 

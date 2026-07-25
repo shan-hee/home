@@ -28,19 +28,21 @@
 import { Error } from "@icon-park/vue-next";
 import Hitokoto from "@/components/Hitokoto.vue";
 import { mainStore } from "@/store";
+import { useSiteContentStore } from "@/stores/siteContent";
 const store = mainStore();
+const siteContent = useSiteContentStore();
 
 // 主页站点logo
-const siteLogo = envConfig.VITE_SITE_MAIN_LOGO;
+const siteLogo = computed(() => siteContent.profile.mainLogo);
 // 站点链接
 const siteUrl = computed(() => {
   let mns: string | null = null;
   if (store.msgNameShow) {
-    mns = envConfig.VITE_SITE_MAIN_NAME  ||  envConfig.VITE_SITE_URL || "imsyy.top";
+    mns = siteContent.profile.mainName || siteContent.profile.siteUrl || "imsyy.top";
     // 这里并没有处理显示自定义内容后的分段点，因为这个点看着也不错，有种写字时封笔的感觉，就不处理啦~
     // 才不是懒的！（x）
   } else {
-    mns = envConfig.VITE_SITE_URL || "imsyy.top";
+    mns = siteContent.profile.siteUrl || "imsyy.top";
   };
   const url = mns;
   if (!url) return "imsyy.top".split(".");

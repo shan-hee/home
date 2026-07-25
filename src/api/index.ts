@@ -1,4 +1,5 @@
 import fetchJsonp from "fetch-jsonp";
+import { useSiteContentStore } from "@/stores/siteContent";
 
 export interface PlaylistItem {
   name: string;
@@ -18,14 +19,8 @@ const asText = (value: unknown, fallback = "") => {
 /**
  * 获取单一音乐播放队列。
  */
-export const getPlayerList = async (
-  server: string,
-  type: string,
-  id: string,
-): Promise<PlaylistItem[]> => {
-  const response = await fetch(
-    `${envConfig.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
-  );
+export const getPlayerList = async (): Promise<PlaylistItem[]> => {
+  const response = await fetch("/api/music", { headers: { accept: "application/json" } });
   if (!response.ok) {
     throw new Error(`音乐源返回 ${response.status}`);
   }
@@ -34,6 +29,7 @@ export const getPlayerList = async (
     throw new Error("音乐源响应格式无效");
   }
   const data = payload as MusicApiItem[];
+  const siteName = useSiteContentStore().profile.siteName;
 
   if (data.length > 0 && asText(data[0]?.url).startsWith("@")) {
     const encodedUrl = asText(data[0].url);
@@ -53,7 +49,7 @@ export const getPlayerList = async (
       .map((item, index) => ({
         name: asText(item.name, asText(item.title, "未知歌曲")),
         artist: asText(item.artist, asText(item.author, "未知歌手")),
-        album: asText(item.album, envConfig.VITE_SITE_NAME),
+        album: asText(item.album, siteName),
         url: domain + asText(jsonpData.req_0?.data?.midurlinfo[index]?.purl),
         cover: asText(item.cover, asText(item.pic)),
         lrc: asText(item.lrc),
@@ -65,7 +61,7 @@ export const getPlayerList = async (
     .map((item) => ({
       name: asText(item.name, asText(item.title, "未知歌曲")),
       artist: asText(item.artist, asText(item.author, "未知歌手")),
-      album: asText(item.album, envConfig.VITE_SITE_NAME),
+      album: asText(item.album, siteName),
       url: asText(item.url),
       cover: asText(item.cover, asText(item.pic)),
       lrc: asText(item.lrc),
@@ -74,6 +70,7 @@ export const getPlayerList = async (
 };
 
 export const getHitokoto = async () => {
-  const response = await fetch("https://v1.hitokoto.cn");
+  const response = await fetch("/api/hitokoto", { headers: { accept: "application/json" } });
+  if (!response.ok) throw new Error(`一言接口返回 ${response.status}`);
   return await response.json();
 };
