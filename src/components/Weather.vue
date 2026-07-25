@@ -1,6 +1,33 @@
 <template>
   <div class="weather weather-widget">
-    <button type="button" class="weather-summary" :aria-label="summaryAria" @click="dialogOpen = true">
+    <form v-if="editingCity" class="city-inline" role="search" @submit.prevent="searchCities">
+      <input
+        ref="cityInput"
+        v-model="cityQuery"
+        type="search"
+        autocomplete="off"
+        :placeholder="searchError || '输入城市后回车'"
+        aria-label="城市名称"
+        :aria-invalid="Boolean(searchError)"
+        @input="searchError = ''"
+        @keydown.esc.prevent="closeCityInput"
+      />
+      <button
+        type="submit"
+        aria-label="搜索城市"
+        :disabled="cityQuery.trim().length < 2 || searching"
+      >
+        <Search theme="outline" size="17" />
+      </button>
+    </form>
+
+    <button
+      v-else
+      type="button"
+      class="weather-summary"
+      :aria-label="`${summaryAria}，点击输入城市`"
+      @click="openCityInput"
+    >
       <template v-if="weatherData">
         <span>{{ weatherData.city }}&nbsp;</span>
         <span>{{ weatherData.weather }}&nbsp;</span>
@@ -13,52 +40,13 @@
         <span v-if="alerts.length" class="alert-badge">{{ alerts.length }} 条预警</span>
       </template>
       <span v-else-if="loading">天气加载中…</span>
-      <span v-else>{{ errorMessage || "选择城市" }}</span>
+      <span v-else>{{ errorMessage || "天气数据获取失败" }}</span>
     </button>
-
-    <el-dialog v-model="dialogOpen" title="选择城市" width="min(92vw, 440px)" append-to-body>
-      <div class="search-row">
-        <input v-model="cityQuery" type="search" autocomplete="off" placeholder="城市名称" aria-label="城市名称"
-          @input="queueCitySearch" @keydown.enter.prevent="searchCities" />
-        <button type="button" aria-label="搜索城市" :disabled="cityQuery.trim().length < 2 || searching"
-          @click="searchCities">
-          <Search theme="outline" size="18" />
-        </button>
-        <button type="button" aria-label="使用 IP 定位" title="使用 IP 定位" :disabled="locating" @click="useIpLocation">
-          <Gps theme="outline" size="18" />
-        </button>
-      </div>
-
-      <div v-if="searching" class="search-state">正在搜索…</div>
-      <div v-else-if="searchError" class="search-state error">{{ searchError }}</div>
-      <ul v-else-if="cityResults.length" class="city-results">
-        <li v-for="city in cityResults" :key="city.id">
-          <button type="button" @click="selectCity(city)">
-            <span>{{ city.name }}</span>
-            <small>{{ [city.admin1, city.country].filter(Boolean).join(" · ") }}</small>
-          </button>
-        </li>
-      </ul>
-
-      <div v-if="weatherData" class="weather-details">
-        <span>{{ weatherData.source === "open-meteo" ? "Open-Meteo" : "MET Norway" }}</span>
-        <span>{{ updatedLabel }}</span>
-        <span v-if="weatherData.stale" class="status-badge">旧数据</span>
-      </div>
-
-      <ul v-if="alerts.length" class="weather-alerts">
-        <li v-for="alert in alerts" :key="alert.id">
-          <strong>{{ alert.title }}</strong>
-          <span v-if="alert.level">{{ alert.level }}</span>
-          <p v-if="alert.text">{{ alert.text }}</p>
-        </li>
-      </ul>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Error as ErrorIcon, Gps, Search } from "@icon-park/vue-next";
+import { Search } from "@icon-park/vue-next";
 import type {
   GeocodingApiResponse,
   GeocodingResult,
@@ -87,15 +75,13 @@ const WEATHER_CACHE_KEY = STORAGE_KEYS.weatherCache;
 const weatherData = ref<WeatherDisplay | null>(null);
 const alerts = ref<WeatherAlert[]>([]);
 const loading = ref(false);
-const locating = ref(false);
 const errorMessage = ref("");
-const dialogOpen = ref(false);
+const editingCity = ref(false);
+const cityInput = ref<HTMLInputElement | null>(null);
 const cityQuery = ref("");
-const cityResults = ref<GeocodingResult[]>([]);
 const searching = ref(false);
 const searchError = ref("");
 
-let searchTimer: number | null = null;
 let searchController: AbortController | null = null;
 let weatherController: AbortController | null = null;
 let alertsController: AbortController | null = null;
@@ -192,10 +178,11 @@ const readLatestCachedWeather = () => {
 const saveWeatherCache = (location: WeatherLocation, data: WeatherApiResponse) => {
   const cache = readCacheStore();
   cache.entries[cacheKey(location)] = { data, savedAt: new Date().toISOString() };
-  const newestEntries = Object.entries(cache.entries)
-    .sort(([, first], [, second]) => Date.parse(second.savedAt) - Date.parse(first.savedAt))
-    .slice(0, 5);
-  cache.entries = Object.fromEntries(newestEntries);
+  cache.entries = Object.fromEntries(
+    Object.entries(cache.entries)
+      .sort(([, first], [, second]) => Date.parse(second.savedAt) - Date.parse(first.savedAt))
+      .slice(0, 5),
+  );
   storageSet(WEATHER_CACHE_KEY, JSON.stringify(cache));
 };
 
@@ -273,47 +260,51 @@ const loadWeather = async (location?: WeatherLocation) => {
       errorMessage.value = "实时天气不可用，正在显示旧数据";
     } else {
       weatherData.value = null;
+      alerts.value = [];
       errorMessage.value = "天气数据获取失败";
-      dialogOpen.value = true;
-      ElMessage({
-        message: "天气获取失败，请选择城市",
-        icon: h(ErrorIcon, { theme: "filled", fill: "var(--el-message-icon-color)" }),
-      });
     }
   } finally {
     if (weatherController === controller) loading.value = false;
   }
 };
 
+const closeCityInput = () => {
+  searchController?.abort();
+  editingCity.value = false;
+  cityQuery.value = "";
+  searchError.value = "";
+  searching.value = false;
+};
+
 const useIpLocation = async () => {
   const requestId = ++locationRequestId;
-  locating.value = true;
+  closeCityInput();
   try {
-    try {
-      localStorage.removeItem(SAVED_LOCATION_KEY);
-    } catch {
-      // 无法访问本地存储时仍可使用本次 IP 定位。
-    }
-    dialogOpen.value = false;
-    await loadWeather();
-  } catch (error) {
-    if (requestId !== locationRequestId) return;
-    console.warn("IP 定位不可用：", error);
-    errorMessage.value = "IP 定位不可用，请选择城市";
-    dialogOpen.value = true;
-  } finally {
-    if (requestId === locationRequestId) locating.value = false;
+    localStorage.removeItem(SAVED_LOCATION_KEY);
+  } catch {
+    // 无法访问本地存储时仍可使用本次 IP 定位。
   }
+  await loadWeather();
+  if (requestId !== locationRequestId) return;
+};
+
+const selectCity = async (city: GeocodingResult) => {
+  locationRequestId += 1;
+  const location: WeatherLocation = {
+    name: city.name,
+    latitude: Number(city.latitude.toFixed(2)),
+    longitude: Number(city.longitude.toFixed(2)),
+  };
+  storageSet(SAVED_LOCATION_KEY, JSON.stringify(location));
+  closeCityInput();
+  await loadWeather(location);
 };
 
 const searchCities = async () => {
-  if (searchTimer !== null) window.clearTimeout(searchTimer);
   searchController?.abort();
   const query = cityQuery.value.trim();
   if (query.length < 2) {
-    cityResults.value = [];
-    searchError.value = "";
-    searching.value = false;
+    searchError.value = "至少输入两个字符";
     return;
   }
   const controller = new AbortController();
@@ -330,45 +321,37 @@ const searchCities = async () => {
     if (!payload || typeof payload !== "object") throw new Error("城市搜索响应格式无效");
     const results = (payload as Partial<GeocodingApiResponse>).results;
     if (!Array.isArray(results)) throw new Error("城市搜索响应格式无效");
-    cityResults.value = results.filter(isGeocodingResult);
-    if (cityResults.value.length === 0) searchError.value = "未找到匹配城市";
+    const city = results.find(isGeocodingResult);
+    if (!city) {
+      searchError.value = "未找到匹配城市";
+      cityQuery.value = "";
+      await nextTick();
+      cityInput.value?.focus();
+      return;
+    }
+    await selectCity(city);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") return;
-    cityResults.value = [];
     searchError.value = "城市搜索暂时不可用";
+    cityQuery.value = "";
+    await nextTick();
+    cityInput.value?.focus();
   } finally {
     if (searchController === controller) searching.value = false;
   }
 };
 
-const queueCitySearch = () => {
-  if (searchTimer !== null) window.clearTimeout(searchTimer);
-  searchTimer = window.setTimeout(() => void searchCities(), 400);
+const openCityInput = async () => {
+  editingCity.value = true;
+  cityQuery.value = weatherData.value?.city || "";
+  searchError.value = "";
+  await nextTick();
+  cityInput.value?.focus();
+  cityInput.value?.select();
 };
-
-const selectCity = async (city: GeocodingResult) => {
-  locationRequestId += 1;
-  locating.value = false;
-  const location: WeatherLocation = {
-    name: city.name,
-    latitude: Number(city.latitude.toFixed(2)),
-    longitude: Number(city.longitude.toFixed(2)),
-  };
-  storageSet(SAVED_LOCATION_KEY, JSON.stringify(location));
-  cityResults.value = [];
-  cityQuery.value = "";
-  dialogOpen.value = false;
-  await loadWeather(location);
-};
-
-const updatedLabel = computed(() => {
-  if (!weatherData.value) return "";
-  const date = new Date(weatherData.value.updatedAt);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("zh-CN", { hour12: false });
-});
 
 const summaryAria = computed(() => {
-  if (!weatherData.value) return errorMessage.value || "选择城市";
+  if (!weatherData.value) return errorMessage.value || "天气数据获取失败";
   const stale = weatherData.value.stale ? "，旧数据" : "";
   return `${weatherData.value.city}，${weatherData.value.weather}，${weatherData.value.temperature} 摄氏度${stale}`;
 });
@@ -380,17 +363,13 @@ const handleSettingsReset = () => {
 onMounted(async () => {
   window.addEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);
   const storedLocation = savedLocation();
-  if (storedLocation) {
-    await loadWeather(storedLocation);
-  } else {
-    await useIpLocation();
-  }
+  if (storedLocation) await loadWeather(storedLocation);
+  else await useIpLocation();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);
   locationRequestId += 1;
-  if (searchTimer !== null) window.clearTimeout(searchTimer);
   searchController?.abort();
   weatherController?.abort();
   alertsController?.abort();
@@ -420,6 +399,66 @@ onBeforeUnmount(() => {
       background: rgb(255 255 255 / 12%);
     }
   }
+
+  .city-inline {
+    width: min(100%, 190px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    input {
+      width: 100%;
+      min-width: 0;
+      height: 28px;
+      padding: 0 8px;
+      border: 1px solid rgba(from currentColor r g b / 0.24);
+      border-radius: 6px;
+      color: inherit;
+      background: rgba(from currentColor r g b / 0.08);
+      font: inherit;
+      text-align: center;
+      outline: none;
+
+      &::placeholder {
+        color: inherit;
+        opacity: 0.68;
+      }
+
+      &:focus {
+        border-color: rgba(from currentColor r g b / 0.48);
+        background: rgba(from currentColor r g b / 0.12);
+      }
+
+      &[aria-invalid="true"] {
+        border-color: rgb(255 150 150 / 70%);
+      }
+    }
+
+    button {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      color: inherit;
+      background: rgba(from currentColor r g b / 0.08);
+      cursor: pointer;
+
+      &:hover,
+      &:focus-visible {
+        background: rgba(from currentColor r g b / 0.14);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.42;
+      }
+    }
+  }
 }
 
 .status-badge,
@@ -431,98 +470,11 @@ onBeforeUnmount(() => {
   font-size: 0.72rem;
 }
 
-.status-badge { background: rgb(255 193 7 / 25%); }
-.alert-badge { background: rgb(244 67 54 / 28%); }
-
-.search-row {
-  display: grid;
-  grid-template-columns: 1fr 38px 38px;
-  gap: 8px;
-
-  input,
-  button {
-    height: 38px;
-    border: 1px solid var(--set-radio-border-color);
-    border-radius: 7px;
-    color: var(--text-color);
-    background: var(--set-radio-bg-color);
-  }
-
-  input { padding: 0 10px; }
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.45;
-    }
-  }
+.status-badge {
+  background: rgb(255 193 7 / 25%);
 }
 
-.search-state {
-  padding: 18px 4px 4px;
-  color: var(--text-color);
-
-  &.error { color: #d9534f; }
-}
-
-.city-results,
-.weather-alerts {
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.city-results {
-  max-height: 240px;
-  overflow-y: auto;
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 10px;
-    border: 0;
-    border-radius: 7px;
-    color: var(--text-color);
-    background: transparent;
-    cursor: pointer;
-
-    &:hover,
-    &:focus-visible { background: var(--set-radio-bg-color); }
-  }
-
-  small { opacity: 0.7; }
-}
-
-.weather-details {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 14px;
-  font-size: 0.78rem;
-  opacity: 0.8;
-}
-
-.weather-alerts li {
-  padding: 10px;
-  border-radius: 7px;
-  color: var(--text-color);
-  background: rgb(244 67 54 / 12%);
-
-  & + li { margin-top: 8px; }
-
-  span { margin-left: 8px; }
-
-  p {
-    margin: 6px 0 0;
-    line-height: 1.5;
-    white-space: normal;
-  }
+.alert-badge {
+  background: rgb(244 67 54 / 28%);
 }
 </style>
