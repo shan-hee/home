@@ -47,7 +47,6 @@
               </select>
             </label>
             <label class="wide">地址<input v-model="item.link" type="url" /></label>
-            <label class="switch-label"><input v-model="item.enabled" type="checkbox" /> 显示</label>
           </div>
         </div>
         <button type="button" class="add-button" @click="addSiteLink">＋ 添加网站</button>
@@ -69,7 +68,6 @@
             </label>
             <label>悬浮提示<input v-model="item.tip" /></label>
             <label class="wide">地址<input v-model="item.url" /></label>
-            <label class="switch-label"><input v-model="item.enabled" type="checkbox" /> 显示</label>
           </div>
         </div>
         <button type="button" class="add-button" @click="addSocialLink">＋ 添加社交链接</button>
@@ -91,7 +89,6 @@
             </select>
           </label>
           <label class="wide">音乐 ID<input v-model="drafts.music.id" /></label>
-          <label class="switch-label"><input v-model="drafts.music.enabled" type="checkbox" /> 启用播放器</label>
         </div>
         <SectionSave section="music" :state="saveStates.music" @save="saveSection('music')" />
       </el-collapse-item>
@@ -253,7 +250,6 @@ const addSiteLink = () => drafts.value?.siteLinks.push({
   icon: "Compass",
   name: "",
   link: "https://",
-  enabled: true,
 });
 
 const addSocialLink = () => drafts.value?.socialLinks.push({
@@ -261,7 +257,6 @@ const addSocialLink = () => drafts.value?.socialLinks.push({
   icon: "github",
   tip: "",
   url: "https://",
-  enabled: true,
 });
 
 onMounted(() => void loadContent());
@@ -372,12 +367,6 @@ onMounted(() => void loadContent());
     color: #222;
   }
 
-  .switch-label {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 34px;
-  }
 }
 
 .list-editor {

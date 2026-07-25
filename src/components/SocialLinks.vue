@@ -26,7 +26,6 @@ const socialIconClasses = {
 
 const siteContent = useSiteContentStore();
 const socialLinks = computed(() => siteContent.sections.socialLinks
-  .filter((item) => item.enabled)
   .map(({ icon, ...item }) => ({
     ...item,
     iconClass: socialIconClasses[icon],

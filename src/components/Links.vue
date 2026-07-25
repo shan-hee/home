@@ -1,5 +1,5 @@
 <template>
-  <div v-if="siteLinks[0]" class="links">
+  <div class="links">
     <div class="line">
       <Icon size="20" class="iconl">
         <Link />
@@ -7,7 +7,7 @@
       <span class="title text-truncate-ellipsis">网站列表</span>
     </div>
     <!-- 网站列表 -->
-    <Swiper v-if="siteLinks[0]" :modules="[Pagination, Mousewheel]" :slides-per-view="1" :space-between="40"
+    <Swiper :modules="[Pagination, Mousewheel]" :slides-per-view="1" :space-between="40"
       :pagination="{
         el: '.swiper-pagination',
         clickable: true,
@@ -40,7 +40,7 @@ import { Pagination, Mousewheel } from "swiper/modules";
 import type { SiteLinkConfig } from "@/typings/siteContent";
 
 const siteContent = useSiteContentStore();
-const siteLinks = computed(() => siteContent.sections.siteLinks.filter((item) => item.enabled));
+const siteLinks = computed(() => siteContent.sections.siteLinks);
 
 // 计算网站链接
 const siteLinksList = computed(() => {

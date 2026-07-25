@@ -4,7 +4,7 @@
     <el-row :gutter="20">
       <el-col :span="12">
         <div class="left">
-          <Music v-if="playerHasId" :key="siteContent.snapshot.sectionRevisions.music" />
+          <Music :key="siteContent.snapshot.sectionRevisions.music" />
         </div>
       </el-col>
       <el-col :span="12">
@@ -107,9 +107,6 @@ const lunarDayNames = [
   "三十",
 ];
 let calendarDateKey = "";
-
-// 播放器 id
-const playerHasId = computed(() => siteContent.sections.music.enabled && Boolean(siteContent.sections.music.id));
 
 // 更新农历与星期，仅在日期变化时重新格式化
 const updateCalendarText = (date: Date) => {

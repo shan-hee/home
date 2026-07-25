@@ -21,7 +21,6 @@ export interface SiteLinkConfig {
   icon: SiteIcon;
   name: string;
   link: string;
-  enabled: boolean;
 }
 
 export interface SocialLinkConfig {
@@ -29,11 +28,9 @@ export interface SocialLinkConfig {
   icon: SocialIcon;
   tip: string;
   url: string;
-  enabled: boolean;
 }
 
 export interface MusicContentConfig {
-  enabled: boolean;
   server: "netease" | "tencent";
   type: "playlist" | "song";
   id: string;

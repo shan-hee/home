@@ -39,11 +39,6 @@ const text = (value: unknown, name: string, maxLength: number, allowEmpty = true
   return normalized;
 };
 
-const boolean = (value: unknown, name: string) => {
-  if (typeof value !== "boolean") throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
-  return value;
-};
-
 const integer = (value: unknown, name: string, min: number, max: number) => {
   if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
     throw new ApiError(400, "INVALID_CONTENT", `${name}范围无效`);
@@ -108,7 +103,7 @@ const siteLinks = (value: unknown) => {
   }
   return value.map((item, index) => {
     if (!isRecord(item)) throw new ApiError(400, "INVALID_CONTENT", `网站 ${index + 1} 格式无效`);
-    knownKeys(item, ["icon", "name", "link", "enabled"]);
+    knownKeys(item, ["icon", "name", "link"]);
     return {
       icon: (() => {
         const icon = iconName(item.icon);
@@ -117,7 +112,6 @@ const siteLinks = (value: unknown) => {
       })(),
       name: text(item.name, "网站名称", 80, false),
       link: url(item.link, "网站地址", ["http:", "https:"]),
-      enabled: item.enabled === undefined ? true : boolean(item.enabled, "网站启用状态"),
     };
   });
 };
@@ -128,7 +122,7 @@ const socialLinks = (value: unknown) => {
   }
   return value.map((item, index) => {
     if (!isRecord(item)) throw new ApiError(400, "INVALID_CONTENT", `社交链接 ${index + 1} 格式无效`);
-    knownKeys(item, ["name", "icon", "tip", "url", "enabled"]);
+    knownKeys(item, ["name", "icon", "tip", "url"]);
     return {
       name: text(item.name, "社交名称", 80, false),
       icon: (() => {
@@ -138,14 +132,13 @@ const socialLinks = (value: unknown) => {
       })(),
       tip: text(item.tip, "社交提示", 120),
       url: url(item.url, "社交地址", ["https:", "mailto:"]),
-      enabled: item.enabled === undefined ? true : boolean(item.enabled, "社交链接启用状态"),
     };
   });
 };
 
 const music = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "音乐配置格式无效");
-  knownKeys(value, ["enabled", "server", "type", "id"]);
+  knownKeys(value, ["server", "type", "id"]);
   const server = text(value.server, "音乐平台", 20, false);
   const type = text(value.type, "音乐类型", 20, false);
   if (!(["netease", "tencent"] as string[]).includes(server)) {
@@ -155,7 +148,6 @@ const music = (value: unknown) => {
     throw new ApiError(400, "INVALID_CONTENT", "不支持的音乐类型");
   }
   return {
-    enabled: boolean(value.enabled, "播放器启用状态"),
     server,
     type,
     id: text(value.id, "音乐 ID", 120),
@@ -264,11 +256,11 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config", request.url).toString();
+  return new URL("/__edge-cache/site-config-v2", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/music", request.url).toString();
+  return new URL("/__edge-cache/music-v2", request.url).toString();
 };
 
 export const hitokotoCacheUrl = (request: Request) => {

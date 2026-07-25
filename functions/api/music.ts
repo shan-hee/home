@@ -10,12 +10,11 @@ export const onRequestGet = async (context: PagesContext) => {
     return await cachedResponse(musicCacheUrl(context.request), 300, context, async () => {
       const config = await loadSiteContent(context.env.DB);
       const music = config.sections.music as {
-        enabled: boolean;
         server: string;
         type: string;
         id: string;
       };
-      if (!music.enabled || !music.id) return apiResponse([], requestId, {}, "public, max-age=300");
+      if (!music.id) return apiResponse([], requestId, {}, "public, max-age=300");
 
       const upstreamValue = context.env.MUSIC_API_URL?.trim() || "";
       let upstream: URL;

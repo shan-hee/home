@@ -5,6 +5,7 @@ const projectRoot = resolve(import.meta.dirname, "..");
 
 const sqlText = (value) => `'${String(value).replaceAll("'", "''")}'`;
 const now = new Date().toISOString();
+const seedRevision = Math.floor(Date.now() / 1000);
 const localSeedPath = resolve(projectRoot, ".site-content.seed.json");
 const seedPath = existsSync(localSeedPath)
   ? localSeedPath
@@ -23,7 +24,7 @@ const statements = [
   ...Object.entries(sections).map(([key, content]) => (
     `INSERT INTO content_sections (`
       + "section_key, content_json, revision, updated_at, updated_by_device"
-      + `) VALUES (${sqlText(key)}, ${sqlText(JSON.stringify(content))}, 1, ${sqlText(now)}, NULL);`
+      + `) VALUES (${sqlText(key)}, ${sqlText(JSON.stringify(content))}, ${seedRevision}, ${sqlText(now)}, NULL);`
   )),
 ];
 
