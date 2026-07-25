@@ -1,19 +1,5 @@
 简体中文 | [English](./README_EN.md)
 
-> [!IMPORTANT]
-> ## 致大家
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;嘿！恭喜你看到这里~ 这是酪灰基于原作者 imsyy 主页的修改版本！修改版本添加了更多的功能，但是也会带来更高的性能占用！（主要来自季节效果渲染），也添加了安全更新，增强安全性。<p>
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;酪灰作为 Vue 初学者，因为热爱，拉着同学 Pizero 完善了这个项目，因此这些代码可能会很 shi，并可能充斥着不少 BUG。欢迎在遇到 BUG 时进行反馈，也欢迎各位大佬帮助！<p>
->#### 关于问题反馈以及求助
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;遇到问题请在 Github 上提 issue ，需要帮助请在 Github 上发 discussion ，看到了会回复。除特殊情况外，<b>请不要直接通过其它社交方式联系酪灰！</b>酪灰不是客服，不提供售后服务，并没有那么多的时间来回复私聊。还请谅解！<p>
->### 最后，喜欢本项目的话麻烦给个 STAR ！阿里嘎多~
-
-<p>&nbsp;<p>
-
-> [!WARNING]
-> ## hmm...
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;下一个版本原计划是添加 i18n ，由于工作量巨大且...某个笨蛋最近迷上了 洛克王国 ，故这个更新可能会遥遥无期(x)... 等腾点时间出来叭（<p>
-
 <p>&nbsp;<p>
 <strong><h2>無名の主页</h2></strong>
 </p>
@@ -81,7 +67,7 @@ pnpm dev:cf
 
 `dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。`pnpm dev:web` 不会自动打开浏览器。
 
-`.dev.vars` 至少需要填写长度足够的 `OWNER_ACCESS_KEY` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后站点资料直接在主页铅笔入口的“内容”面板修改，无需重新构建或重启服务。
+`.dev.vars` 至少需要填写长度足够的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后站点资料在主页铅笔入口的“内容”面板修改；网站和社交方式则直接在主页原位置管理，无需重新构建或重启服务。
 
 ### ⚙️ Cloudflare Pages 部署
 
@@ -91,56 +77,30 @@ pnpm dev:cf
 2. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
 3. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
 4. 将 `DB` 绑定到刚创建的 D1；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
-5. 通过 Cloudflare Secret 配置 `OWNER_ACCESS_KEY`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
+5. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
 6. 部署后先确认公开主页正常，再用铅笔入口登录；站点内容、设备和审计均在原位设置面板管理。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
 
 ### 站点内容
 
-Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威来源。所有者登录后，在原位设置面板的“内容”标签修改；保存会校验 section revision，避免多个标签页静默覆盖。
+Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威来源。所有者登录后，网站列表与社交方式会显示新增和编辑入口，并支持拖动排序；网站图标还可通过右键菜单编辑或删除。网站编辑器支持根据网址获取 favicon 候选并选择使用。其余内容在原位设置面板的“内容”标签修改。保存会校验 section revision，避免多个标签页静默覆盖。
 
 ```json
 {
-  "icon": "Blog",
   "name": "博客",
-  "link": "https://blog.your.domain/"
-},
+  "link": "https://blog.your.domain/",
+  "iconMode": "icon",
+  "iconValue": "ri:blogger-fill",
+  "iconColor": "#FF4757"
+}
 ```
 
-网站图标目前支持 `Blog`、`Cloud`、`Compass`、`Book`、`Fire`、`LaptopCode`。扩展图标需要同时修改前端静态图标映射和服务端白名单。以下代码仅说明现有图标映射：
-
-```js
-// 可前往 https://www.xicons.org 自行挑选并在此处引入
-// 此处引入的是 fa 类型
-import {
-  Link,
-  Blog,
-  CompactDisc,
-  Cloud,
-  Compass,
-  Book,
-  Fire,
-  LaptopCode,
-} from "@vicons/fa";
-
-...
-
-// 网站链接图标
-const siteIcon = {
-  Blog,
-  Cloud,
-  CompactDisc,
-  Compass,
-  Book,
-  Fire,
-  LaptopCode,
-};
-```
+`iconMode` 可取 `icon`、`text` 或 `image`。图标库模式使用 Iconify 代码（例如 `ri:github-fill`），文字模式的 `iconValue` 为 1 至 4 个字符，图片模式使用 HTTPS 图标地址；`iconColor` 使用六位十六进制颜色。
 
 ### 社交链接
 
-社交链接同样在“内容”面板维护。内置 `icon` 值包括 `github`、`bilibili`、`qq`、`mail`、`twitter-x` 和 `telegram`，由 UnoCSS 和 Remix Icon 在构建时按需生成；增加其它图标时，需要同时修改前端映射和服务端白名单。
+管理员登录后可在主页社交图标区域直接新增、编辑、删除和拖动排序。`icon` 使用 Iconify 图标代码，表单提供常用图标选择，也可以直接填写其它有效代码。
 
 ### 天气
 
@@ -156,7 +116,7 @@ const siteIcon = {
 
 ### 音乐
 
-> 本项目采用了 `Aplayer` 音乐播放器，可实现快速自定义歌单
+> 本项目采用原生 HTML Audio 播放引擎与 React 自定义界面，可实现歌单、歌词、全屏、底栏进度和媒体快捷键
 > \*仅支持 **中国大陆地区**
 
 音乐平台、类型和 ID 在原位设置面板的“内容 → 音乐来源”中修改；Meting API 上游地址只通过 Worker Secret `MUSIC_API_URL` 配置，不会下发到浏览器。
@@ -192,13 +152,11 @@ const siteIcon = {
 
 ### 技术栈
 
-- [Vue](https://cn.vuejs.org/)
+- [React](https://react.dev/)
 - [Vite](https://vitejs.cn/vite3-cn/)
-- [Pinia](https://pinia.vuejs.org/zh/)
+- [Zustand](https://zustand.docs.pmnd.rs/)
 - [IconPark](https://iconpark.oceanengine.com/official)
-- [xicons](https://xicons.org/)
 - [TypeScript](https://www.typescriptlang.org/zh/)
-- [Aplayer](https://aplayer.js.org/)
 
 ### API
 

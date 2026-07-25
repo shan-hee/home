@@ -1,12 +1,5 @@
 English | [简体中文](./README.md)
 
-> [!IMPORTANT]
-> ## To everyone
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Hey! Congratulations on reading this~ This is a modified version of NanoRocky based on the original author imsyy's homepage! The modified version adds more features, but also brings higher performance usage! (mainly from seasonal effect rendering), and also adds security updates to enhance security.<p>
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;NanoRocky is a Vue beginner. Because of his passion, he worked with his classmate Pizero to perfect this project. Therefore, the code may be very bad and may be full of bugs. You are welcome to give feedback when you encounter bugs, and you are also welcome to help!<p>
->#### About feedback and help
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;If you encounter any problems, please raise an issue on Github. If you need help, please post a discussion on Github. We will reply to you when we see it. Except for special circumstances, <b>please do not contact NanoRocky directly through other social contact! </b>NanoRocky is not a customer service, does not provide after-sales service, and does not have that much time to reply to private chats. Please understand!<p>
->### Finally, if you like this project, please give a STAR! Thank you very much~
 
 <p>
 <strong><h2>Homepage</h2></strong>
@@ -88,49 +81,23 @@ The repository's `wrangler.jsonc` supports local preview and Wrangler deployment
 
 ### Site content
 
-Profile, site links, social links, music, wallpaper metadata, and Hitokoto configuration use D1 as their authoritative source. Sign in through the pencil button and edit them in the in-place Content panel; changes do not require a rebuild or service restart. The following object only illustrates a site-link entry:
+Profile, site links, social links, music, wallpaper metadata, and Hitokoto configuration use D1 as their authoritative source. After signing in, site and social links can be added, edited, deleted, and drag-sorted in place. Site icons also expose edit and delete actions in a context menu, and the site editor can load favicon candidates from the entered URL. The remaining content is available in the Content panel. Changes do not require a rebuild or service restart.
 
 ```json
 {
-  "icon": "Blog",
   "name": "Blog",
-  "link": "https://blog.your.domain/"
-},
+  "link": "https://blog.your.domain/",
+  "iconMode": "icon",
+  "iconValue": "ri:blogger-fill",
+  "iconColor": "#FF4757"
+}
 ```
 
-Supported site icons are `Blog`, `Cloud`, `Compass`, `Book`, `Fire`, and `LaptopCode`. Extending the list requires updating both the frontend mapping and backend allowlist:
-
-```js
-// You can go to https://www.xicons.org to select and import it here
-// The fa type is imported here
-import {
-  Link,
-  Blog,
-  CompactDisc,
-  Cloud,
-  Compass,
-  Book,
-  Fire,
-  LaptopCode,
-} from "@vicons/fa";
-
-...
-
-// Website link icon
-const siteIcon = {
-  Blog,
-  Cloud,
-  CompactDisc,
-  Compass,
-  Book,
-  Fire,
-  LaptopCode,
-};
-```
+`iconMode` accepts `icon`, `text`, or `image`. Icon mode uses an Iconify code such as `ri:github-fill`; text mode accepts one to four characters in `iconValue`, and image mode uses an HTTPS icon URL. `iconColor` is a six-digit hexadecimal color.
 
 ### Social Links
 
-Social links are managed in the same Content panel. Built-in `icon` values are `github`, `bilibili`, `qq`, `mail`, `twitter-x`, and `telegram`; UnoCSS and Remix Icon generate them on demand at build time.
+After signing in, social links are managed directly in their home-page row. The form provides common Iconify choices and also accepts a valid Iconify code directly.
 
 ### Weather
 
@@ -146,7 +113,7 @@ Online wallpaper metadata is provided by `/api/wallpaper`, remote images use the
 
 ### Music
 
->This project uses the `Aplayer` music player based on `MetingJS` for quick song list customization
+>This project uses a native HTML Audio engine with a custom React interface for playlists, lyrics, fullscreen playback, footer progress, and media shortcuts.
 >\*Only supported in **Mainland China**
 
 Configure the provider, type, and ID in **Content → Music source**. Configure the upstream Meting API only through the Worker Secret `MUSIC_API_URL`; it is never exposed to the browser.
@@ -178,13 +145,11 @@ The website icon can be modified in `public/images/icon`.
 
 ### Technology Stack
 
-- [Vue](https://cn.vuejs.org/)
+- [React](https://react.dev/)
 - [Vite](https://vitejs.cn/vite3-cn/)
-- [Pinia](https://pinia.vuejs.org/zh/)
+- [Zustand](https://zustand.docs.pmnd.rs/)
 - [IconPark](https://iconpark.oceanengine.com/official)
-- [xicons](https://xicons.org/)
 - [TypeScript](https://www.typescriptlang.org/zh/)
-- [Aplayer](https://aplayer.js.org/)
 
 ### API
 
