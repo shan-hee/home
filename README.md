@@ -63,6 +63,15 @@ npm install -g pnpm
 
 # 安装依赖
 pnpm install --frozen-lockfile
+
+# 首次初始化本地 D1
+cp .dev.vars.example .dev.vars
+cp scripts/site-content.seed.example.json .site-content.seed.json
+# 编辑上述两个本地文件后执行
+pnpm db:migrate:local
+pnpm db:seed:generate
+pnpm db:seed:local
+
 # 只启动前端，适合页面与样式开发
 pnpm dev:web
 
@@ -70,23 +79,26 @@ pnpm dev:web
 pnpm dev:cf
 ```
 
-`dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。可先访问 `http://localhost:3000/api/health`，确认返回 JSON。
+`dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。`pnpm dev:web` 不会自动打开浏览器。
+
+`.dev.vars` 至少需要填写长度足够的 `OWNER_ACCESS_KEY` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后站点资料直接在主页铅笔入口的“内容”面板修改，无需重新构建或重启服务。
 
 ### ⚙️ Cloudflare Pages 部署
 
 首版只维护 Cloudflare Pages：
 
-1. 在 Cloudflare Pages 连接本仓库。
-2. 安装命令填写 `pnpm install --frozen-lockfile`。
-3. 构建命令填写 `pnpm build`。
-4. 输出目录填写 `dist`；根目录下的 `functions/` 会作为 Pages Functions 发布。
-5. 非敏感配置使用 Pages 环境变量，Secret 通过 Cloudflare 控制台配置，不要写入 `VITE_*`。可选变量见 `.dev.vars.example`，包括 `WALLHAVEN_API_KEY`、`GITHUB_REPOSITORY` 和 `GITHUB_TOKEN`。
+1. 创建 D1 数据库并将真实 `database_id` 写入 `wrangler.jsonc`，再应用 `migrations/0001_initial.sql`。
+2. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
+3. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
+4. 将 `DB` 绑定到刚创建的 D1；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
+5. 通过 Cloudflare Secret 配置 `OWNER_ACCESS_KEY`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
+6. 部署后先确认公开主页正常，再用铅笔入口登录；站点内容、设备和审计均在原位设置面板管理。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
 
-### 网站链接
+### 站点内容
 
-在 `src/assets/siteLinks.json` 中可以自定义网站链接（以指向自己的网站）:
+Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威来源。所有者登录后，在原位设置面板的“内容”标签修改；保存会校验 section revision，避免多个标签页静默覆盖。
 
 ```json
 {
@@ -96,7 +108,7 @@ pnpm dev:cf
 },
 ```
 
-其中 `icon` 网站链接的图标可以在 `src/components/Links/index.vue` 中添加:
+网站图标目前支持 `Blog`、`Cloud`、`Compass`、`Book`、`Fire`、`LaptopCode`。扩展图标需要同时修改前端静态图标映射和服务端白名单。以下代码仅说明现有图标映射：
 
 ```js
 // 可前往 https://www.xicons.org 自行挑选并在此处引入
@@ -128,7 +140,7 @@ const siteIcon = {
 
 ### 社交链接
 
-在 `src/assets/socialLinks.json` 中可以自定义社交链接。内置 `icon` 值包括 `github`、`bilibili`、`qq`、`mail`、`twitter-x` 和 `telegram`，由 UnoCSS 和 Remix Icon 在构建时按需生成；增加其他图标时，需要同时在 `src/components/SocialLinks.vue` 的 `socialIconClasses` 中添加静态映射。
+社交链接同样在“内容”面板维护。内置 `icon` 值包括 `github`、`bilibili`、`qq`、`mail`、`twitter-x` 和 `telegram`，由 UnoCSS 和 Remix Icon 在构建时按需生成；增加其它图标时，需要同时修改前端映射和服务端白名单。
 
 ### 天气
 
@@ -147,18 +159,7 @@ const siteIcon = {
 > 本项目采用了 `Aplayer` 音乐播放器，可实现快速自定义歌单
 > \*仅支持 **中国大陆地区**
 
-请在 `.env` 文件中更改歌曲相关参数即可实现自定义歌单列表
-
-```bash
-# 歌曲 API 地址 （强烈建议自行搭建 Meting-Api）
-VITE_SONG_API = "https://metingapi.nanorocky.top/"
-# 歌曲服务器 ( netease-网易云, tencent-qq音乐 )
-VITE_SONG_SERVER = "netease"
-# 播放类型 ( song-歌曲, playlist-播放列表, album-专辑, search-搜索, artist-艺术家 )
-VITE_SONG_TYPE = "playlist"
-# 播放 ID
-VITE_SONG_ID = "3035221869"
-```
+音乐平台、类型和 ID 在原位设置面板的“内容 → 音乐来源”中修改；Meting API 上游地址只通过 Worker Secret `MUSIC_API_URL` 配置，不会下发到浏览器。
 >首版只维护一个播放队列。<p>
 
 >[!WARNING]
@@ -179,25 +180,7 @@ VITE_SONG_ID = "3035221869"
 
 可以在 `public/images` 中修改网站背景。<p>
 
-桌面与移动端使用独立图片集合。添加或减少本地壁纸时，只需调整图片文件并编辑 `public/images/config.json`：<p>
-
-```json
-{
-  "version": 1,
-  "desktop": {
-    "count": 10,
-    "pattern": "/images/background{id}.jpg",
-    "fallback": "/images/background1.jpg"
-  },
-  "mobile": {
-    "count": 2,
-    "pattern": "/images/phone/backgroundphone{id}.jpg",
-    "fallback": "/images/phone/backgroundphone1.jpg"
-  }
-}
-```
-
-`count` 必须与对应集合中的连续编号图片一致，`pattern` 中必须保留 `{id}`。该配置在运行时读取，修改 JSON 和图片后不需要重新编译 JavaScript。默认本地壁纸 ID、自动切换间隔和壁纸来源可在站点设置中调整。
+桌面与移动端使用独立图片集合。添加或减少本地壁纸后，在原位设置面板的“内容 → 壁纸资源”修改数量、路径模板和回退图片；`count` 必须与连续编号图片一致，`pattern` 中必须保留 `{id}`。默认本地壁纸 ID、自动切换间隔和壁纸来源在“偏好”标签调整，并可跨设备同步。
 
 #### 网站图标
 

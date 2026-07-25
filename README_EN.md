@@ -58,6 +58,13 @@ npm install -g pnpm
 # Install the dependencies
 pnpm install --frozen-lockfile
 
+# Initialize the local D1 database once
+cp .dev.vars.example .dev.vars
+cp scripts/site-content.seed.example.json .site-content.seed.json
+pnpm db:migrate:local
+pnpm db:seed:generate
+pnpm db:seed:local
+
 # Frontend-only development
 pnpm dev:web
 
@@ -65,7 +72,7 @@ pnpm dev:web
 pnpm dev:cf
 ```
 
-`dev:web` does not execute `/api/*`. Use `dev:cf` when validating Pages Functions, then open the Vite URL at `http://localhost:3000`; the development server proxies `/api/*` to the local Wrangler process. Verify that `http://localhost:3000/api/health` returns JSON first.
+`dev:web` does not execute `/api/*` and does not open a browser automatically. Use `dev:cf` when validating Pages Functions, then open `http://localhost:3000`; the development server proxies `/api/*` to the local Wrangler process.
 
 ### ⚙️ Cloudflare Pages deployment
 
@@ -79,9 +86,9 @@ Cloudflare Pages is the only deployment target maintained for the first release:
 
 The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
 
-### Site Links
+### Site content
 
-In `src/assets/siteLinks.json` you can customize the website links (to point to your own website):
+Profile, site links, social links, music, wallpaper metadata, and Hitokoto configuration use D1 as their authoritative source. Sign in through the pencil button and edit them in the in-place Content panel; changes do not require a rebuild or service restart. The following object only illustrates a site-link entry:
 
 ```json
 {
@@ -91,7 +98,7 @@ In `src/assets/siteLinks.json` you can customize the website links (to point to 
 },
 ```
 
-The icon of the `icon` website link can be added in `src/components/Links/index.vue`:
+Supported site icons are `Blog`, `Cloud`, `Compass`, `Book`, `Fire`, and `LaptopCode`. Extending the list requires updating both the frontend mapping and backend allowlist:
 
 ```js
 // You can go to https://www.xicons.org to select and import it here
@@ -123,7 +130,7 @@ const siteIcon = {
 
 ### Social Links
 
-Social links can be customized in `src/assets/socialLinks.json`. Built-in `icon` values are `github`, `bilibili`, `qq`, `mail`, `twitter-x`, and `telegram`; UnoCSS and Remix Icon generate them on demand at build time. When adding another icon, also add its static mapping to `socialIconClasses` in `src/components/SocialLinks.vue`.
+Social links are managed in the same Content panel. Built-in `icon` values are `github`, `bilibili`, `qq`, `mail`, `twitter-x`, and `telegram`; UnoCSS and Remix Icon generate them on demand at build time.
 
 ### Weather
 
@@ -142,18 +149,7 @@ Online wallpaper metadata is provided by `/api/wallpaper`, remote images use the
 >This project uses the `Aplayer` music player based on `MetingJS` for quick song list customization
 >\*Only supported in **Mainland China**
 
-Please change the song related parameters in the `.env` file to customize the song list
-
-```bash
-# Songs API address (It is strongly recommended to build Meting-Api by yourself)
-VITE_SONG_API = "https://metingapi.nanorocky.top/"
-# Song server ( netease-netease, tencent-qq music )
-VITE_SONG_SERVER = "netease"
-# Playback type ( song-song, playlist-playlist, album-album, search-search, artist-artist )
-VITE_SONG_TYPE = "playlist"
-# Playback ID
-VITE_SONG_ID = "3035221869"
-```
+Configure the provider, type, and ID in **Content → Music source**. Configure the upstream Meting API only through the Worker Secret `MUSIC_API_URL`; it is never exposed to the browser.
 
 The first release maintains a single playback queue.
 
@@ -170,25 +166,7 @@ Now using` MiSans` and `HarmonyOS Sans` font, using font splitting to improve lo
 
 You can modify the website background in `public/images`.<p>
 
-Desktop and mobile use separate image collections. To add or remove local wallpapers, update the image files and `public/images/config.json`:<p>
-
-```json
-{
-  "version": 1,
-  "desktop": {
-    "count": 10,
-    "pattern": "/images/background{id}.jpg",
-    "fallback": "/images/background1.jpg"
-  },
-  "mobile": {
-    "count": 2,
-    "pattern": "/images/phone/backgroundphone{id}.jpg",
-    "fallback": "/images/phone/backgroundphone1.jpg"
-  }
-}
-```
-
-`count` must match the continuously numbered files in each collection, and `pattern` must keep `{id}`. The configuration is loaded at runtime, so changing the JSON and images does not require rebuilding the JavaScript. The default local wallpaper ID, rotation interval, and source are available in site settings.
+Desktop and mobile use separate image collections. After adding or removing local images, update count, path pattern, and fallback in **Content → Wallpaper resources**. `count` must match the continuously numbered files and `pattern` must keep `{id}`. Local wallpaper preferences are managed in the Preferences panel and can sync across devices.
 
 #### Website Icon
 
