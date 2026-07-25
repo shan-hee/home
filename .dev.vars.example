@@ -1,3 +1,7 @@
+# 单所有者登录。使用 `openssl rand -base64 48` 分别生成，不得提交真实值。
+OWNER_ACCESS_KEY = ""
+IP_HASH_SECRET = ""
+
 # Wrangler 本地没有 Cloudflare request.cf 时使用的可选默认位置。
 DEFAULT_LATITUDE = ""
 DEFAULT_LONGITUDE = ""
@@ -9,6 +13,9 @@ QWEATHER_API_HOST = "devapi.qweather.com"
 
 # 可选：Wallhaven API Key。留空时只请求公开 SFW 壁纸。
 WALLHAVEN_API_KEY = ""
+
+# 音乐上游 API。后端接管音乐配置后使用，不能改为 VITE_*。
+MUSIC_API_URL = ""
 
 # 版本检查目标仓库与可选 GitHub Token。
 GITHUB_REPOSITORY = "shan-hee/home"

@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 docs-dev/
+.tmp/
 node_modules
 dist
 dist-ssr
@@ -15,6 +16,7 @@ dist-ssr
 *.local
 .env
 .dev.vars
+.site-content.seed.json
 
 # Editor directories and files
 .vscode/*
