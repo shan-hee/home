@@ -67,9 +67,9 @@ export const sessionTtlSeconds = (env: AppEnvironment) => {
   return Math.round(days * 24 * 60 * 60);
 };
 
-export const verifyOwnerAccessKey = async (env: AppEnvironment, candidate: string) => {
-  const configured = env.OWNER_ACCESS_KEY || "";
-  if (configured.length < 32) {
+export const verifyOwnerPassword = async (env: AppEnvironment, candidate: string) => {
+  const configured = env.OWNER_PASSWORD || "";
+  if (configured.length < 8 || configured.length > 128) {
     throw new ApiError(503, "AUTH_NOT_CONFIGURED", "登录服务暂时不可用");
   }
   return secureTextEqual(candidate, configured);

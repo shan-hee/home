@@ -1,5 +1,8 @@
 <template>
-  <section class="owner-panel cards" aria-live="polite">
+  <section
+    :class="['owner-panel', 'cards', { 'is-login': !auth.authenticated }]"
+    aria-live="polite"
+  >
     <header class="panel-header">
       <button type="button" class="icon-button" aria-label="返回主页内容" @click="emit('close')">
         <BackOne theme="outline" size="22" />
@@ -23,25 +26,24 @@
     </div>
 
     <form v-else-if="!auth.authenticated" class="login-form" @submit.prevent="login">
-      <label for="owner-access-key">访问密钥</label>
       <div class="password-control" :class="{ invalid: Boolean(errorMessage) }">
         <input
-          id="owner-access-key"
+          id="owner-password"
           ref="passwordInput"
-          v-model="accessKey"
+          v-model="password"
           type="password"
           autocomplete="off"
-          placeholder="请输入访问密钥"
+          placeholder="请输入密码"
+          aria-label="所有者密码"
           :disabled="submitting"
           :aria-invalid="Boolean(errorMessage)"
           :aria-describedby="errorMessage ? 'owner-login-error' : undefined"
         />
-        <button type="submit" aria-label="登录" :disabled="submitting || !accessKey">
+        <button type="submit" aria-label="登录" :disabled="submitting || !password">
           <ArrowRight theme="outline" size="21" />
         </button>
       </div>
       <p v-if="errorMessage" id="owner-login-error" class="login-error">{{ errorMessage }}</p>
-      <p v-else class="login-hint">密钥仅用于本次登录，不会保存在浏览器中</p>
     </form>
 
     <div v-else class="settings-content">
@@ -87,7 +89,7 @@ const tabs = [
   { key: "content" as const, label: "内容" },
   { key: "security" as const, label: "设备" },
 ];
-const accessKey = ref("");
+const password = ref("");
 const errorMessage = ref("");
 const submitting = ref(false);
 const loggingOut = ref(false);
@@ -98,14 +100,14 @@ const focusPassword = () => {
 };
 
 const login = async () => {
-  if (!accessKey.value || submitting.value) return;
+  if (!password.value || submitting.value) return;
   submitting.value = true;
   errorMessage.value = "";
   try {
-    await auth.login(accessKey.value);
-    accessKey.value = "";
+    await auth.login(password.value);
+    password.value = "";
   } catch (error) {
-    accessKey.value = "";
+    password.value = "";
     errorMessage.value = error instanceof ApiClientError
       ? error.message
       : "登录服务暂时不可用";
@@ -131,8 +133,8 @@ const logout = async () => {
   }
 };
 
-watch(accessKey, () => {
-  errorMessage.value = "";
+watch(password, (value) => {
+  if (value) errorMessage.value = "";
 });
 
 onMounted(() => {
@@ -153,6 +155,13 @@ onMounted(() => {
   &:hover {
     transform: none;
   }
+
+  &.is-login {
+    width: min(440px, 100%);
+    height: 240px;
+    min-height: 0;
+    margin: 0 auto;
+  }
 }
 
 .panel-header {
@@ -161,7 +170,6 @@ onMounted(() => {
   grid-template-columns: 40px 1fr 40px;
   align-items: center;
   padding: 7px 10px;
-  border-bottom: 1px solid rgba(from currentColor r g b / 0.12);
   text-align: center;
   font-size: 1rem;
 }
@@ -216,12 +224,6 @@ onMounted(() => {
   margin: 0 auto;
   flex-direction: column;
   align-items: stretch;
-
-  label {
-    margin-bottom: 10px;
-    font-size: 0.86rem;
-    opacity: 0.72;
-  }
 }
 
 .password-control {
@@ -258,19 +260,11 @@ onMounted(() => {
   }
 }
 
-.login-error,
-.login-hint {
+.login-error {
   min-height: 20px;
   margin: 9px 2px 0;
   font-size: 0.76rem;
-}
-
-.login-error {
   color: rgb(255 165 165);
-}
-
-.login-hint {
-  opacity: 0.54;
 }
 
 .settings-content {

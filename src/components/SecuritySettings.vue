@@ -33,10 +33,10 @@
       <div class="section-heading">
         <div>
           <strong>会话安全</strong>
-          <small>固定访问密钥只存在于 Cloudflare Secret，不会写入 D1</small>
+          <small>所有者密码只存在于 Cloudflare Secret，不会写入 D1</small>
         </div>
       </div>
-      <p class="security-note">如需轮换密钥，请更新部署环境中的 <code>OWNER_ACCESS_KEY</code>，然后注销全部设备，使旧会话立即失效。</p>
+      <p class="security-note">如需修改密码，请更新部署环境中的 <code>OWNER_PASSWORD</code>，重新加载服务后注销全部设备，使旧会话立即失效。</p>
       <button type="button" class="logout-all" :disabled="loggingOutAll" @click="logoutEverywhere">
         {{ loggingOutAll ? "正在注销…" : "注销全部设备" }}
       </button>

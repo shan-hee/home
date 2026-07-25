@@ -1,5 +1,6 @@
-# 单所有者登录。使用 `openssl rand -base64 48` 分别生成，不得提交真实值。
-OWNER_ACCESS_KEY = ""
+# 单所有者登录密码。由所有者设置，至少 8 个字符，不得提交真实值。
+OWNER_PASSWORD = ""
+# 用于登录限流的 IP 摘要密钥，应使用 `openssl rand -base64 48` 生成。
 IP_HASH_SECRET = ""
 
 # Wrangler 本地没有 Cloudflare request.cf 时使用的可选默认位置。

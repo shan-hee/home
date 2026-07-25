@@ -25,7 +25,7 @@ export interface AppEnvironment {
   APP_ENV?: string;
   APP_ORIGIN?: string;
   SESSION_TTL_DAYS?: string;
-  OWNER_ACCESS_KEY?: string;
+  OWNER_PASSWORD?: string;
   IP_HASH_SECRET?: string;
   MUSIC_API_URL?: string;
   QWEATHER_API_KEY?: string;

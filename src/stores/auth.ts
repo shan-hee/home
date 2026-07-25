@@ -82,11 +82,11 @@ export const useAuthStore = defineStore("owner-auth", {
         });
       return this.checkPromise;
     },
-    async login(accessKey: string) {
+    async login(password: string) {
       const response = await requestJson<SessionResponse>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({
-          accessKey,
+          password,
           deviceId: this.deviceId,
           deviceName: defaultDeviceName(),
         }),

@@ -11,12 +11,12 @@ import {
   clearLoginFailures,
   createOwnerSession,
   recordLoginFailure,
-  verifyOwnerAccessKey,
+  verifyOwnerPassword,
 } from "../../lib/auth";
 import type { PagesContext } from "../../lib/types";
 
 interface LoginBody {
-  accessKey?: unknown;
+  password?: unknown;
   deviceId?: unknown;
   deviceName?: unknown;
 }
@@ -28,18 +28,18 @@ export const onRequestPost = async (context: PagesContext) => {
   try {
     requireSameOrigin(context.request, context.env);
     const body = await parseJsonBody<LoginBody>(context.request);
-    const accessKey = typeof body.accessKey === "string" ? body.accessKey : "";
+    const password = typeof body.password === "string" ? body.password : "";
     const deviceId = typeof body.deviceId === "string" ? body.deviceId.trim() : "";
     const deviceName = typeof body.deviceName === "string" ? body.deviceName.trim() : "";
 
-    if (!accessKey || accessKey.length > 512 || !UUID_PATTERN.test(deviceId) || !deviceName || deviceName.length > 80) {
+    if (!password || password.length > 128 || !UUID_PATTERN.test(deviceId) || !deviceName || deviceName.length > 80) {
       throw new ApiError(400, "INVALID_LOGIN_REQUEST", "登录信息格式无效");
     }
 
     const ipHash = await assertLoginAllowed(context.request, context.env);
-    if (!await verifyOwnerAccessKey(context.env, accessKey)) {
+    if (!await verifyOwnerPassword(context.env, password)) {
       await recordLoginFailure(context.env, ipHash);
-      throw new ApiError(401, "INVALID_ACCESS_KEY", "访问密钥无效或暂时无法登录");
+      throw new ApiError(401, "INVALID_PASSWORD", "密码错误或暂时无法登录");
     }
 
     await clearLoginFailures(context.env, ipHash);
