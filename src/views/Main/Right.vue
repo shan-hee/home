@@ -1,14 +1,5 @@
 <template>
   <div :class="store.mobileOpenState ? 'right' : 'right is-hidden'">
-    <button
-      v-if="!ownerPanelOpen"
-      type="button"
-      class="owner-edit"
-      aria-label="打开所有者设置"
-      @click="openOwnerPanel"
-    >
-      <EditTwo theme="outline" size="22" />
-    </button>
     <Transition name="fade" mode="out-in">
       <div v-if="!ownerPanelOpen" key="home" class="right-home">
         <!-- 移动端 Logo -->
@@ -21,13 +12,12 @@
         <!-- 网站链接 -->
         <Link />
       </div>
-      <OwnerPanel v-else key="owner" @close="ownerPanelOpen = false" />
+      <OwnerPanel v-else key="owner" @close="emit('close-owner-panel')" />
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { EditTwo } from "@icon-park/vue-next";
 import { mainStore } from "@/store";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
@@ -37,12 +27,20 @@ import Link from "@/components/Links.vue";
 const store = mainStore();
 const auth = useAuthStore();
 const siteContent = useSiteContentStore();
-const ownerPanelOpen = ref(false);
+const props = defineProps<{
+  ownerPanelOpen: boolean;
+}>();
+const emit = defineEmits<{
+  closeOwnerPanel: [];
+}>();
 
-const openOwnerPanel = () => {
-  ownerPanelOpen.value = true;
-  if (auth.status === "checking") void auth.checkSession();
-};
+watch(
+  () => props.ownerPanelOpen,
+  (open) => {
+    if (open && auth.status === "checking") void auth.checkSession();
+  },
+  { immediate: true },
+);
 
 // 站点链接
 const siteUrl = computed(() => {
@@ -63,34 +61,6 @@ const siteUrl = computed(() => {
   position: relative;
   width: 50%;
   margin-left: 0.75rem;
-
-  .owner-edit {
-    position: absolute;
-    top: 50%;
-    left: -38px;
-    z-index: 1;
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 0;
-    color: var(--text-color);
-    background: transparent;
-    cursor: pointer;
-    opacity: 0.42;
-    transform: translateY(-50%);
-    transition: opacity 0.2s, transform 0.2s;
-
-    &:hover,
-    &:focus-visible {
-      opacity: 0.78;
-    }
-
-    &:active {
-      transform: translateY(-50%) scale(0.9);
-    }
-  }
 
   .right-home {
     width: 100%;
@@ -124,18 +94,6 @@ const siteUrl = computed(() => {
   @media (max-width: 720px) {
     margin-left: 0;
     width: 100%;
-
-    .owner-edit {
-      position: fixed;
-      top: 6%;
-      right: 54px;
-      left: auto;
-      transform: none;
-
-      &:active {
-        transform: scale(0.9);
-      }
-    }
 
     &.is-hidden {
       display: none;

@@ -1,6 +1,6 @@
 <template>
   <div :class="store.mobileOpenState ? 'left hidden' : 'left'">
-    <Message />
+    <Message @open-owner-panel="emit('open-owner-panel')" />
     <SocialLinks />
   </div>
 </template>
@@ -9,6 +9,9 @@
 import { mainStore } from "@/store";
 import Message from "@/components/Message.vue";
 import SocialLinks from "@/components/SocialLinks.vue";
+const emit = defineEmits<{
+  openOwnerPanel: [];
+}>();
 const store = mainStore();
 </script>
 

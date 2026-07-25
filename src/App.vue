@@ -8,8 +8,12 @@
     <main id="main" v-if="store.imgLoadStatus">
       <div class="page-container" v-show="!store.backgroundShow">
         <section class="all">
-          <MainLeft />
-          <MainRight v-show="!store.boxOpenState" />
+          <MainLeft @open-owner-panel="openOwnerPanel" />
+          <MainRight
+            v-show="!store.boxOpenState"
+            :owner-panel-open="ownerPanelOpen"
+            @close-owner-panel="closeOwnerPanel"
+          />
           <Box v-show="store.boxOpenState" />
         </section>
       </div>
@@ -44,7 +48,23 @@ import cursorInit from "@/utils/cursor";
 
 const store = mainStore();
 const { applyBackgroundTheme } = useTheme(store);
+const ownerPanelOpen = ref(false);
 let disposeCursor: (() => void) | null = null;
+
+const openOwnerPanel = () => {
+  store.boxOpenState = false;
+  ownerPanelOpen.value = true;
+  if ((store.getInnerWidth ?? window.innerWidth) < 721) {
+    store.mobileOpenState = true;
+  }
+};
+
+const closeOwnerPanel = () => {
+  ownerPanelOpen.value = false;
+  if ((store.getInnerWidth ?? window.innerWidth) < 721) {
+    store.mobileOpenState = false;
+  }
+};
 
 // 页面宽度
 const getWidth = () => {
