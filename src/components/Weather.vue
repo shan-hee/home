@@ -55,6 +55,7 @@ import type {
   WeatherApiResponse,
   WeatherLocation,
 } from "@/typings/weather";
+import { mainStore } from "@/store";
 import { SETTINGS_RESET_EVENT, STORAGE_KEYS } from "@/utils/storageKeys";
 
 type WeatherDisplay = WeatherApiResponse & { stale: boolean };
@@ -69,8 +70,8 @@ interface WeatherCacheStore {
   entries: Record<string, WeatherCacheEntry>;
 }
 
-const SAVED_LOCATION_KEY = STORAGE_KEYS.weatherLocation;
 const WEATHER_CACHE_KEY = STORAGE_KEYS.weatherCache;
+const store = mainStore();
 
 const weatherData = ref<WeatherDisplay | null>(null);
 const alerts = ref<WeatherAlert[]>([]);
@@ -186,17 +187,6 @@ const saveWeatherCache = (location: WeatherLocation, data: WeatherApiResponse) =
   storageSet(WEATHER_CACHE_KEY, JSON.stringify(cache));
 };
 
-const savedLocation = () => {
-  const raw = storageGet(SAVED_LOCATION_KEY);
-  if (!raw) return null;
-  try {
-    const value: unknown = JSON.parse(raw);
-    return isWeatherLocation(value) ? value : null;
-  } catch {
-    return null;
-  }
-};
-
 const loadAlerts = async (location: WeatherLocation) => {
   alertsController?.abort();
   const controller = new AbortController();
@@ -279,10 +269,9 @@ const closeCityInput = () => {
 const useIpLocation = async () => {
   const requestId = ++locationRequestId;
   closeCityInput();
-  try {
-    localStorage.removeItem(SAVED_LOCATION_KEY);
-  } catch {
-    // 无法访问本地存储时仍可使用本次 IP 定位。
+  if (store.weatherLocation !== null) {
+    store.weatherLocation = null;
+    return;
   }
   await loadWeather();
   if (requestId !== locationRequestId) return;
@@ -295,9 +284,12 @@ const selectCity = async (city: GeocodingResult) => {
     latitude: Number(city.latitude.toFixed(2)),
     longitude: Number(city.longitude.toFixed(2)),
   };
-  storageSet(SAVED_LOCATION_KEY, JSON.stringify(location));
   closeCityInput();
-  await loadWeather(location);
+  if (JSON.stringify(store.weatherLocation) === JSON.stringify(location)) {
+    await loadWeather(location);
+  } else {
+    store.weatherLocation = location;
+  }
 };
 
 const searchCities = async () => {
@@ -362,10 +354,17 @@ const handleSettingsReset = () => {
 
 onMounted(async () => {
   window.addEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);
-  const storedLocation = savedLocation();
-  if (storedLocation) await loadWeather(storedLocation);
+  if (store.weatherLocation) await loadWeather(store.weatherLocation);
   else await useIpLocation();
 });
+
+watch(
+  () => store.weatherLocation,
+  (location) => {
+    void loadWeather(location || undefined);
+  },
+  { deep: true },
+);
 
 onBeforeUnmount(() => {
   window.removeEventListener(SETTINGS_RESET_EVENT, handleSettingsReset);

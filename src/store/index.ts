@@ -24,7 +24,6 @@ export const storeState: MainState = {
   boxOpenState: false, // 【状态】盒子开启状态
   mobileOpenState: false, // 【状态】移动端开启状态
   mobileFuncState: false, // 【状态】移动端功能区开启状态
-  setOpenState: false, // 【状态】设置页面开启状态
   setV: false, // 【状态】开发者模式
   playerStatus: "idle", // 【状态】播放器状态
   playerHasStarted: false, // 【状态】当前会话是否已经开始播放
@@ -39,6 +38,7 @@ export const storeState: MainState = {
   playerAutoplay: false, // 【开关】是否自动播放
   playerOrder: "shuffle", // 【开关】播放顺序 "list", "single", "shuffle"
   playerKeyboardShortcuts: true, // 【开关】全局播放器快捷键
+  weatherLocation: null, // 【开关】手动选择的天气城市；为空时使用 IP 定位
   playerCurrentTime: 0, // 【缓存】当前歌曲已播放时间
   playerDuration: 0, // 【缓存】当前歌曲总时长
   showFirefly: false, // 【状态】萤火虫特效
@@ -135,6 +135,7 @@ export const mainStore = defineStore("main", {
         "siteStartShow", "footerPlayerShow", "footerBlur",
         "playerAutoplay", "playerOrder", "playerKeyboardShortcuts", "effectsMode",
         "selectedEffects", "theme", "setV", "msgNameShow",
+        "weatherLocation",
       ] as const satisfies ReadonlyArray<keyof MainState>;
       const defaults = Object.fromEntries(
         persistedSettings.map((key) => [key, structuredClone(storeState[key])]),
@@ -142,12 +143,7 @@ export const mainStore = defineStore("main", {
       this.$patch(defaults);
       await nextTick();
       try {
-        removeStorageKeys(localStorage, [
-          STORAGE_KEYS.pinia,
-          STORAGE_KEYS.weatherLocation,
-          STORAGE_KEYS.weatherCache,
-        ]);
-        removeStorageKeys(sessionStorage, [STORAGE_KEYS.pinia]);
+        removeStorageKeys(localStorage, [STORAGE_KEYS.weatherCache]);
         window.dispatchEvent(new Event(SETTINGS_RESET_EVENT));
       } catch (error) {
         console.error("清理本项目设置失败：", error);
@@ -155,32 +151,4 @@ export const mainStore = defineStore("main", {
       }
     },
   },
-  persist: [
-    // 未存在这里的变量，刷新页面就会恢复默认值，主要用于状态
-    {
-      storage: localStorage,
-      pick: [
-        // 持久性存储，这里的变量永久存储于浏览器，用于存储用户的自定义设置
-        'coverType',
-        'wallpaperLocalId',
-        'autoBGSwitchInterval',
-        'musicVolume',
-        'siteStartShow',
-        'footerPlayerShow',
-        'footerBlur',
-        'playerOrder',
-        'effectsMode',
-        'selectedEffects',
-        'theme',
-      ],
-    },
-    {
-      storage: sessionStorage,
-      pick: [
-        // 会话性存储，这里的变量在重新打开页面时恢复默认值，多个窗口不互通，用于存储一些特殊的仅本次生效的设置
-        'setV',
-        'msgNameShow'
-      ],
-    },
-  ],
 });

@@ -1,3 +1,5 @@
+import type { WeatherLocation } from "@/typings/weather";
+
 export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 export type BackgroundEffect = "snow" | "firefly" | "lantern" | "meteor";
 export type BackgroundEffectMode = "auto" | "off" | "manual";
@@ -21,7 +23,6 @@ export interface MainState {
     boxOpenState: boolean;
     mobileOpenState: boolean;
     mobileFuncState: boolean;
-    setOpenState: boolean;
     setV: boolean;
     playerStatus: PlayerStatus;
     playerHasStarted: boolean;
@@ -36,6 +37,7 @@ export interface MainState {
     playerAutoplay: boolean;
     playerOrder: "list" | "single" | "shuffle";
     playerKeyboardShortcuts: boolean;
+    weatherLocation: WeatherLocation | null;
     playerCurrentTime: number;
     playerDuration: number;
     showFirefly: boolean;
