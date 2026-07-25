@@ -66,11 +66,11 @@ pnpm install --frozen-lockfile
 # 只启动前端，适合页面与样式开发
 pnpm dev:web
 
-# 启动 Cloudflare Pages 与 Functions 完整环境
+# 并行启动 Vite 前端与 Cloudflare Pages Functions
 pnpm dev:cf
 ```
 
-`dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，并先访问 `/api/health`，确认返回 JSON。
+`dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。可先访问 `http://localhost:3000/api/health`，确认返回 JSON。
 
 ### ⚙️ Cloudflare Pages 部署
 

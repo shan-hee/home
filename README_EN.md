@@ -61,11 +61,11 @@ pnpm install --frozen-lockfile
 # Frontend-only development
 pnpm dev:web
 
-# Cloudflare Pages and Functions development
+# Start the Vite frontend and Cloudflare Pages Functions in parallel
 pnpm dev:cf
 ```
 
-`dev:web` does not execute `/api/*`. Use `dev:cf` when validating Pages Functions and verify that `/api/health` returns JSON first.
+`dev:web` does not execute `/api/*`. Use `dev:cf` when validating Pages Functions, then open the Vite URL at `http://localhost:3000`; the development server proxies `/api/*` to the local Wrangler process. Verify that `http://localhost:3000/api/health` returns JSON first.
 
 ### ⚙️ Cloudflare Pages deployment
 

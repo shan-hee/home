@@ -12,7 +12,8 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev:web": "vite --host",
-    "dev:cf": "wrangler pages dev -- vite --host",
+    "dev:api": "wrangler pages dev public --port 8788",
+    "dev:cf": "pnpm run --parallel \"/^dev:(web|api)$/\"",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "format": "prettier --write src/",
