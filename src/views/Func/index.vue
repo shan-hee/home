@@ -14,7 +14,11 @@
               <span>{{ currentTime.year }}&nbsp;年&nbsp;</span>
               <span>{{ currentTime.month }}&nbsp;月&nbsp;</span>
               <span>{{ currentTime.day }}&nbsp;日&nbsp;</span>
-              <span class="sm-hidden">{{ currentTime.weekday }}</span>
+            </div>
+            <div class="lunar-date">
+              <span>{{ lunarDate }}</span>
+              <span aria-hidden="true">&nbsp;·&nbsp;</span>
+              <span>{{ weekdayText }}</span>
             </div>
             <div class="text">
               <span> {{ currentTime.hour }}:{{ currentTime.minute }}:{{ currentTime.second }}</span>
@@ -57,12 +61,70 @@ const currentTime = ref < CurrentTime > ({
   second: 0,
 });
 const timeInterval = ref < number | null > (null);
+const lunarDate = ref("");
+const weekdayText = ref("");
+
+const lunarFormatter = new Intl.DateTimeFormat("zh-CN-u-ca-chinese", {
+  month: "long",
+  day: "numeric",
+});
+const weekdayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  weekday: "short",
+});
+const lunarDayNames = [
+  "",
+  "初一",
+  "初二",
+  "初三",
+  "初四",
+  "初五",
+  "初六",
+  "初七",
+  "初八",
+  "初九",
+  "初十",
+  "十一",
+  "十二",
+  "十三",
+  "十四",
+  "十五",
+  "十六",
+  "十七",
+  "十八",
+  "十九",
+  "二十",
+  "廿一",
+  "廿二",
+  "廿三",
+  "廿四",
+  "廿五",
+  "廿六",
+  "廿七",
+  "廿八",
+  "廿九",
+  "三十",
+];
+let calendarDateKey = "";
 
 // 播放器 id
 const playerHasId = envConfig.VITE_SONG_ID;
 
+// 更新农历与星期，仅在日期变化时重新格式化
+const updateCalendarText = (date: Date) => {
+  const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  if (dateKey === calendarDateKey) return;
+
+  calendarDateKey = dateKey;
+  const lunarParts = lunarFormatter.formatToParts(date);
+  const lunarMonth = lunarParts.find((part) => part.type === "month")?.value || "";
+  const lunarDay = Number(lunarParts.find((part) => part.type === "day")?.value || 0);
+  lunarDate.value = `${lunarMonth}${lunarDayNames[lunarDay] || ""}`;
+  weekdayText.value = weekdayFormatter.format(date);
+};
+
 // 更新时间
 const updateTimeData = () => {
+  updateCalendarText(new Date());
   Object.assign(currentTime.value, getCurrentTime());
 };
 
@@ -152,8 +214,15 @@ onBeforeUnmount(() => {
           white-space: nowrap;
         }
 
+        .lunar-date {
+          margin-top: 3px;
+          font-size: 0.82rem;
+          opacity: 0.72;
+          white-space: nowrap;
+        }
+
         .text {
-          margin-top: 10px;
+          margin-top: 7px;
           font-size: 3.25rem;
           letter-spacing: 2px;
           font-family: "UnidreamLED";
