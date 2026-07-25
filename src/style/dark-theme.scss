@@ -2,6 +2,8 @@
     --background-color: rgba(15, 15, 15, 1);
     --text-color: rgba(245, 245, 245, 1);
     --card-background-color: rgba(15, 15, 15, 0.2);
+    --cards-background-color: rgba(15, 15, 15, 0.2);
+    --cards-backdrop-filter: blur(10px);
     --link-card-hover-color: rgba(15, 15, 15, 0.5); // rgb(0 0 0 / 40%);
     --social-background-color: rgba(15, 15, 15, 0.2);
     --social-font-color: rgba(245, 245, 245, 1);
@@ -17,16 +19,13 @@
     --music-player-background-color: rgba(15, 15, 15, 0.5);
     --music-player-list-bgc: rgba(245, 245, 245, 0.2);
     --music-player-list-hover-bgc: rgba(245, 245, 245, 0.3);
-    --music-aplayer-list-icon-color: #efefef;
-    --music-aplayer-message-icon-color: #EFEFEF;
-    --el-message-icon-color: #EFEFEF;
     --footer-background-color: rgba(15, 15, 15, 0.2); // rgb(0 0 0 / 25%)
     --footer-text-color: rgba(245, 245, 245, 1);
     --time-icon-one-color: #efefef;
     --time-icon-two-color: #00000020;
-    --el-progress-bar-in-color: rgba(15, 15, 15, 0.2);
-    --el-progress-bar-out-color: rgba(245, 245, 245, 0.8);
-    --el-progress-bar-span-color: rgba(15, 15, 15, 0.9);
+    --time-progress-track-color: rgba(15, 15, 15, 0.2);
+    --time-progress-fill-color: rgba(245, 245, 245, 0.8);
+    --time-progress-text-color: rgba(15, 15, 15, 0.9);
     --set-background-color: rgba(245, 245, 245, 0.4);
     --set-coll-background-color: rgba(245, 245, 245, 0.3);
     --set-coll-background-ck-color: rgba(245, 245, 245, 0.1);
@@ -41,26 +40,6 @@
     p {
         color: var(--text-color);
     }
-
-    // 卡片样式
-    .cards {
-        border-radius: 6px;
-        background-color: rgba(15, 15, 15, 0.2);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        transform: scale(1);
-        transition:
-            backdrop-filter 0.3s,
-            transform 0.3s;
-
-        &:hover {
-            transform: scale(1.01);
-        }
-
-        &:active {
-            transform: scale(0.98);
-        }
-    }
 }
 
 // Common styles
@@ -70,26 +49,6 @@ body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-
-.el-message {
-    --el-message-bg-color: var(--card-background-color) !important;
-    --el-message-text-color: var(--text-color) !important;
-}
-
-.el-popper.is-color {
-    background: var(--set-background-color) !important;
-    color: var(--text-color) !important;
-}
-
-.el-card {
-    .el-card__header {
-        background-color: rgba(from var(--card-background-color) r g b / 0.2) !important;
-    }
-
-    .el-card__body {
-        background-color: rgba(from var(--card-background-color) r g b / 0.1) !important;
-    }
-}
 
 a {
     color: var(--text-color);

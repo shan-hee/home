@@ -5,18 +5,18 @@
  * Released under the MIT License.
  */
 
-import { mainStore } from "@/store";
+import { useMainStore } from "@/store";
 let styleElement: HTMLStyleElement | null = null;
 let lanternContainer: HTMLDivElement | null = null;
 
 // 初始化灯笼特效
 export function initLantern() {
-  const store = mainStore();
+  const store = useMainStore.getState();
   if (styleElement || lanternContainer) {
-    store.showLantern = true;
+    store.patch({ showLantern: true });
     return;
   };
-  store.showLantern = true;
+  store.patch({ showLantern: true });
   styleElement = document.createElement('style');
   styleElement.type = 'text/css';
   styleElement.innerHTML = `
@@ -216,6 +216,5 @@ export function closeLantern() {
     document.body.removeChild(lanternContainer);
     lanternContainer = null;
   };
-  const store = mainStore();
-  store.showLantern = false;
+  useMainStore.getState().patch({ showLantern: false });
 };

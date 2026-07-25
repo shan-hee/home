@@ -1,8 +1,9 @@
-import { defineStore } from "pinia";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import { requestJson } from "@/services/apiClient";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
 
-interface AuthDevice {
+export interface AuthDevice {
   id: string;
   name: string;
 }
@@ -13,7 +14,7 @@ interface SessionResponse {
   expiresAt?: string;
 }
 
-type AuthStatus = "checking" | "anonymous" | "authenticated";
+export type AuthStatus = "checking" | "anonymous" | "authenticated";
 
 const createDeviceId = () => {
   try {
@@ -46,70 +47,66 @@ const platformName = () => {
   return "当前设备";
 };
 
-const defaultDeviceName = () => `${browserName()} · ${platformName()}`;
+interface AuthStore {
+  status: AuthStatus;
+  device: AuthDevice | null;
+  expiresAt: string | null;
+  deviceId: string;
+  checkPromise: Promise<boolean> | null;
+  applySession: (response: SessionResponse) => void;
+  checkSession: () => Promise<boolean>;
+  login: (password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
+  expireSession: () => void;
+}
 
-export const useAuthStore = defineStore("owner-auth", {
-  state: () => ({
-    status: "checking" as AuthStatus,
-    device: null as AuthDevice | null,
-    expiresAt: null as string | null,
-    deviceId: createDeviceId(),
-    checkPromise: null as Promise<boolean> | null,
+export const useAuthStore = create<AuthStore>()(subscribeWithSelector((set, get) => ({
+  status: "checking",
+  device: null,
+  expiresAt: null,
+  deviceId: createDeviceId(),
+  checkPromise: null,
+  applySession: (response) => set({
+    status: response.authenticated ? "authenticated" : "anonymous",
+    device: response.authenticated && response.device ? response.device : null,
+    expiresAt: response.authenticated ? response.expiresAt || null : null,
   }),
-  getters: {
-    authenticated: (state) => state.status === "authenticated",
+  checkSession: async () => {
+    if (get().checkPromise) return get().checkPromise!;
+    set({ status: "checking" });
+    const promise = requestJson<SessionResponse>("/api/auth/session")
+      .then((response) => {
+        get().applySession(response);
+        return response.authenticated;
+      })
+      .catch(() => {
+        get().applySession({ authenticated: false });
+        return false;
+      })
+      .finally(() => set({ checkPromise: null }));
+    set({ checkPromise: promise });
+    return promise;
   },
-  actions: {
-    applySession(response: SessionResponse) {
-      this.status = response.authenticated ? "authenticated" : "anonymous";
-      this.device = response.authenticated && response.device ? response.device : null;
-      this.expiresAt = response.authenticated ? response.expiresAt || null : null;
-    },
-    async checkSession() {
-      if (this.checkPromise) return this.checkPromise;
-      this.status = "checking";
-      this.checkPromise = requestJson<SessionResponse>("/api/auth/session")
-        .then((response) => {
-          this.applySession(response);
-          return response.authenticated;
-        })
-        .catch(() => {
-          this.applySession({ authenticated: false });
-          return false;
-        })
-        .finally(() => {
-          this.checkPromise = null;
-        });
-      return this.checkPromise;
-    },
-    async login(password: string) {
-      const response = await requestJson<SessionResponse>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({
-          password,
-          deviceId: this.deviceId,
-          deviceName: defaultDeviceName(),
-        }),
-      });
-      this.applySession(response);
-      return response.authenticated;
-    },
-    async logout() {
-      const response = await requestJson<SessionResponse>("/api/auth/logout", {
-        method: "POST",
-        body: "{}",
-      });
-      this.applySession(response);
-    },
-    async logoutAll() {
-      const response = await requestJson<SessionResponse>("/api/auth/logout-all", {
-        method: "POST",
-        body: "{}",
-      });
-      this.applySession(response);
-    },
-    expireSession() {
-      this.applySession({ authenticated: false });
-    },
+  login: async (password) => {
+    const response = await requestJson<SessionResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        password,
+        deviceId: get().deviceId,
+        deviceName: `${browserName()} · ${platformName()}`,
+      }),
+    });
+    get().applySession(response);
+    return response.authenticated;
   },
-});
+  logout: async () => {
+    const response = await requestJson<SessionResponse>("/api/auth/logout", { method: "POST", body: "{}" });
+    get().applySession(response);
+  },
+  logoutAll: async () => {
+    const response = await requestJson<SessionResponse>("/api/auth/logout-all", { method: "POST", body: "{}" });
+    get().applySession(response);
+  },
+  expireSession: () => get().applySession({ authenticated: false }),
+})));

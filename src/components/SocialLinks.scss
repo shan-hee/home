@@ -1,0 +1,139 @@
+.social {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 460px;
+  width: 100%;
+  height: 42px;
+  background-color: transparent;
+  border-radius: 6px;
+  -webkit-backdrop-filter: blur(0);
+  backdrop-filter: blur(0);
+  animation: fade 0.5s;
+  transition:
+    background-color 0.3s,
+    backdrop-filter 0.3s;
+
+  @media (max-width: 840px) {
+    max-width: 100%;
+    justify-content: center;
+
+    .link {
+      justify-content: space-evenly !important;
+      width: 90%;
+    }
+
+    .tip {
+      display: none !important;
+      color: var(--social-font-color);
+    }
+  }
+
+  .link {
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .social-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      transition: opacity 0.2s, transform 0.2s;
+
+      &.is-dragging {
+        opacity: 0.3;
+      }
+    }
+
+    a,
+    .add-social {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      color: var(--social-font-color);
+
+      &:focus-visible {
+        border-radius: 4px;
+        outline: 2px solid currentColor;
+        outline-offset: 4px;
+      }
+
+      .icon {
+        display: block;
+        width: 24px;
+        height: 24px;
+        margin: 0 12px;
+        transition: transform 0.3s;
+      }
+
+      &:hover .icon {
+        transform: scale(1.1);
+      }
+
+      &:active .icon {
+        transform: scale(1);
+      }
+    }
+
+    .add-social {
+      padding: 0 12px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.56;
+      transition: opacity 0.2s, transform 0.2s;
+
+      &:hover { opacity: 1; transform: scale(1.08); }
+    }
+
+  }
+
+  .tip {
+    color: var(--social-font-color);
+    display: none;
+    height: 24px;
+    margin-right: 12px;
+    line-height: 24px;
+    transform: translateY(-1px);
+    animation: fade 0.5s;
+  }
+
+  @media (min-width: 768px) {
+    &:hover {
+      background-color: var(--social-background-color);
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+
+      .tip {
+        display: block;
+        color: var(--social-font-color);
+      }
+    }
+  }
+
+  &.is-managing .social-item a {
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+.social-drag-overlay {
+  width: 48px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--social-font-color);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.32));
+
+  .icon {
+    width: 24px;
+    height: 24px;
+  }
+}

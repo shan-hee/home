@@ -1,0 +1,48 @@
+.right {
+  // flex: 1 0 0%;
+  position: relative;
+  width: 50%;
+  margin-left: 0.75rem;
+
+  .right-home {
+    width: 100%;
+  }
+
+  .logo {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    font-family: "Pacifico-Regular";
+    color: var(--background-color);
+    font-size: 2.25rem;
+    position: fixed;
+    top: 6%;
+    left: 0;
+    text-align: center;
+    transition: transform 0.3s;
+    animation: fade 0.5s;
+    &:active {
+      transform: scale(0.95);
+    }
+    @media (min-width: 721px) {
+      display: none;
+    }
+    @media (max-height: 720px) {
+      width: calc(100% + 6px);
+      top: 43.26px; // 721px * 0.06
+    }
+    @media (max-width: 390px) {
+        width: 391px;
+    }
+  }
+  @media (max-width: 720px) {
+    margin-left: 0;
+    width: 100%;
+
+    &.is-hidden {
+      display: none;
+    }
+  }
+}

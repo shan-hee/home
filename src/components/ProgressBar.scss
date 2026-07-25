@@ -1,0 +1,79 @@
+.progress-bar {
+  position: absolute;
+  top: -11px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  z-index: 99;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+
+  .track-line {
+    position: absolute;
+    top: 11px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 999px;
+    background-color: var(--player-slider-runway-color);
+  }
+
+  .progress {
+    height: 100%;
+    border-radius: inherit;
+    background-color: var(--player-slider-main-color);
+    transition: width 0.15s linear;
+  }
+
+  .progress-thumb {
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--player-slider-main-color);
+    box-shadow: none;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.75);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none;
+  }
+
+  .reload-circle {
+    position: absolute;
+    top: 50%;
+    color: var(--player-slider-main-color);
+    transform: translate(-50%, -50%);
+    animation: spin 1s linear infinite;
+  }
+
+  &:hover .progress-thumb,
+  &:focus-visible .progress-thumb,
+  &.dragging .progress-thumb {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(from var(--player-slider-main-color) r g b / 0.7);
+    outline-offset: -2px;
+  }
+
+  &.dragging .progress {
+    transition: none;
+  }
+}
+
+@keyframes spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar .progress,
+  .progress-bar .progress-thumb {
+    transition: none;
+  }
+}

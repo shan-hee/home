@@ -1,4 +1,4 @@
-import { mainStore } from "@/store";
+import { useMainStore } from "@/store";
 
 interface Firefly {
   x: number;
@@ -68,9 +68,9 @@ const render = () => {
 };
 
 const initFirefly = () => {
-  const store = mainStore();
+  const store = useMainStore.getState();
   if (canvas) {
-    store.showFirefly = true;
+    store.patch({ showFirefly: true });
     return;
   }
   canvas = document.createElement("canvas");
@@ -90,7 +90,7 @@ const initFirefly = () => {
     canvas = null;
     return;
   }
-  store.showFirefly = true;
+  store.patch({ showFirefly: true });
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
   createFireflies();
@@ -105,7 +105,7 @@ const closeFirefly = () => {
   canvas = null;
   context = null;
   fireflies.length = 0;
-  mainStore().showFirefly = false;
+  useMainStore.getState().patch({ showFirefly: false });
 };
 
 export { initFirefly, closeFirefly };

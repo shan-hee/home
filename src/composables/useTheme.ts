@@ -1,101 +1,75 @@
-import { onBeforeUnmount, watch } from "vue";
-import { ElMessage } from "element-plus";
-import type { mainStore } from "@/store";
+import { useCallback, useEffect, useRef } from "react";
+import { useMainStore } from "@/store";
 import { getBrightness } from "@/utils/getColor";
+import { toast } from "@/ui/toast";
 
-type MainStore = ReturnType<typeof mainStore>;
 type AppliedTheme = "light" | "dark";
-
 const DARK_THRESHOLD = 116;
 const LIGHT_THRESHOLD = 140;
 
-const currentAppliedTheme = (): AppliedTheme => {
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-};
+export const useTheme = () => {
+  const theme = useMainStore((state) => state.theme);
+  const setSetting = useMainStore((state) => state.setSetting);
+  const sequence = useRef(0);
 
-export const useTheme = (store: MainStore) => {
-  const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  let timeThemeTimer: number | null = null;
-  let listeningToSystem = false;
-  let brightnessSequence = 0;
+  const setTheme = useCallback((value: AppliedTheme) => {
+    document.documentElement.dataset.theme = value;
+  }, []);
 
-  const setTheme = (theme: AppliedTheme) => {
-    document.documentElement.dataset.theme = theme;
-  };
-
-  const applySystemTheme = () => setTheme(systemQuery.matches ? "dark" : "light");
-  const handleSystemChange = () => {
-    if (store.theme === "system") applySystemTheme();
-  };
-
-  const toggleSystemListener = (enabled: boolean) => {
-    if (enabled === listeningToSystem) return;
-    listeningToSystem = enabled;
-    if (enabled) systemQuery.addEventListener("change", handleSystemChange);
-    else systemQuery.removeEventListener("change", handleSystemChange);
-  };
-
-  const clearTimeThemeTimer = () => {
-    if (timeThemeTimer !== null) window.clearTimeout(timeThemeTimer);
-    timeThemeTimer = null;
-  };
-
-  const applyTimeTheme = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    setTheme(hour >= 19 || hour < 6 ? "dark" : "light");
-
-    const nextBoundary = new Date(now);
-    if (hour < 6) nextBoundary.setHours(6, 0, 0, 0);
-    else if (hour < 19) nextBoundary.setHours(19, 0, 0, 0);
-    else {
-      nextBoundary.setDate(nextBoundary.getDate() + 1);
-      nextBoundary.setHours(6, 0, 0, 0);
-    }
-    clearTimeThemeTimer();
-    timeThemeTimer = window.setTimeout(applyTimeTheme, nextBoundary.getTime() - now.getTime());
-  };
-
-  const applyBackgroundTheme = async (img: HTMLImageElement) => {
-    if (store.theme !== "bg") return;
-    const sequence = ++brightnessSequence;
+  const applyBackgroundTheme = useCallback(async (img: HTMLImageElement) => {
+    if (useMainStore.getState().theme !== "bg") return;
+    const current = ++sequence.current;
     try {
       const brightness = await getBrightness(img);
-      if (sequence !== brightnessSequence || store.theme !== "bg") return;
+      if (current !== sequence.current || useMainStore.getState().theme !== "bg") return;
       if (brightness <= DARK_THRESHOLD) setTheme("dark");
       else if (brightness >= LIGHT_THRESHOLD) setTheme("light");
-      else setTheme(currentAppliedTheme());
     } catch (error) {
       console.error(error);
-      if (sequence !== brightnessSequence || store.theme !== "bg") return;
-      ElMessage.error("背景主题切换失败，已回退到跟随系统");
-      store.theme = "system";
+      if (current !== sequence.current || useMainStore.getState().theme !== "bg") return;
+      toast.error("背景主题切换失败，已回退到跟随系统");
+      setSetting("theme", "system");
     }
-  };
+  }, [setSetting, setTheme]);
 
-  const stopThemeWatch = watch(
-    () => store.theme,
-    (theme) => {
-      brightnessSequence += 1;
-      clearTimeThemeTimer();
-      toggleSystemListener(theme === "system");
-      if (theme === "light" || theme === "dark") setTheme(theme);
-      else if (theme === "system") applySystemTheme();
-      else if (theme === "time") applyTimeTheme();
+  useEffect(() => {
+    sequence.current += 1;
+    const systemQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    let timer: number | null = null;
+    const applySystem = () => setTheme(systemQuery.matches ? "dark" : "light");
+    const applyTime = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      setTheme(hour >= 19 || hour < 6 ? "dark" : "light");
+      const next = new Date(now);
+      if (hour < 6) next.setHours(6, 0, 0, 0);
+      else if (hour < 19) next.setHours(19, 0, 0, 0);
       else {
-        const background = document.querySelector("img.bg.current") as HTMLImageElement | null;
-        if (background?.complete) void applyBackgroundTheme(background);
+        next.setDate(next.getDate() + 1);
+        next.setHours(6, 0, 0, 0);
       }
-    },
-    { immediate: true },
-  );
+      timer = window.setTimeout(applyTime, next.getTime() - now.getTime());
+    };
+    const onSystemChange = () => {
+      if (useMainStore.getState().theme === "system") applySystem();
+    };
 
-  onBeforeUnmount(() => {
-    brightnessSequence += 1;
-    stopThemeWatch();
-    clearTimeThemeTimer();
-    toggleSystemListener(false);
-  });
+    if (theme === "light" || theme === "dark") setTheme(theme);
+    else if (theme === "system") {
+      applySystem();
+      systemQuery.addEventListener("change", onSystemChange);
+    } else if (theme === "time") applyTime();
+    else {
+      const background = document.querySelector<HTMLImageElement>("img.bg.current");
+      if (background?.complete) void applyBackgroundTheme(background);
+    }
+
+    return () => {
+      sequence.current += 1;
+      if (timer !== null) window.clearTimeout(timer);
+      systemQuery.removeEventListener("change", onSystemChange);
+    };
+  }, [theme, applyBackgroundTheme, setTheme]);
 
   return { applyBackgroundTheme };
 };

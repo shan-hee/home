@@ -1,0 +1,155 @@
+.security-settings {
+  display: grid;
+  gap: 14px;
+  color: var(--text-color);
+}
+
+.security-section {
+  padding: 13px;
+  border: 1px solid rgba(from currentColor r g b / 0.11);
+  border-radius: 9px;
+  background: rgba(from currentColor r g b / 0.035);
+}
+
+.section-heading,
+.device-row,
+.audit-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading {
+  margin-bottom: 10px;
+
+  div,
+  .device-row div {
+    display: grid;
+    gap: 3px;
+  }
+
+  small {
+    font-size: 0.71rem;
+    opacity: 0.54;
+  }
+}
+
+.device-row {
+  padding: 10px 0;
+  border-top: 1px solid rgba(from currentColor r g b / 0.08);
+
+  div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  strong {
+    font-size: 0.8rem;
+
+    span {
+      margin-left: 5px;
+      padding: 1px 5px;
+      border-radius: 99px;
+      font-size: 0.62rem;
+      background: rgba(from currentColor r g b / 0.1);
+    }
+  }
+
+  small {
+    overflow: hidden;
+    font-size: 0.69rem;
+    opacity: 0.52;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.text-button,
+.danger-button,
+.logout-all {
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  background: rgba(from currentColor r g b / 0.08);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.4;
+  }
+}
+
+.text-button,
+.danger-button {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+}
+
+.danger-button,
+.logout-all,
+.inline-error {
+  color: rgb(255 165 165);
+}
+
+.security-note {
+  margin: 7px 0 11px;
+  font-size: 0.73rem;
+  line-height: 1.7;
+  opacity: 0.68;
+
+  code {
+    font-size: 0.69rem;
+  }
+}
+
+.logout-all {
+  width: 100%;
+  padding: 9px;
+  background: rgb(180 65 65 / 0.13);
+}
+
+.inline-error,
+.action-message,
+.empty-state {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+}
+
+.empty-state {
+  padding: 10px 0;
+  text-align: center;
+  opacity: 0.52;
+}
+
+.audit-list {
+  max-height: 230px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+
+  li {
+    padding: 8px 0;
+    border-top: 1px solid rgba(from currentColor r g b / 0.07);
+    font-size: 0.72rem;
+
+    div {
+      min-width: 0;
+      display: flex;
+      gap: 8px;
+    }
+
+    span,
+    time {
+      opacity: 0.52;
+    }
+
+    time {
+      flex: 0 0 auto;
+      font-size: 0.66rem;
+    }
+  }
+}

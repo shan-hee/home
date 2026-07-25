@@ -1,0 +1,45 @@
+.toast-host {
+  position: fixed;
+  top: 22px;
+  left: 50%;
+  z-index: 10020;
+  width: min(420px, calc(100vw - 32px));
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.toast-item {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 22px;
+  color: var(--text-color);
+  background: var(--card-background-color);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  animation: toast-in 0.24s ease both;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  > span {
+    line-height: 1.3;
+  }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}

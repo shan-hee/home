@@ -1,0 +1,54 @@
+.hitokoto {
+  position: relative;
+  width: 100%;
+  min-height: 112px;
+  padding: 18px 20px;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  animation: fade 0.5s;
+
+  .quote-icon {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+
+    &.quote-start {
+      top: 16px;
+      left: 16px;
+    }
+
+    &.quote-end {
+      right: 16px;
+      bottom: 16px;
+      transform: rotate(180deg);
+    }
+  }
+
+  .content {
+    min-height: 76px;
+    padding: 4px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+
+    .text {
+      overflow: hidden;
+      display: -webkit-box;
+      font-size: 1.1rem;
+      line-height: 1.75;
+      text-overflow: ellipsis;
+      word-break: break-all;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+    }
+
+    .from {
+      align-self: flex-end;
+      margin: 8px 18px 0 0;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+  }
+}

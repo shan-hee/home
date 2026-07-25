@@ -1,0 +1,20 @@
+.setting {
+  color: var(--text-color);
+  .native-collapse { overflow: hidden; border-radius: 8px; }
+  details { background: var(--set-coll-background-color); border-bottom: 1px solid rgba(from currentColor r g b / .08); }
+  summary { padding: 14px 18px; cursor: pointer; font-size: 15px; user-select: none; }
+  .collapse-content { padding: 18px 20px; display: grid; gap: 16px; background: var(--set-coll-background-ck-color); }
+  .item { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 14px; }
+  .choice-group, .checkbox-group, .inline-control { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+  .choice-group label { padding: 7px 10px; border: 1px solid transparent; border-radius: 7px; background: var(--set-radio-bg-color); cursor: pointer; }
+  .choice-group label.is-selected { border-color: var(--set-radio-border-color); }
+  .choice-group input { position: absolute; opacity: 0; pointer-events: none; }
+  .checkbox-group label { cursor: pointer; }
+  .inline-control input, .inline-control button { min-height: 32px; border: 1px solid var(--set-radio-border-color); border-radius: 6px; color: inherit; background: var(--set-radio-bg-color); }
+  .inline-control input { width: 76px; padding: 0 8px; }
+  .inline-control button { padding: 0 10px; cursor: pointer; }
+}
+.native-switch { width: 39px; height: 22px; padding: 2px; border: 0; border-radius: 99px; background: rgba(from currentColor r g b / .2); cursor: pointer; transition: background .2s; }
+.native-switch span { display: block; width: 18px; height: 18px; border-radius: 50%; background: currentColor; transform: translateX(0); transition: transform .2s; }
+.native-switch.is-on { background: var(--set-radio-bg-ck-color); }
+.native-switch.is-on span { transform: translateX(17px); }

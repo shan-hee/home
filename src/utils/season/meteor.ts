@@ -1,4 +1,4 @@
-import { mainStore } from "@/store";
+import { useMainStore } from "@/store";
 
 interface Star {
   x: number;
@@ -181,9 +181,9 @@ const render = (timestamp: number) => {
 };
 
 const initMeteor = () => {
-  const store = mainStore();
+  const store = useMainStore.getState();
   if (canvas) {
-    store.showMeteor = true;
+    store.patch({ showMeteor: true });
     return;
   }
 
@@ -206,7 +206,7 @@ const initMeteor = () => {
     return;
   }
 
-  store.showMeteor = true;
+  store.patch({ showMeteor: true });
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
   lastFrameTime = 0;
@@ -225,7 +225,7 @@ const closeMeteor = () => {
   nextMeteorAt = 0;
   stars.length = 0;
   meteors.length = 0;
-  mainStore().showMeteor = false;
+  useMainStore.getState().patch({ showMeteor: false });
 };
 
 export { initMeteor, closeMeteor };

@@ -1,6 +1,4 @@
 import config from "@/../package.json";
-let updateauthor: string | null = null;
-let typer: string | null = null;
 
 export const parseVersion = (ver: string) => {
     const versionMatch = ver.match(/^(\d+\.\d+\.\d+)/);
@@ -8,25 +6,21 @@ export const parseVersion = (ver: string) => {
     const isPreview = /\.pre\b/.test(ver);
     const isBeta = /\.beta\b/.test(ver);
     const channelMatch = ver.match(/\[([^\]]+)\]$/);
+    let type: "preview" | "development" | "beta" | "release";
     if (isPreview) {
-        typer = 'preview';
+        type = 'preview';
     } else if (isDevelopment) {
-        typer = 'development'
+        type = 'development'
     } else if (isBeta) {
-        typer = 'beta';
+        type = 'beta';
     } else {
-        typer = 'release';
+        type = 'release';
     };
-    if (channelMatch?.[1] != 'imsyy') {
-        updateauthor = config.efua;
-    } else {
-        updateauthor = config.author;
-    };
+    const updateAuthor = channelMatch?.[1] !== 'imsyy' ? config.efua : config.author;
     return {
         version: versionMatch?.[1] || '0.0.0',
-        type: typer,
+        type,
         channel: channelMatch?.[1] || 'imsyy',
-        upa: updateauthor
+        upa: updateAuthor
     };
 };
-

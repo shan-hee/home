@@ -1,0 +1,118 @@
+.player-seek {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .time {
+    flex: 0 0 auto;
+    min-width: 38px;
+    color: rgba(from var(--text-color) r g b / 0.7);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .duration-time {
+    text-align: right;
+  }
+}
+
+.seek-track {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  flex: 1 1 auto;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+
+  &.disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    .seek-runway {
+      box-shadow: 0 0 0 2px rgba(from var(--player-slider-main-color) r g b / 0.28);
+    }
+  }
+}
+
+.seek-runway {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  overflow: visible;
+  border-radius: 999px;
+  background: var(--player-slider-runway-color);
+  transform: translateY(-50%);
+}
+
+.seek-progress {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--player-slider-main-color);
+  transition: width 0.15s linear;
+}
+
+.seek-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--player-slider-main-color);
+  box-shadow: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.75);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  pointer-events: none;
+}
+
+.seek-loading {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(from var(--text-color) r g b / 0.35);
+  border-top-color: var(--text-color);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: seek-loading-spin 0.8s linear infinite;
+}
+
+.seek-track:hover .seek-thumb,
+.seek-track:focus-visible .seek-thumb,
+.seek-track.dragging .seek-thumb {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.seek-track.dragging .seek-progress {
+  transition: none;
+}
+
+@keyframes seek-loading-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seek-progress,
+  .seek-thumb {
+    transition: none;
+  }
+
+  .seek-loading {
+    animation: none;
+  }
+}

@@ -1,4 +1,4 @@
-import { mainStore } from "@/store";
+import { useMainStore } from "@/store";
 
 interface Snowflake {
   x: number;
@@ -65,9 +65,9 @@ const render = () => {
 };
 
 const initSnowfall = () => {
-  const store = mainStore();
+  const store = useMainStore.getState();
   if (canvas) {
-    store.showSnowfall = true;
+    store.patch({ showSnowfall: true });
     return;
   }
   canvas = document.createElement("canvas");
@@ -87,7 +87,7 @@ const initSnowfall = () => {
     canvas = null;
     return;
   }
-  store.showSnowfall = true;
+  store.patch({ showSnowfall: true });
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
   createSnowflakes();
@@ -102,7 +102,7 @@ const closeSnowfall = () => {
   canvas = null;
   context = null;
   snowflakes.length = 0;
-  mainStore().showSnowfall = false;
+  useMainStore.getState().patch({ showSnowfall: false });
 };
 
 export { initSnowfall, closeSnowfall };

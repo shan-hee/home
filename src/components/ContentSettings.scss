@@ -1,0 +1,162 @@
+.content-settings {
+  color: var(--text-color);
+}
+
+.section-heading,
+.save-row,
+.list-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading {
+  padding: 4px 3px 14px;
+
+  div {
+    display: grid;
+    gap: 3px;
+  }
+
+  small {
+    font-size: 0.72rem;
+    opacity: 0.55;
+  }
+}
+
+.text-button,
+.save-button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.text-button {
+  opacity: 0.65;
+}
+
+.admin-collapse {
+  overflow: hidden;
+  border-radius: 8px;
+
+  details > summary {
+    padding: 0 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    border-color: rgba(from currentColor r g b / 0.1);
+    color: var(--text-color);
+    background: rgba(from currentColor r g b / 0.055);
+    cursor: pointer;
+  }
+
+  details {
+    border-color: rgba(from currentColor r g b / 0.08);
+    background: transparent;
+  }
+
+  .admin-section {
+    padding: 14px 10px 18px;
+    color: var(--text-color);
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+
+  label {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+    font-size: 0.74rem;
+    opacity: 0.78;
+  }
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+
+  input:not([type="checkbox"]),
+  textarea,
+  select {
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 9px;
+    border: 1px solid rgba(from currentColor r g b / 0.17);
+    border-radius: 6px;
+    outline: 0;
+    color: var(--text-color);
+    background: rgba(from currentColor r g b / 0.07);
+    font: inherit;
+    resize: vertical;
+
+    &:focus {
+      border-color: rgba(from currentColor r g b / 0.42);
+    }
+  }
+
+  select option {
+    color: #222;
+  }
+
+}
+
+.list-editor {
+  margin-bottom: 12px;
+  padding: 11px;
+  border: 1px solid rgba(from currentColor r g b / 0.11);
+  border-radius: 8px;
+  background: rgba(from currentColor r g b / 0.035);
+}
+
+.list-editor-head {
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+}
+
+.save-error,
+.inline-error {
+  color: rgb(255 165 165);
+}
+
+.save-row {
+  min-height: 44px;
+  margin-top: 12px;
+}
+
+.save-message,
+.save-error {
+  font-size: 0.74rem;
+}
+
+.save-button {
+  padding: 7px 13px;
+  border-radius: 7px;
+  background: rgba(from currentColor r g b / 0.1);
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.45;
+  }
+}
+
+.inline-error,
+.empty-state {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 460px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+
+    .wide {
+      grid-column: auto;
+    }
+  }
+}

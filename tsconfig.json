@@ -3,7 +3,7 @@
         "target": "ESNext",
         "module": "ESNext",
         "strict": true,
-        "jsx": "preserve",
+        "jsx": "react-jsx",
         "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "allowJs": false,
@@ -22,9 +22,8 @@
         },
         "types": [
             "vite/client",
-            "@vitejs/plugin-vue",
-            "unplugin-vue-components",
-            "element-plus/global",
+            "react",
+            "react-dom",
             "vite-plugin-pwa/client"
         ],
         "noEmit": true

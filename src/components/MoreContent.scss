@@ -1,0 +1,21 @@
+.more-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  width: 100%;
+  max-height: 100%;
+  flex: 1;
+
+  .greeting {
+    font-family: MiSans VF;
+    font-weight: 520;
+    font-size: 1.05rem;
+    width: 100%;
+    text-align: center;
+    padding: 0 10px;
+    color: var(--text-color);
+  }
+
+}

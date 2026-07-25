@@ -1,0 +1,40 @@
+.item-context-menu {
+  position: fixed;
+  z-index: 140;
+  width: 152px;
+  padding: 5px;
+  border: 1px solid rgba(from currentColor r g b / 0.14);
+  border-radius: 7px;
+  color: var(--text-color);
+  background: var(--card-background-color);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  animation: fade 0.14s ease both;
+
+  button {
+    width: 100%;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 5px;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      outline: 0;
+      background: rgba(from currentColor r g b / 0.1);
+    }
+
+    &.danger {
+      color: rgb(255 145 145);
+    }
+  }
+}

@@ -15,20 +15,20 @@
     "repositoryUrl": "https://github.com/shan-hee/home"
   },
   "siteLinks": [
-    { "icon": "Blog", "name": "博客", "link": "https://blog.imsyy.top/" },
-    { "icon": "Cloud", "name": "网盘", "link": "https://pan.imsyy.top/" },
-    { "icon": "Compass", "name": "起始页", "link": "https://nav.imsyy.top/" },
-    { "icon": "Book", "name": "网址集", "link": "https://web.imsyy.top/" },
-    { "icon": "Fire", "name": "今日热榜", "link": "https://hot.imsyy.top/" },
-    { "icon": "LaptopCode", "name": "站点监测", "link": "https://status.imsyy.top/" }
+    { "name": "博客", "link": "https://blog.imsyy.top/", "iconMode": "icon", "iconValue": "ri:blogger-fill", "iconColor": "#FF4757" },
+    { "name": "网盘", "link": "https://pan.imsyy.top/", "iconMode": "icon", "iconValue": "ri:cloud-fill", "iconColor": "#25A7F0" },
+    { "name": "起始页", "link": "https://nav.imsyy.top/", "iconMode": "icon", "iconValue": "ri:compass-fill", "iconColor": "#1D8FCA" },
+    { "name": "网址集", "link": "https://web.imsyy.top/", "iconMode": "icon", "iconValue": "ri:book-fill", "iconColor": "#F09A37" },
+    { "name": "今日热榜", "link": "https://hot.imsyy.top/", "iconMode": "icon", "iconValue": "ri:fire-fill", "iconColor": "#F05B45" },
+    { "name": "站点监测", "link": "https://status.imsyy.top/", "iconMode": "icon", "iconValue": "ri:code-box-fill", "iconColor": "#525866" }
   ],
   "socialLinks": [
-    { "name": "Github", "icon": "github", "tip": "去 Github 看看", "url": "https://github.com/shan-hee" },
-    { "name": "BiliBili", "icon": "bilibili", "tip": "(゜-゜)つロ 干杯 ~", "url": "https://space.bilibili.com/98544142" },
-    { "name": "QQ", "icon": "qq", "tip": "有什么事吗", "url": "https://res.abeim.cn/api/qq/?qq=1539250352" },
-    { "name": "Email", "icon": "mail", "tip": "来封 Email ~", "url": "mailto:one@imsyy.top" },
-    { "name": "Twitter", "icon": "twitter-x", "tip": "你懂的 ~", "url": "https://x.com/iimmsyy" },
-    { "name": "Telegram", "icon": "telegram", "tip": "你懂的 ~", "url": "https://t.me/bottom_user" }
+    { "name": "Github", "icon": "ri:github-fill", "tip": "去 Github 看看", "url": "https://github.com/shan-hee" },
+    { "name": "BiliBili", "icon": "ri:bilibili-fill", "tip": "(゜-゜)つロ 干杯 ~", "url": "https://space.bilibili.com/98544142" },
+    { "name": "QQ", "icon": "ri:qq-fill", "tip": "有什么事吗", "url": "https://res.abeim.cn/api/qq/?qq=1539250352" },
+    { "name": "Email", "icon": "ri:mail-fill", "tip": "来封 Email ~", "url": "mailto:one@imsyy.top" },
+    { "name": "Twitter", "icon": "ri:twitter-x-fill", "tip": "你懂的 ~", "url": "https://x.com/iimmsyy" },
+    { "name": "Telegram", "icon": "ri:telegram-fill", "tip": "你懂的 ~", "url": "https://t.me/bottom_user" }
   ],
   "music": {
     "server": "netease",

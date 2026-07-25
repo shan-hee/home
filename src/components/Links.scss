@@ -1,0 +1,226 @@
+.links {
+  .line {
+    margin: 2rem 0.25rem 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    animation: fade 0.5s;
+    color: rgba(245, 245, 245, 1);
+
+    .iconl {
+      color: rgba(245, 245, 245, 1);
+    }
+
+    .title {
+      margin-left: 8px;
+      font-size: 1.15rem;
+      text-shadow: 0 0 5px rgba(15, 15, 15, 0.6);
+      color: rgba(245, 245, 245, 1);
+    }
+
+    .manage-hint {
+      margin-left: auto;
+      font-size: 0.7rem;
+      opacity: 0.52;
+    }
+  }
+
+  .swiper {
+    left: -10px;
+    width: calc(100% + 20px);
+    padding: 5px 10px 0;
+    z-index: 0;
+
+    .swiper-slide {
+      height: 100%;
+    }
+
+    .swiper-pagination {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+
+      .swiper-pagination-bullet {
+        background-color: rgba(245, 245, 245, 1);
+        width: 20px;
+        height: 4px;
+        margin: 0 4px;
+        border-radius: 4px;
+        opacity: 0.2;
+        transition: opacity 0.3s;
+
+        &.swiper-pagination-bullet-active {
+          opacity: 1;
+        }
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  .link-all {
+    height: 220px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 12px 8px;
+
+    .link-column {
+      position: relative;
+      min-width: 0;
+      display: grid;
+      place-items: center;
+      transition: opacity 0.2s, transform 0.2s;
+
+      &.is-dragging {
+        opacity: 0.34;
+      }
+    }
+
+    .item {
+      width: 100%;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      justify-content: center;
+      gap: 7px;
+      padding: 4px;
+      border-radius: 10px;
+      color: rgba(245, 245, 245, 0.96);
+      animation: fade 0.5s;
+
+      &:focus-visible {
+        outline: 2px solid rgba(245, 245, 245, 0.62);
+        outline-offset: 3px;
+      }
+
+      .site-icon {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 15px;
+        color: #2979ff;
+
+        .site-icon-image {
+          width: 34px;
+          height: 34px;
+          object-fit: contain;
+          border-radius: 7px;
+        }
+
+        b {
+          max-width: 46px;
+          overflow: hidden;
+          font-size: 1.25rem;
+          line-height: 1;
+          white-space: nowrap;
+        }
+      }
+
+      .name {
+        width: 100%;
+        padding: 0 4px;
+        color: inherit;
+        font-size: 0.9rem;
+        line-height: 1.2;
+        text-align: center;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.62);
+      }
+
+    }
+
+    .add-link {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.62;
+
+      .site-icon { color: rgba(245, 245, 245, 0.8); }
+      &:hover { opacity: 1; }
+    }
+
+    @media (max-width: 720px) {
+      height: 180px;
+      gap: 8px 4px;
+
+      .item {
+        gap: 5px;
+
+        .site-icon {
+          width: 46px;
+          height: 46px;
+          flex-basis: 46px;
+          border-radius: 13px;
+        }
+
+        .name {
+          font-size: 0.82rem;
+        }
+      }
+    }
+  }
+
+  &.is-managing .site-icon {
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+.site-drag-overlay {
+  width: 92px;
+  height: 98px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  padding: 4px;
+  color: rgba(245, 245, 245, 0.96);
+  pointer-events: none;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.28));
+
+  .site-icon {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+
+    .site-icon-image {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      border-radius: 7px;
+    }
+
+    b {
+      max-width: 46px;
+      overflow: hidden;
+      font-size: 1.25rem;
+      line-height: 1;
+      white-space: nowrap;
+    }
+  }
+
+  .name {
+    width: 100%;
+    padding: 0 4px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    text-align: center;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.62);
+  }
+}

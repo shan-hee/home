@@ -40,10 +40,18 @@ p {
   }
 }
 
+// 所有链接状态均不显示下划线
+a,
+a:hover,
+a:focus,
+a:active,
+a:visited {
+  text-decoration: none;
+}
+
 // 链接悬停效果
 a:hover {
   color: rgb(57, 159, 255);
-  text-decoration: underline;
 }
 
 // 字体文件
@@ -75,6 +83,24 @@ a:hover {
   z-index: 0;
 }
 
+// 卡片交互：提前建立合成层，避免缩放结束时文字重新栅格化产生跳动
+.cards {
+  border-radius: 6px;
+  background-color: var(--cards-background-color);
+  -webkit-backdrop-filter: var(--cards-backdrop-filter);
+  backdrop-filter: var(--cards-backdrop-filter);
+  transform: translate3d(0, 0, 0) scale(1);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: backdrop-filter 0.3s, transform 0.3s;
+
+  &:hover,
+  &:active {
+    transform: translate3d(0, 0, 0) scale(1.01);
+  }
+}
+
 
 
 // 文字超出
@@ -82,70 +108,6 @@ a:hover {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-// 弹窗样式
-.el-message {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-radius: 25px !important;
-  border-color: transparent !important;
-
-  .el-message__badge {
-    display: none;
-  }
-  .el-message__content {
-    white-space: nowrap;
-  }
-}
-
-// 进度条样式
-.el-progress-bar {
-  .el-progress-bar__outer {
-    border-radius: 6px;
-    background-color: var(--el-progress-bar-in-color);
-    .el-progress-bar__inner {
-      background-color: var(--el-progress-bar-out-color);
-      border-radius: 6px;
-      text-align: center;
-      font-family: "UnidreamLED";
-      span {
-        color: var(--el-progress-bar-span-color);
-        font-size: 0.9rem;
-      }
-    }
-  }
-}
-
-// Tooltip 样式
-.el-popper.is-dark {
-  border: 1px solid transparent !important;
-}
-
-// 卡片样式
-.el-card {
-  border-radius: 8px !important;
-  border: 1px solid transparent !important;
-  background-color: transparent !important;
-  .el-card__header {
-    font-weight: bold;
-    padding: 16px 20px !important;
-    border-bottom: 1px solid transparent !important;
-  }
-  .el-card__body {
-    padding: 0 !important;
-  }
-}
-
-// Transition 动画
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease-in-out;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 
 // keyframes 动画

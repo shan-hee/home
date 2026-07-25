@@ -1,10 +1,7 @@
 import { defineConfig } from "vite";
-import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
 import { resolve } from "path";
 import { VitePWA } from "vite-plugin-pwa";
-import vue from "@vitejs/plugin-vue";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
+import react from "@vitejs/plugin-react";
 import UnoCSS from 'unocss/vite';
 import type { UserConfig } from "vite";
 
@@ -12,17 +9,8 @@ import type { UserConfig } from "vite";
 export default (): UserConfig => {
     return defineConfig({
         plugins: [
-            vue(),
+            react(),
             UnoCSS(),
-            AutoImport({
-                imports: ["vue"],
-                resolvers: [ElementPlusResolver()],
-                dts: "src/auto-imports.d.ts",
-            }),
-            Components({
-                resolvers: [ElementPlusResolver()],
-                dts: "src/components.d.ts",
-            }),
             VitePWA({
                 registerType: "prompt",
                 // 酪灰的小批注：如果遇到了子页面自动跳转主页等问题，或不需要客户端浏览器缓存，可尝试取消注释这两行代码，而不需要完全移除 PWA ~
@@ -139,7 +127,7 @@ export default (): UserConfig => {
                     replacement: resolve(__dirname, "src")
                 }
             ],
-            extensions: [".ts", ".js", ".vue", ".json"],
+            extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
         },
         css: {
             preprocessorOptions: {

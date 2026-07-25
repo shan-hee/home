@@ -1,5 +1,4 @@
-export type SiteIcon = "Blog" | "Cloud" | "Compass" | "Book" | "Fire" | "LaptopCode";
-export type SocialIcon = "github" | "bilibili" | "qq" | "mail" | "twitter-x" | "telegram";
+export type LinkIconMode = "text" | "icon" | "image";
 
 export interface SiteProfile {
   siteName: string;
@@ -18,14 +17,16 @@ export interface SiteProfile {
 }
 
 export interface SiteLinkConfig {
-  icon: SiteIcon;
   name: string;
   link: string;
+  iconMode: LinkIconMode;
+  iconValue: string;
+  iconColor: string;
 }
 
 export interface SocialLinkConfig {
   name: string;
-  icon: SocialIcon;
+  icon: string;
   tip: string;
   url: string;
 }
@@ -67,7 +68,7 @@ export interface SiteContentSections {
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 1;
+  schemaVersion: 3;
   revision: string;
   generatedAt: string;
   etag: string;

@@ -1,0 +1,73 @@
+.volume-slider {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.volume-track {
+  --volume-progress: 0%;
+  position: relative;
+  width: 32px;
+  height: 88px;
+  flex: 0 0 88px;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+
+  &:focus-visible {
+    outline: none;
+
+    .volume-runway {
+      box-shadow: 0 0 0 2px rgba(from var(--player-slider-main-color) r g b / 0.28);
+    }
+  }
+}
+
+.volume-runway {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--player-slider-runway-color);
+  transform: translateX(-50%);
+}
+
+.volume-fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--volume-progress);
+  border-radius: inherit;
+  background: var(--player-slider-main-color);
+}
+
+.volume-thumb {
+  position: absolute;
+  bottom: var(--volume-progress);
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--player-slider-main-color);
+  box-shadow: none;
+  transform: translate(-50%, 50%);
+  pointer-events: none;
+}
+
+.volume-percent {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .volume-runway {
+    transition: none;
+  }
+}

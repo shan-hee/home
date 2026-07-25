@@ -1,41 +1,26 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import pluginVue from "eslint-plugin-vue";
-
-const autoImportGlobals = {
-  computed: "readonly",
-  defineComponent: "readonly",
-  defineEmits: "readonly",
-  defineProps: "readonly",
-  ElMessage: "readonly",
-  ElMessageBox: "readonly",
-  h: "readonly",
-  nextTick: "readonly",
-  onBeforeUnmount: "readonly",
-  onMounted: "readonly",
-  onUnmounted: "readonly",
-  reactive: "readonly",
-  ref: "readonly",
-  watch: "readonly",
-};
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
 
 export default tseslint.config(
-  {
-    ignores: ["dist/**", "node_modules/**", "src/auto-imports.d.ts", "src/components.d.ts"],
-  },
+  { ignores: ["dist/**", "node_modules/**"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...pluginVue.configs["flat/essential"],
   {
-    files: ["src/**/*.{ts,vue}", "vite.config.ts", "uno.config.ts"],
+    files: ["src/**/*.{ts,tsx}", "vite.config.ts", "uno.config.ts"],
+    plugins: {
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+    },
     languageOptions: {
-      globals: { ...globals.browser, ...autoImportGlobals },
-      parserOptions: { parser: tseslint.parser, sourceType: "module" },
+      globals: { ...globals.browser },
+      parserOptions: { parser: tseslint.parser, sourceType: "module", ecmaFeatures: { jsx: true } },
     },
     rules: {
-      "no-undef": "off",
-      "vue/multi-word-component-names": "off",
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-explicit-any": "off",
     },
   },

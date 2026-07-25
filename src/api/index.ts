@@ -29,7 +29,7 @@ export const getPlayerList = async (): Promise<PlaylistItem[]> => {
     throw new Error("音乐源响应格式无效");
   }
   const data = payload as MusicApiItem[];
-  const siteName = useSiteContentStore().profile.siteName;
+  const siteName = useSiteContentStore.getState().snapshot.sections.profile.siteName;
 
   if (data.length > 0 && asText(data[0]?.url).startsWith("@")) {
     const encodedUrl = asText(data[0].url);

@@ -1,0 +1,6 @@
+.devsettings { display: grid; gap: 15px; color: var(--text-color); }
+.devsettings section { display: grid; gap: 8px; padding: 11px; border: 1px solid rgba(from currentColor r g b / .1); border-radius: 7px; }
+.devsettings p { margin: 0; font-size: .75rem; opacity: .65; }
+.dev-inline, .dev-actions, .dev-check { display: flex; align-items: center; gap: 8px; }
+.devsettings input, .devsettings button { min-height: 32px; padding: 0 9px; border: 1px solid rgba(from currentColor r g b / .16); border-radius: 6px; color: inherit; background: rgba(from currentColor r g b / .07); }
+.devsettings button { cursor: pointer; }

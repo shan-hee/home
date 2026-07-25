@@ -1,0 +1,274 @@
+.link-manager-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.34);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: fade 0.18s ease both;
+}
+
+.link-manager {
+  width: min(420px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 18px;
+  border-radius: 14px;
+  color: var(--text-color);
+  background: var(--card-background-color);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+
+  > header,
+  > header > div,
+  form > footer,
+  form > footer > div {
+    display: flex;
+    align-items: center;
+  }
+
+  > header {
+    justify-content: space-between;
+    margin-bottom: 16px;
+
+    > div { gap: 8px; }
+    h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+    button { display: grid; place-items: center; padding: 2px; }
+  }
+
+  button {
+    border: 0;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+
+    &:disabled { cursor: wait; opacity: 0.45; }
+  }
+
+  .manager-mark {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(from currentColor r g b / 0.09);
+  }
+
+  form {
+    display: grid;
+    gap: 13px;
+
+    > label,
+    fieldset {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      font-size: 0.76rem;
+    }
+
+    legend { margin-bottom: 6px; }
+
+    input:not([type="color"]) {
+      width: 100%;
+      min-height: 38px;
+      padding: 7px 10px;
+      border: 1px solid rgba(from currentColor r g b / 0.16);
+      border-radius: 8px;
+      outline: 0;
+      color: inherit;
+      background: rgba(from currentColor r g b / 0.065);
+      font: inherit;
+
+      &:focus { border-color: rgba(from currentColor r g b / 0.46); }
+    }
+
+    small { font-size: 0.68rem; opacity: 0.48; }
+  }
+
+  .url-fetch-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px;
+
+    button {
+      min-width: 106px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: rgba(from currentColor r g b / 0.1);
+
+      &:hover,
+      &:focus-visible {
+        outline: 0;
+        background: rgba(from currentColor r g b / 0.16);
+      }
+    }
+  }
+
+  .manager-preview {
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 0.86rem;
+
+    .preview-icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+
+      .site-icon-image {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        border-radius: 7px;
+      }
+
+      b { max-width: 46px; overflow: hidden; font-size: 1.35rem; white-space: nowrap; }
+    }
+
+    &.social-preview { font-size: 0.9rem; }
+  }
+
+  .segmented {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+
+    button {
+      padding: 8px;
+      border-radius: 7px;
+      background: rgba(from currentColor r g b / 0.055);
+      opacity: 0.55;
+
+      &.active { background: rgba(from currentColor r g b / 0.13); opacity: 1; }
+      &:disabled { cursor: not-allowed; opacity: 0.3; }
+    }
+  }
+
+  .favicon-candidates {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    gap: 7px;
+
+    button {
+      position: relative;
+      min-width: 0;
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 7px 5px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: rgba(from currentColor r g b / 0.06);
+      opacity: 0.52;
+
+      &:not(:disabled):hover,
+      &:not(:disabled):focus-visible,
+      &.active {
+        outline: 0;
+        border-color: rgba(from currentColor r g b / 0.3);
+        background: rgba(from currentColor r g b / 0.12);
+        opacity: 1;
+      }
+
+      &:disabled {
+        cursor: wait;
+      }
+
+      img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        border-radius: 7px;
+      }
+
+      > span:not(.i-icon) {
+        max-width: 100%;
+        overflow: hidden;
+        font-size: 0.68rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .candidate-check {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+      }
+    }
+  }
+
+  .favicon-empty {
+    min-height: 38px;
+    display: grid;
+    place-items: center;
+    font-size: 0.74rem;
+    opacity: 0.58;
+  }
+
+  .color-picker,
+  .icon-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .color-picker button,
+  .color-picker input {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 50%;
+
+    &.active { border-color: currentColor; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.16); }
+  }
+
+  .color-picker input { overflow: hidden; cursor: pointer; }
+
+  .icon-presets button {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: rgba(from currentColor r g b / 0.06);
+    opacity: 0.6;
+
+    &.active { background: rgba(from currentColor r g b / 0.14); opacity: 1; }
+  }
+
+  form > footer {
+    min-height: 42px;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
+
+    > div { gap: 8px; }
+    button { min-height: 34px; padding: 7px 13px; border-radius: 8px; }
+    .cancel-button { opacity: 0.62; }
+    .primary-button { background: rgba(from currentColor r g b / 0.14); }
+    .delete-button { display: flex; align-items: center; gap: 5px; color: rgb(255 145 145); }
+  }
+}
+
+@media (max-width: 480px) {
+  .link-manager-layer { padding: 12px; align-items: end; }
+  .link-manager { max-height: calc(100vh - 24px); padding: 16px; border-radius: 16px 16px 10px 10px; }
+}

@@ -1,154 +1,123 @@
-import { defineStore } from "pinia";
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import type { MainState } from "@/typings/store";
-import { nextTick } from "vue";
+import { validateMainPatch } from "@/store/plugins/validation";
 import { removeStorageKeys, SETTINGS_RESET_EVENT, STORAGE_KEYS } from "@/utils/storageKeys";
 
 export const storeState: MainState = {
-  // 这些变量，非有能力的开发者请只操作【开关】项来实现个性化的默认设置，其余变量勿动！
-  imgLoadStatus: false, // 【状态】壁纸加载状态
-  innerWidth: null as number | null, // 【状态】当前窗口宽度
-  coverType: 0 as number, // 【开关】壁纸种类
-  sBGCount: null as string | null, // 【状态】使用内置壁纸时用于临时指定壁纸的接口
-  /* 0 不切换，1 等待 15 秒，2 等待 30 秒，3 等待 45 秒。 */
-  autoBGSwitchInterval : 2 as number, // 【开关】自动切换壁纸设置
-  wallpaperLocalId: null as number | null, // 【开关】默认本地壁纸 ID
-  wallpaperMaxId: 0, // 【状态】当前设备本地壁纸数量
-  effectsMode: "auto", // 【开关】背景特效模式
-  selectedEffects: [] as MainState["selectedEffects"], // 【开关】手动背景特效
-  msgNameShow: false, // 【开关】信息区域显示自定义名而非原本的 URL
-  siteStartShow: true, // 【开关】建站日期显示
-  musicBoxOpenState: false, // 【状态】音乐盒子开启状态
-  musicIsOk: false, // 【状态】音乐是否加载完成
-  musicVolume: 0.3 as number, // 【开关】音乐音量
-  backgroundShow: false, // 【状态】壁纸展示状态
-  boxOpenState: false, // 【状态】盒子开启状态
-  mobileOpenState: false, // 【状态】移动端开启状态
-  mobileFuncState: false, // 【状态】移动端功能区开启状态
-  setV: false, // 【状态】开发者模式
-  playerStatus: "idle", // 【状态】播放器状态
-  playerHasStarted: false, // 【状态】当前会话是否已经开始播放
-  playerError: null as string | null, // 【状态】播放器错误
-  playerCanplay: false, // 【状态】当前音乐是否完成加载
-  playerTitle: null as string | null, // 【缓存】当前播放歌曲名
-  playerArtist: null as string | null, // 【缓存】当前播放歌手名
-  playerAlbum: null as string | null, // 【缓存】当前播放专辑名
-  playerLyric: "", // 【缓存】当前播放歌词
-  footerPlayerShow: false, // 【开关】底栏是否显示播放器信息
-  footerBlur: true, // 【开关】底栏模糊
-  playerAutoplay: false, // 【开关】是否自动播放
-  playerOrder: "shuffle", // 【开关】播放顺序 "list", "single", "shuffle"
-  playerKeyboardShortcuts: true, // 【开关】全局播放器快捷键
-  weatherLocation: null, // 【开关】手动选择的天气城市；为空时使用 IP 定位
-  playerCurrentTime: 0, // 【缓存】当前歌曲已播放时间
-  playerDuration: 0, // 【缓存】当前歌曲总时长
-  showFirefly: false, // 【状态】萤火虫特效
-  showSnowfall: false, // 【状态】雪花特效
-  showLantern: false, // 【状态】灯笼特效
-  showMeteor: false, // 【状态】流星特效
-  theme: "system", // 【开关】主题，"system"/"time"/"bg"/"light"/"dark"。
+  imgLoadStatus: false,
+  innerWidth: null,
+  coverType: 0,
+  sBGCount: null,
+  autoBGSwitchInterval: 2,
+  wallpaperLocalId: null,
+  wallpaperMaxId: 0,
+  effectsMode: "auto",
+  selectedEffects: [],
+  msgNameShow: false,
+  siteStartShow: true,
+  musicBoxOpenState: false,
+  musicIsOk: false,
+  musicVolume: 0.3,
+  backgroundShow: false,
+  boxOpenState: false,
+  mobileOpenState: false,
+  mobileFuncState: false,
+  setV: false,
+  playerStatus: "idle",
+  playerHasStarted: false,
+  playerError: null,
+  playerCanplay: false,
+  playerTitle: null,
+  playerArtist: null,
+  playerAlbum: null,
+  playerLyric: "",
+  footerPlayerShow: false,
+  footerBlur: true,
+  playerAutoplay: false,
+  playerOrder: "shuffle",
+  playerKeyboardShortcuts: true,
+  weatherLocation: null,
+  playerCurrentTime: 0,
+  playerDuration: 0,
+  showFirefly: false,
+  showSnowfall: false,
+  showLantern: false,
+  showMeteor: false,
+  theme: "system",
 };
 
-export const mainStore = defineStore("main", {
-  state: (): MainState => (
-    // 主要状态，使用这个方法是为了添加重置功能..烦诶，pinia 你还得努力啊，你不努力那...那..那就不努力叭..哼唧（）
-    JSON.parse(
-      JSON.stringify(storeState)
-    )
-  ),
-  getters: {
-    // 获取歌曲信息
-    getPlayerData(state) {
-      return {
-        name: state.playerTitle,
-        artist: state.playerArtist,
-        album: state.playerAlbum,
-      };
-    },
-    // 获取页面宽度
-    getInnerWidth(state) {
-      return state.innerWidth;
-    },
+export interface MainActions {
+  patch: (patch: Partial<MainState>) => void;
+  setSetting: <Key extends keyof MainState>(key: Key, value: MainState[Key]) => void;
+  setInnerWidth: (value: number) => void;
+  setPlayerStatus: (value: MainState["playerStatus"]) => void;
+  setPlayerCanplay: (value: boolean) => void;
+  setPlayerLyric: (value: string) => void;
+  setPlayerData: (title: string, artist: string, album?: string | null) => void;
+  setImgLoadStatus: (value: boolean) => void;
+  setSBGCount: (value: string | number) => boolean;
+  setWallpaperLocalId: (value: string | number | null) => boolean;
+  resetStore: () => Promise<void>;
+}
+
+export type MainStore = MainState & MainActions;
+
+const cloneDefaults = () => structuredClone(storeState);
+
+export const useMainStore = create<MainStore>()(subscribeWithSelector((set, get) => ({
+  ...cloneDefaults(),
+  patch: (patch) => set((state) => validateMainPatch(patch, state)),
+  setSetting: (key, value) => get().patch({ [key]: value } as Partial<MainState>),
+  setInnerWidth: (value) => set({
+    innerWidth: value,
+    ...(value >= 720 ? { mobileOpenState: false, mobileFuncState: false } : {}),
+  }),
+  setPlayerStatus: (value) => set((state) => ({
+    playerStatus: value,
+    ...(value === "playing" ? { playerHasStarted: true, playerError: null } : {}),
+    ...(value === "error" ? { playerCanplay: false } : {}),
+  })),
+  setPlayerCanplay: (value) => set({ playerCanplay: value }),
+  setPlayerLyric: (value) => set({ playerLyric: value }),
+  setPlayerData: (title, artist, album = null) => set({
+    playerTitle: title,
+    playerArtist: artist,
+    playerAlbum: album,
+  }),
+  setImgLoadStatus: (value) => set({ imgLoadStatus: value }),
+  setSBGCount: (value) => {
+    const state = get();
+    const wallpaperId = Number(value);
+    if (state.coverType !== 0 || !Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > state.wallpaperMaxId) {
+      return false;
+    }
+    set({ sBGCount: String(wallpaperId) });
+    return true;
   },
-  actions: {
-    // 更改当前页面宽度
-    setInnerWidth(value: number) {
-      this.innerWidth = value;
-      if (value >= 720) {
-        this.mobileOpenState = false;
-        this.mobileFuncState = false;
-      }
-    },
-    // 更改播放器状态
-    setPlayerStatus(value: MainState["playerStatus"]) {
-      this.playerStatus = value;
-      if (value === "playing") {
-        this.playerHasStarted = true;
-        this.playerError = null;
-      }
-      if (value === "error") {
-        this.playerCanplay = false;
-      }
-    },
-    // 更改音乐加载状态
-    setPlayerCanplay(value: boolean) {
-      this.playerCanplay = value;
-    },
-    // 更改当前歌词
-    setPlayerLyric(value: string) {
-      this.playerLyric = value;
-    },
-    // 更改歌曲数据
-    setPlayerData(title: string, artist: string, album: string | null = null) {
-      this.playerTitle = title;
-      this.playerArtist = artist;
-      this.playerAlbum = album;
-    },
-    // 更改壁纸加载状态
-    setImgLoadStatus(value: boolean) {
-      this.imgLoadStatus = value;
-    },
-    // 使用内置壁纸时用于临时指定壁纸的接口
-    setSBGCount(value: string | number) {
-      const wallpaperId = Number(value);
-      if (this.coverType !== 0 || !Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > this.wallpaperMaxId) {
-        return false;
-      }
-      this.sBGCount = String(wallpaperId);
+  setWallpaperLocalId: (value) => {
+    if (value === null || value === "") {
+      set({ wallpaperLocalId: null });
       return true;
-    },
-    setWallpaperLocalId(value: string | number | null) {
-      if (value === null || value === "") {
-        this.wallpaperLocalId = null;
-        return true;
-      }
-      const wallpaperId = Number(value);
-      if (!Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > this.wallpaperMaxId) {
-        return false;
-      }
-      this.wallpaperLocalId = wallpaperId;
-      return true;
-    },
-    // 重置所有设置
-    async resetStore() {
-      const persistedSettings = [
-        "coverType", "wallpaperLocalId", "autoBGSwitchInterval", "musicVolume",
-        "siteStartShow", "footerPlayerShow", "footerBlur",
-        "playerAutoplay", "playerOrder", "playerKeyboardShortcuts", "effectsMode",
-        "selectedEffects", "theme", "setV", "msgNameShow",
-        "weatherLocation",
-      ] as const satisfies ReadonlyArray<keyof MainState>;
-      const defaults = Object.fromEntries(
-        persistedSettings.map((key) => [key, structuredClone(storeState[key])]),
-      ) as Partial<MainState>;
-      this.$patch(defaults);
-      await nextTick();
-      try {
-        removeStorageKeys(localStorage, [STORAGE_KEYS.weatherCache]);
-        window.dispatchEvent(new Event(SETTINGS_RESET_EVENT));
-      } catch (error) {
-        console.error("清理本项目设置失败：", error);
-        throw error;
-      }
-    },
+    }
+    const wallpaperId = Number(value);
+    if (!Number.isInteger(wallpaperId) || wallpaperId < 1 || wallpaperId > get().wallpaperMaxId) return false;
+    set({ wallpaperLocalId: wallpaperId });
+    return true;
   },
-});
+  resetStore: async () => {
+    const persistedSettings = [
+      "coverType", "wallpaperLocalId", "autoBGSwitchInterval", "musicVolume",
+      "siteStartShow", "footerPlayerShow", "footerBlur", "playerAutoplay",
+      "playerOrder", "playerKeyboardShortcuts", "effectsMode", "selectedEffects",
+      "theme", "setV", "msgNameShow", "weatherLocation",
+    ] as const satisfies ReadonlyArray<keyof MainState>;
+    const defaults = Object.fromEntries(
+      persistedSettings.map((key) => [key, structuredClone(storeState[key])]),
+    ) as Partial<MainState>;
+    get().patch(defaults);
+    await Promise.resolve();
+    removeStorageKeys(localStorage, [STORAGE_KEYS.weatherCache]);
+    window.dispatchEvent(new Event(SETTINGS_RESET_EVENT));
+  },
+})));

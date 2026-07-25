@@ -63,16 +63,41 @@ const assetUrl = (value: unknown, name: string) => {
   return url(normalized, name);
 };
 
-const iconName = (value: unknown) => {
-  const normalized = text(value, "图标", 40, false);
-  if (!/^[A-Za-z][A-Za-z0-9-]*$/.test(normalized)) {
-    throw new ApiError(400, "INVALID_CONTENT", "图标标识无效");
+const iconCode = (value: unknown, name = "图标代码") => {
+  const normalized = text(value, name, 80, false).toLowerCase();
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized)) {
+    throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
   }
   return normalized;
 };
 
-const SITE_ICONS = new Set(["Blog", "Cloud", "Compass", "Book", "Fire", "LaptopCode"]);
-const SOCIAL_ICONS = new Set(["github", "bilibili", "qq", "mail", "twitter-x", "telegram"]);
+const color = (value: unknown, name: string) => {
+  const normalized = text(value, name, 7, false).toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(normalized)) {
+    throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
+  }
+  return normalized;
+};
+
+const iconText = (value: unknown) => {
+  const normalized = text(value, "网站图标文字", 16, false);
+  if ([...normalized].length > 4) {
+    throw new ApiError(400, "INVALID_CONTENT", "网站图标文字长度无效");
+  }
+  return normalized;
+};
+
+const siteIconUrl = (value: unknown, siteLink: string) => {
+  const normalized = url(value, "网站图标地址");
+  const icon = new URL(normalized);
+  const site = new URL(siteLink);
+  const fromGoogle = icon.host === "www.google.com" && icon.pathname === "/s2/favicons";
+  const fromDuckDuckGo = icon.host === "icons.duckduckgo.com" && icon.pathname.startsWith("/ip3/");
+  if (icon.host !== site.host && !fromGoogle && !fromDuckDuckGo) {
+    throw new ApiError(400, "INVALID_CONTENT_URL", "网站图标地址与目标网站不匹配");
+  }
+  return normalized;
+};
 
 const profile = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "站点资料格式无效");
@@ -103,15 +128,22 @@ const siteLinks = (value: unknown) => {
   }
   return value.map((item, index) => {
     if (!isRecord(item)) throw new ApiError(400, "INVALID_CONTENT", `网站 ${index + 1} 格式无效`);
-    knownKeys(item, ["icon", "name", "link"]);
+    knownKeys(item, ["name", "link", "iconMode", "iconValue", "iconColor"]);
+    const iconMode = text(item.iconMode, "网站图标类型", 10, false);
+    if (iconMode !== "text" && iconMode !== "icon" && iconMode !== "image") {
+      throw new ApiError(400, "INVALID_CONTENT", "网站图标类型无效");
+    }
+    const link = url(item.link, "网站地址", ["http:", "https:"]);
     return {
-      icon: (() => {
-        const icon = iconName(item.icon);
-        if (!SITE_ICONS.has(icon)) throw new ApiError(400, "INVALID_CONTENT", "网站图标不受支持");
-        return icon;
-      })(),
       name: text(item.name, "网站名称", 80, false),
-      link: url(item.link, "网站地址", ["http:", "https:"]),
+      link,
+      iconMode,
+      iconValue: iconMode === "icon"
+        ? iconCode(item.iconValue, "网站图标代码")
+        : iconMode === "image"
+          ? siteIconUrl(item.iconValue, link)
+          : iconText(item.iconValue),
+      iconColor: color(item.iconColor, "网站图标颜色"),
     };
   });
 };
@@ -125,11 +157,7 @@ const socialLinks = (value: unknown) => {
     knownKeys(item, ["name", "icon", "tip", "url"]);
     return {
       name: text(item.name, "社交名称", 80, false),
-      icon: (() => {
-        const icon = iconName(item.icon);
-        if (!SOCIAL_ICONS.has(icon)) throw new ApiError(400, "INVALID_CONTENT", "社交图标不受支持");
-        return icon;
-      })(),
+      icon: iconCode(item.icon, "社交图标代码"),
       tip: text(item.tip, "社交提示", 120),
       url: url(item.url, "社交地址", ["https:", "mailto:"]),
     };
@@ -246,7 +274,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 1,
+    schemaVersion: 3,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,
@@ -256,7 +284,7 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config-v2", request.url).toString();
+  return new URL("/__edge-cache/site-config-v3", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {

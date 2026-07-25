@@ -1,6 +1,5 @@
-import { h } from "vue";
-import { SpaCandle } from "@icon-park/vue-next";
 import dayjs from "dayjs";
+import { toast } from "@/ui/toast";
 
 // 时钟
 export const getCurrentTime = () => {
@@ -27,7 +26,8 @@ export const getCurrentTime = () => {
 // 时光胶囊
 export const getTimeCapsule = () => {
   const now = dayjs();
-  const dayText = {
+  type CapsuleUnit = "day" | "week" | "month" | "year";
+  const dayText: Record<CapsuleUnit, string> = {
     day: "今日",
     week: "本周",
     month: "本月",
@@ -37,7 +37,7 @@ export const getTimeCapsule = () => {
    * 计算时间差的函数
    * @param {String} unit 时间单位，可以是 'day', 'week', 'month', 'year'
    */
-  const getDifference = (unit) => {
+  const getDifference = (unit: CapsuleUnit) => {
     // 获取当前时间单位的开始时间
     const start = now.startOf(unit);
     // 获取当前时间单位的结束时间
@@ -93,10 +93,7 @@ export const helloInit = () => {
   } else {
     hello = "深夜好！都快凌晨了啦，早点休息哦~";
   };
-  ElMessage({
-    dangerouslyUseHTMLString: true,
-    message: `<strong>${hello}</strong> 欢迎来到我的主页`,
-  });
+  toast(`${hello} 欢迎来到我的主页`);
 };
 
 // 默哀模式
@@ -116,11 +113,7 @@ export const checkDays = () => {
     const gray = document.createElement("style");
     gray.innerHTML = "html{filter: grayscale(100%)}";
     document.head.appendChild(gray);
-    ElMessage({
-      message: `今天是${anniversaries[key]}`,
-      duration: 14000,
-      icon: h(SpaCandle, { theme: "filled", fill: "#efefef" }),
-    });
+    toast(`今天是${anniversaries[key]}`);
   }
 };
 

@@ -1,55 +1,28 @@
-import { PiniaPluginContext } from "pinia";
+import type { MainState } from "@/typings/store";
 
-// Pinia 变量验证规则
-export const validationRules = {
-    coverType: {
-        allowed: [0, 1, 2, 3],
-        defaultValue: 0,
-    },
-    playerOrder: {
-        allowed: ["list", "single", "shuffle"],
-        defaultValue: "shuffle",
-    },
-    theme: {
-        allowed: ["system", "time", "bg", "light", "dark"],
-        defaultValue: "system",
-    },
-    autoBGSwitchInterval: {
-        allowed: [0, 1, 2, 3],
-        defaultValue: 2,
-    },
-    effectsMode: {
-        allowed: ["auto", "off", "manual"],
-        defaultValue: "auto",
-    },
+type ValidatedKey = "coverType" | "playerOrder" | "theme" | "autoBGSwitchInterval" | "effectsMode";
+
+const validationRules: Record<ValidatedKey, readonly (string | number)[]> = {
+  coverType: [0, 1, 2, 3],
+  playerOrder: ["list", "single", "shuffle"],
+  theme: ["system", "time", "bg", "light", "dark"],
+  autoBGSwitchInterval: [0, 1, 2, 3],
+  effectsMode: ["auto", "off", "manual"],
 };
 
-/**
- * Pinia 数据验证插件
- * @param context
- */
-export const validationPlugin = ({ store }: PiniaPluginContext) => {
-    store.$subscribe((mutation) => {
-        if (mutation.type !== "direct") return;
-        const event = Array.isArray(mutation.events) ? mutation.events[0] : mutation.events;
-        if (!event || !("key" in event) || !("newValue" in event) || !("oldValue" in event)) {
-            return;
-        };
-        const { key, newValue, oldValue } = event;
-        if (Object.prototype.hasOwnProperty.call(validationRules, key)) {
-            const rule = validationRules[key];
-            let coercedValue = newValue;
-            if (rule.allowed.length > 0 && typeof rule.allowed[0] === "number") {
-                coercedValue = Number(newValue);
-            };
-            if (!rule.allowed.includes(coercedValue)) {
-                store.$patch({ [key]: oldValue });
-                console.error(`不支持将变量 '${String(key)}' 的值设置为 '${newValue}'，已阻止更改。`);
-                ElMessage({
-                    dangerouslyUseHTMLString: true,
-                    message: `不支持将变量 '${String(key)}' 的值设置为 '${newValue}'，已阻止更改。`,
-                });
-            };
-        };
-    });
+export const validateMainPatch = (patch: Partial<MainState>, current: MainState) => {
+  const validated = { ...patch };
+  (Object.keys(validationRules) as ValidatedKey[]).forEach((key) => {
+    if (!(key in validated)) return;
+    const allowed = validationRules[key];
+    const incoming = validated[key];
+    const value = typeof allowed[0] === "number" ? Number(incoming) : incoming;
+    if (allowed.includes(value as never)) {
+      (validated as Record<string, unknown>)[key] = value;
+      return;
+    }
+    (validated as Record<string, unknown>)[key] = current[key];
+    console.error(`不支持将变量 '${key}' 的值设置为 '${String(incoming)}'，已阻止更改。`);
+  });
+  return validated;
 };
