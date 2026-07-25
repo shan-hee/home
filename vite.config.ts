@@ -10,7 +10,6 @@ import type { UserConfig } from "vite";
 
 // https://vitejs.dev/config/
 export default (): UserConfig => {
-    const env = loadEnv(mode, process.cwd());
     return defineConfig({
         plugins: [
             vue(),
