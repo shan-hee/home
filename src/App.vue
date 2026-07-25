@@ -7,16 +7,13 @@
   <Transition name="fade" mode="out-in">
     <main id="main" v-if="store.imgLoadStatus">
       <div class="page-container" v-show="!store.backgroundShow">
-        <section class="all" v-show="!store.setOpenState">
+        <section class="all">
           <MainLeft />
           <MainRight v-show="!store.boxOpenState" />
           <Box v-show="store.boxOpenState" />
         </section>
-        <section class="more" v-show="store.setOpenState" @click="store.setOpenState = false">
-          <MoreSet />
-        </section>
       </div>
-      <ThemeSwitcher v-show="!store.backgroundShow && !store.setOpenState" />
+      <ThemeSwitcher v-show="!store.backgroundShow" />
       <!-- 移动端菜单按钮 -->
       <Icon class="menu" size="24" v-show="!store.backgroundShow"
         @click="store.mobileOpenState = !store.mobileOpenState">
@@ -24,7 +21,7 @@
       </Icon>
       <!-- 页脚 -->
       <Transition name="fade" mode="out-in">
-        <Footer class="f-ter" v-show="!store.backgroundShow && !store.setOpenState" />
+        <Footer class="f-ter" v-show="!store.backgroundShow" />
       </Transition>
     </main>
   </Transition>
@@ -42,7 +39,6 @@ import Background from "@/components/Background.vue";
 import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 import Footer from "@/components/Footer.vue";
 import Box from "@/views/Box/index.vue";
-import MoreSet from "@/views/MoreSet/index.vue";
 import { useTheme } from "@/composables/useTheme";
 import cursorInit from "@/utils/cursor";
 
@@ -71,7 +67,6 @@ watch(
   (value) => {
     if (value != null && value < 721) {
       store.boxOpenState = false;
-      store.setOpenState = false;
     }
   },
 );
@@ -137,20 +132,6 @@ onBeforeUnmount(() => {
       overflow: hidden;
     }
 
-    .more {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #00000080;
-      -webkit-backdrop-filter: blur(20px);
-      backdrop-filter: blur(20px);
-      z-index: 2;
-      animation: fade 0.5s;
-    }
-
-
     @media (max-width: 1200px) {
       padding: 0;
     }
@@ -192,10 +173,6 @@ onBeforeUnmount(() => {
     .page-container {
       height: 650px;
 
-      .more {
-        height: 650px;
-        width: calc(100% + 6px);
-      }
     }
 
     .menu {

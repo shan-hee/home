@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Background: typeof import('./components/Background.vue')['default']
+    ContentSettings: typeof import('./components/ContentSettings.vue')['default']
     DevSet: typeof import('./components/DevSet.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
@@ -37,9 +38,11 @@ declare module 'vue' {
     Message: typeof import('./components/Message.vue')['default']
     MoreContent: typeof import('./components/MoreContent.vue')['default']
     Music: typeof import('./components/Music.vue')['default']
+    OwnerPanel: typeof import('./components/OwnerPanel.vue')['default']
     Player: typeof import('./components/Player.vue')['default']
     PlayerSeekBar: typeof import('./components/PlayerSeekBar.vue')['default']
     ProgressBar: typeof import('./components/ProgressBar.vue')['default']
+    SecuritySettings: typeof import('./components/SecuritySettings.vue')['default']
     Set: typeof import('./components/Set.vue')['default']
     SocialLinks: typeof import('./components/SocialLinks.vue')['default']
     ThemeSwitcher: typeof import('./components/ThemeSwitcher.vue')['default']
