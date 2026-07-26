@@ -67,24 +67,25 @@ pnpm dev:cf
 
 `dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。`pnpm dev:web` 不会自动打开浏览器。
 
-`.dev.vars` 至少需要填写长度足够的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后站点资料在主页铅笔入口的“内容”面板修改；网站和社交方式则直接在主页原位置管理，无需重新构建或重启服务。
+`.dev.vars` 至少需要填写长度足够的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后全局行为、站点资料和壁纸在主页铅笔入口的“站点设置”面板修改；网站和社交方式则直接在主页原位置管理。
 
 ### ⚙️ Cloudflare Pages 部署
 
 首版只维护 Cloudflare Pages：
 
-1. 创建 D1 数据库并将真实 `database_id` 写入 `wrangler.jsonc`，再应用 `migrations/0001_initial.sql`。
-2. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
-3. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
-4. 将 `DB` 绑定到刚创建的 D1；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
-5. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
-6. 部署后先确认公开主页正常，再用铅笔入口登录；站点内容、设备和审计均在原位设置面板管理。
+1. 创建 D1 数据库并将真实 `database_id` 写入 `wrangler.jsonc`，再按顺序应用 `migrations/` 下的全部迁移。
+2. 创建 R2 Bucket，并按 `wrangler.jsonc` 将其绑定为 `WALLPAPER_BUCKET`。
+3. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
+4. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
+5. 将 `DB` 和 `WALLPAPER_BUCKET` 绑定到对应的 D1/R2；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
+6. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
+7. 部署后先确认公开主页正常，再用铅笔入口登录；站点设置、R2 壁纸、设备和审计均在原位管理面板操作。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
 
 ### 站点内容
 
-Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威来源。所有者登录后，网站列表与社交方式会显示新增和编辑入口，并支持拖动排序；网站图标还可通过右键菜单编辑或删除。网站编辑器支持根据网址获取 favicon 候选并选择使用。其余内容在原位设置面板的“内容”标签修改。保存会校验 section revision，避免多个标签页静默覆盖。
+Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和一言以 D1 为权威来源，壁纸二进制存放在 R2。管理员离线时，草稿和已确认保存的待提交操作写入 IndexedDB；恢复网络后通过幂等 `mutationId` 提交。保存仍校验 section revision，冲突时保留本机草稿，不会静默覆盖服务器内容。
 
 ```json
 {
@@ -106,13 +107,13 @@ Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威
 
 天气由同源 Cloudflare Pages Function `/api/weather` 提供：
 
-- 首次访问由 Cloudflare 根据访问 IP 的 `request.cf` 提供近似位置，不请求浏览器定位权限；用户仍可搜索并保存城市，或在天气面板恢复 IP 定位。
+- 默认由 Cloudflare 根据访问 IP 的 `request.cf` 提供近似位置，不请求浏览器定位权限；管理员也可以在“站点设置 → 全局行为”配置固定城市和坐标。
 - 首选 Open-Meteo，失败时自动回退到 MET Norway；两者返回统一格式后再交给页面展示。
-- 两个天气源都失败时，页面会显示该地点最近一次成功数据并标记为“旧数据”。
+- 两个天气源都失败时，页面显示明确的离线/不可用状态，不在浏览器中维护天气 localStorage 缓存。
 - `/api/alerts` 是独立可选能力。未配置 `QWEATHER_API_KEY` 时返回空数组，不影响普通天气。
 - Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
 
-在线壁纸元数据由 `/api/wallpaper` 获取，远程图片经带域名白名单的 `/api/image` 同源代理；版本检查统一请求 `/api/version`。这些接口和天气、城市、预警接口都使用 Workers Cache 做短期边缘缓存。
+壁纸文件存放在 Cloudflare R2，管理员通过“站点设置 → 壁纸资源”上传、选择和删除。公开页面通过 `/api/assets/:id` 读取不可变对象，并由 Cloudflare 与 PWA 运行时缓存；版本检查统一请求 `/api/version`。
 
 ### 音乐
 
@@ -138,9 +139,7 @@ Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威
 
 #### 网站背景
 
-可以在 `public/images` 中修改网站背景。<p>
-
-桌面与移动端使用独立图片集合。添加或减少本地壁纸后，在原位设置面板的“内容 → 壁纸资源”修改数量、路径模板和回退图片；`count` 必须与连续编号图片一致，`pattern` 中必须保留 `{id}`。默认本地壁纸 ID、自动切换间隔和壁纸来源在“偏好”标签调整，并可跨设备同步。
+桌面与移动端壁纸都由管理员上传到 Cloudflare R2，不再放入 `public/images`，也不使用连续编号、路径模板、在线随机源或访客壁纸 ID。未配置壁纸时页面使用纯色背景。
 
 #### 网站图标
 
@@ -148,13 +147,16 @@ Profile、网站列表、社交链接、音乐、壁纸和一言以 D1 为权威
 
 #### 更多默认设置
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;自动播放、背景特效等默认设置请编辑 `src/store/index.ts`，但这些设置仅对首次打开网页的用户生效，覆盖用户设置需要清除网页数据。
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;全站默认行为由管理员后台管理。未登录访客只持久化主题与背景特效；播放器操作仅保留在当前页面会话。
 
 ### 技术栈
 
 - [React](https://react.dev/)
 - [Vite](https://vitejs.cn/vite3-cn/)
 - [Zustand](https://zustand.docs.pmnd.rs/)
+- [idb](https://github.com/jakearchibald/idb)
+- [Valibot](https://valibot.dev/)
+- Cloudflare D1 / R2 / Pages Functions
 - [IconPark](https://iconpark.oceanengine.com/official)
 - [TypeScript](https://www.typescriptlang.org/zh/)
 

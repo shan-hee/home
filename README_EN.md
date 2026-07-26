@@ -75,13 +75,14 @@ Cloudflare Pages is the only deployment target maintained for the first release:
 2. Set the install command to `pnpm install --frozen-lockfile`.
 3. Set the build command to `pnpm build`.
 4. Set the output directory to `dist`; the root `functions/` directory is deployed as Pages Functions.
-5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `WALLHAVEN_API_KEY`, `GITHUB_REPOSITORY`, and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
+5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `GITHUB_REPOSITORY` and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
+6. Create the R2 bucket configured by `wrangler.jsonc` and bind it as `WALLPAPER_BUCKET`.
 
 The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
 
 ### Site content
 
-Profile, site links, social links, music, wallpaper metadata, and Hitokoto configuration use D1 as their authoritative source. After signing in, site and social links can be added, edited, deleted, and drag-sorted in place. Site icons also expose edit and delete actions in a context menu, and the site editor can load favicon candidates from the entered URL. The remaining content is available in the Content panel. Changes do not require a rebuild or service restart.
+Profile, global behavior, site links, social links, music, wallpaper references, and Hitokoto configuration use D1 as their authoritative source; wallpaper binaries live in R2. Offline owner drafts and confirmed pending saves are stored in IndexedDB, then submitted with an idempotent mutation ID after connectivity returns. Section revisions still prevent silent overwrites, and conflicts retain the local draft for an explicit decision.
 
 ```json
 {
@@ -103,13 +104,13 @@ After signing in, social links are managed directly in their home-page row. The 
 
 Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 
-- Cloudflare supplies an approximate location from the visitor IP through `request.cf`; the app no longer requests browser geolocation permission. Users can still save a searched city or restore IP location from the weather dialog.
+- Cloudflare supplies an approximate location from the visitor IP through `request.cf`; the app no longer requests browser geolocation permission. The owner can configure a fixed city and coordinates in **Site settings → Global behavior**.
 - Open-Meteo is tried first, with MET Norway as a fallback; both are normalized before the UI receives the response.
-- If both providers fail, the latest successful response for that location is shown and marked as stale.
+- If both providers fail, the page shows a clear offline/unavailable state and does not maintain a weather localStorage cache.
 - `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
 - When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
 
-Online wallpaper metadata is provided by `/api/wallpaper`, remote images use the allowlisted same-origin `/api/image` proxy, and update checks use `/api/version`. These endpoints and the weather endpoints use short-lived Workers Cache entries.
+Wallpaper files are stored in Cloudflare R2 and managed in **Site settings → Wallpaper assets**. Public pages read immutable objects through `/api/assets/:id`; Cloudflare and the PWA runtime cache those responses. Update checks continue to use `/api/version`.
 
 ### Music
 
@@ -131,9 +132,7 @@ Now using` MiSans` and `HarmonyOS Sans` font, using font splitting to improve lo
 
 #### Website Background
 
-You can modify the website background in `public/images`.<p>
-
-Desktop and mobile use separate image collections. After adding or removing local images, update count, path pattern, and fallback in **Content → Wallpaper resources**. `count` must match the continuously numbered files and `pattern` must keep `{id}`. Local wallpaper preferences are managed in the Preferences panel and can sync across devices.
+Desktop and mobile wallpapers are uploaded by the owner to Cloudflare R2. They are no longer stored under `public/images`, continuously numbered, or selected by visitors. The page uses its solid-color fallback when no wallpaper is configured.
 
 #### Website Icon
 
@@ -141,13 +140,16 @@ The website icon can be modified in `public/images/icon`.
 
 #### More default settings
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;For defaults such as autoplay and background effects, edit `src/store/index.ts`. These settings only apply to first-time visitors; clear the site's stored data to replace existing preferences.
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Global defaults are managed in the owner panel. Anonymous visitors persist only theme and background effects; player controls remain session-only.
 
 ### Technology Stack
 
 - [React](https://react.dev/)
 - [Vite](https://vitejs.cn/vite3-cn/)
 - [Zustand](https://zustand.docs.pmnd.rs/)
+- [idb](https://github.com/jakearchibald/idb)
+- [Valibot](https://valibot.dev/)
+- Cloudflare D1 / R2 / Pages Functions
 - [IconPark](https://iconpark.oceanengine.com/official)
 - [TypeScript](https://www.typescriptlang.org/zh/)
 
