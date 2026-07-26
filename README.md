@@ -67,7 +67,7 @@ pnpm dev:cf
 
 `dev:web` 不会运行 `/api/*`。需要验证 Pages Functions 时使用 `dev:cf`，浏览器访问 Vite 输出的 `http://localhost:3000`；开发服务器会将 `/api/*` 转发到本地 Wrangler。`pnpm dev:web` 不会自动打开浏览器。
 
-`.dev.vars` 至少需要填写长度足够的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`；音乐功能还需要 `MUSIC_API_URL`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后全局行为、站点资料和壁纸在主页铅笔入口的“站点设置”面板修改；网站和社交方式则直接在主页原位置管理。
+`.dev.vars` 至少需要填写长度足够的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`。这些文件均已忽略提交。`.site-content.seed.json` 只用于初始化空 D1，初始化后全局行为、站点资料和壁纸在主页铅笔入口的“站点设置”面板修改；网站和社交方式则直接在主页原位置管理。
 
 ### ⚙️ Cloudflare Pages 部署
 
@@ -78,7 +78,7 @@ pnpm dev:cf
 3. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
 4. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
 5. 将 `DB` 和 `WALLPAPER_BUCKET` 绑定到对应的 D1/R2；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
-6. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD`、`IP_HASH_SECRET` 和 `MUSIC_API_URL`。其它可选变量见 `.dev.vars.example`。
+6. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`。其它可选变量见 `.dev.vars.example`。
 7. 部署后先确认公开主页正常，再用铅笔入口登录；站点设置、R2 壁纸、设备和审计均在原位管理面板操作。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
@@ -120,12 +120,9 @@ Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和�
 > 本项目采用原生 HTML Audio 播放引擎与 React 自定义界面，可实现歌单、歌词、全屏、底栏进度和媒体快捷键
 > \*仅支持 **中国大陆地区**
 
-音乐平台、类型和 ID 在设置面板的“音乐设置”中修改；Meting API 上游地址只通过 Worker Secret `MUSIC_API_URL` 配置，不会下发到浏览器。
->首版只维护一个播放队列。<p>
+音乐平台、查询类型和资源 ID（搜索时为关键词）在设置面板的“音乐设置”中修改。后端固定通过 [诺西 API 音乐解析](https://docs.nxvav.cn/doc/music.html) 获取播放队列，校验并转换为站内统一格式；上游生成媒体签名，项目无需配置 `auth` 或额外 Secret。首版只维护一个播放队列。
 
->[!WARNING]
->这里提供的 api 有较高的速率限制，且不太稳定，强烈建议自行搭建 Meting-API！你也可以赞助酪灰帮助他承担服务费用！阿里嘎多！<p>
->注意：提供的 api 可能出现Q音接口抛 401 的情况，并非服务异常，Q音接口需要将项目编译后挂到正常域名并使用 https only，使用正常 443 端口，才能正常工作。<p>
+播放队列响应会被短时缓存，但音频、封面和歌词仍由浏览器直接请求上游。PWA 可保证页面和已有站点配置在断网时打开，不保证未缓存的音乐资源可离线播放。
 
 ### 字体
 
@@ -167,15 +164,11 @@ Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和�
 - [高德开放平台](https://lbs.amap.com/)
 - [腾讯位置服务](https://lbs.qq.com/)
 - [Hitokoto 一言](https://hitokoto.cn/)
-- [Meting API](https://github.com/injahow/meting-api)
-- [Meting API 酪灰修改版](https://github.com/NanoRocky/meting-api)
+- [诺西 API 音乐解析](https://docs.nxvav.cn/doc/music.html)
 
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=imsyy/home&type=Date)](https://star-history.com/#imsyy/home&Date)
-
-## 特别鸣谢
-- [Meting API](https://github.com/injahow/meting-api)
 
 ### 感谢原作者 imsyy 和帮助本项目的小伙伴们！
 - [imsyy](https://github.com/imsyy/)

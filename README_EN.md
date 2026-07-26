@@ -117,9 +117,9 @@ Wallpaper files are stored in Cloudflare R2 and managed under **Wallpaper manage
 >This project uses a native HTML Audio engine with a custom React interface for playlists, lyrics, fullscreen playback, footer progress, and media shortcuts.
 >\*Only supported in **Mainland China**
 
-Configure the provider, type, and ID under **Music settings**. Configure the upstream Meting API only through the Worker Secret `MUSIC_API_URL`; it is never exposed to the browser.
+Configure the provider, query type, and resource ID (or keyword for search) under **Music settings**. The backend uses the fixed [Nuoxian Music API](https://docs.nxvav.cn/doc/music.html), validates its response, and converts it into the application's stable playlist format. The upstream service generates media signatures, so no `auth` value or additional Worker Secret is required.
 
-The first release maintains a single playback queue.
+The first release maintains a single playback queue. Its response is cached briefly, while audio, artwork, and lyrics are still requested directly from the upstream service. The PWA can reopen the page and previously loaded site configuration offline, but it does not guarantee offline playback of uncached music.
 
 ### Fonts
 
@@ -160,15 +160,11 @@ The website icon can be modified in `public/images/icon`.
 - [高德开放平台](https://lbs.amap.com/)
 - [腾讯位置服务](https://lbs.qq.com/)
 - [Hitokoto 一言](https://hitokoto.cn/)
-- [Meting API](https://github.com/injahow/meting-api)
-- [Meting API 酪灰修改版](https://github.com/NanoRocky/meting-api)
+- [Nuoxian Music API](https://docs.nxvav.cn/doc/music.html)
 
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=imsyy/home&type=Date)](https://star-history.com/#imsyy/home&Date)
-
-## Special thanks
-- [Meting API](https://github.com/injahow/meting-api)
 
 ### Thanks to the original author imsyy and the friends who helped with this project!
 - [imsyy](https://github.com/imsyy/)
