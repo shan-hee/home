@@ -89,7 +89,6 @@
       color: rgba(245, 245, 245, 0.96);
       animation: fade 0.5s;
 
-      &:focus-visible,
       .site-icon:focus-visible {
         outline: 2px solid rgba(245, 245, 245, 0.62);
         outline-offset: 3px;
@@ -134,12 +133,14 @@
 
     .add-link {
       border: 0;
-      background: transparent;
+      padding: 0;
       cursor: pointer;
       opacity: 0.62;
+      appearance: none;
 
-      .site-icon { color: rgba(245, 245, 245, 0.8); }
+      color: rgba(245, 245, 245, 0.8);
       &:hover { opacity: 1; }
+      &:disabled { cursor: default; }
     }
 
     @media (max-width: 720px) {
@@ -163,7 +164,7 @@
     }
   }
 
-  &.is-managing .site-icon {
+  &.is-managing a.site-icon {
     cursor: grab;
     touch-action: none;
 

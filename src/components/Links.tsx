@@ -246,7 +246,23 @@ export default function Links() {
               <SortableContext items={page.map((entry) => entry.id)} strategy={rectSortingStrategy}>
                 <div className="link-all">
                   {page.map((entry) => <SortableSiteLink key={entry.id} {...entry} disabled={sortingDisabled} onOpenMenu={openContextMenu} />)}
-                  {showAdd && <div className="link-column add-column"><button type="button" className="item add-link" disabled={saving} onClick={() => setEditingIndex("new")}><span className="site-icon cards"><AddOne theme="outline" size={29} /></span><span className="name">添加网站</span></button></div>}
+                  {showAdd && (
+                    <div className="link-column add-column">
+                      <div className="item">
+                        <button
+                          type="button"
+                          className="site-icon cards add-link"
+                          disabled={saving}
+                          aria-label="添加网站"
+                          title="添加网站"
+                          onClick={() => setEditingIndex("new")}
+                        >
+                          <AddOne theme="outline" size={29} />
+                        </button>
+                        <span className="name">添加网站</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </SortableContext>
             </SwiperSlide>;
