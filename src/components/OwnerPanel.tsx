@@ -1,15 +1,19 @@
-import { ArrowRight, BackOne, CloseSmall, Devices, FileSettingsOne, Logout, Sync } from "@icon-park/react";
+import { ArrowRight, BackOne, CloseSmall, Devices, IdCardH, Logout, Music, PictureAlbum, Quote, SettingTwo, Sync } from "@icon-park/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ApiClientError } from "@/services/apiClient";
 import { useAuthStore } from "@/stores/auth";
 import { getAdminOfflineLabel, useAdminOfflineStore } from "@/stores/adminOffline";
-import ContentSettings from "@/components/ContentSettings";
+import ContentSettings, { type ContentSettingsView } from "@/components/ContentSettings";
 import SecuritySettings from "@/components/SecuritySettings";
 import "@/components/OwnerPanel.scss";
 
-type Tab = "content" | "security";
+type Tab = ContentSettingsView | "security";
 const tabs = [
-  { key: "content", label: "站点设置", icon: FileSettingsOne },
+  { key: "general", label: "常规设置", icon: SettingTwo },
+  { key: "wallpaper", label: "壁纸管理", icon: PictureAlbum },
+  { key: "profile", label: "站点资料", icon: IdCardH },
+  { key: "music", label: "音乐设置", icon: Music },
+  { key: "hitokoto", label: "一言设置", icon: Quote },
   { key: "security", label: "设备安全", icon: Devices },
 ] as const;
 
@@ -23,7 +27,8 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
   const conflictCount = useAdminOfflineStore((state) => state.conflictCount);
   const authenticated = status === "authenticated" || status === "offline-owner";
   const offlineOwner = status === "offline-owner";
-  const [tab, setTab] = useState<Tab>("content");
+  const [tab, setTab] = useState<Tab>("general");
+  const [contentTab, setContentTab] = useState<ContentSettingsView>("general");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +43,7 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
   };
   const logout = async () => {
     if (loggingOut) return; setLoggingOut(true);
-    try { await logoutAction(); setTab("content"); }
+    try { await logoutAction(); setTab("general"); setContentTab("general"); }
     catch (reason) { setError(reason instanceof ApiClientError ? reason.message : "退出失败，请稍后再试"); }
     finally { setLoggingOut(false); }
   };
@@ -73,7 +78,7 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
         <nav className="settings-tabs" aria-label="设置分类">
           {tabs.map((item) => {
             const Icon = item.icon;
-            return <button key={item.key} type="button" disabled={offlineOwner && item.key === "security"} className={tab === item.key ? "active" : ""} aria-current={tab === item.key ? "page" : undefined} onClick={() => setTab(item.key)}><Icon theme="outline" size="19" /><span>{item.label}</span></button>;
+            return <button key={item.key} type="button" disabled={offlineOwner && item.key === "security"} className={tab === item.key ? "active" : ""} aria-current={tab === item.key ? "page" : undefined} onClick={() => { setTab(item.key); if (item.key !== "security") setContentTab(item.key); }}><Icon theme="outline" size="19" /><span>{item.label}</span></button>;
           })}
         </nav>
         <button type="button" className="sidebar-logout" aria-label="退出登录" title="退出登录" disabled={loggingOut || offlineOwner} onClick={() => void logout()}><Logout theme="outline" size="19" /><span>{offlineOwner ? "离线状态" : loggingOut ? "退出中…" : "退出登录"}</span></button>
@@ -84,7 +89,8 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
           <button type="button" className="icon-button" aria-label="关闭设置" title="关闭设置" onClick={onClose}><CloseSmall theme="outline" size="23" /></button>
         </header>
         <div className="settings-content">
-          {tab === "content" ? <ContentSettings /> : <SecuritySettings onLoggedOut={() => setTab("content")} />}
+          <div hidden={tab === "security"}><ContentSettings view={contentTab} /></div>
+          {tab === "security" && <SecuritySettings onLoggedOut={() => { setTab("general"); setContentTab("general"); }} />}
         </div>
       </div>
     </div>

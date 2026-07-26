@@ -110,14 +110,14 @@ Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 - `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
 - When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
 
-Wallpaper files are stored in Cloudflare R2 and managed in **Site settings → Wallpaper assets**. Public pages read immutable objects through `/api/assets/:id`; Cloudflare and the PWA runtime cache those responses. Update checks continue to use `/api/version`.
+Wallpaper files are stored in Cloudflare R2 and managed under **Wallpaper management**, including upload, preview, download, selection, and deletion. Each file may be up to 50MB. The server detects the actual JPEG, PNG, WebP, or AVIF format from its header and normalizes the object extension and MIME type. Public pages read immutable objects through `/api/assets/:id`; Cloudflare and the PWA runtime cache those responses. Update checks continue to use `/api/version`.
 
 ### Music
 
 >This project uses a native HTML Audio engine with a custom React interface for playlists, lyrics, fullscreen playback, footer progress, and media shortcuts.
 >\*Only supported in **Mainland China**
 
-Configure the provider, type, and ID in **Content → Music source**. Configure the upstream Meting API only through the Worker Secret `MUSIC_API_URL`; it is never exposed to the browser.
+Configure the provider, type, and ID under **Music settings**. Configure the upstream Meting API only through the Worker Secret `MUSIC_API_URL`; it is never exposed to the browser.
 
 The first release maintains a single playback queue.
 

@@ -107,20 +107,20 @@ Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和�
 
 天气由同源 Cloudflare Pages Function `/api/weather` 提供：
 
-- 默认由 Cloudflare 根据访问 IP 的 `request.cf` 提供近似位置，不请求浏览器定位权限；管理员也可以在“站点设置 → 全局行为”配置固定城市和坐标。
+- 默认由 Cloudflare 根据访问 IP 的 `request.cf` 提供近似位置，不请求浏览器定位权限；管理员也可以在“常规设置”中配置固定城市和坐标。
 - 首选 Open-Meteo，失败时自动回退到 MET Norway；两者返回统一格式后再交给页面展示。
 - 两个天气源都失败时，页面显示明确的离线/不可用状态，不在浏览器中维护天气 localStorage 缓存。
 - `/api/alerts` 是独立可选能力。未配置 `QWEATHER_API_KEY` 时返回空数组，不影响普通天气。
 - Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
 
-壁纸文件存放在 Cloudflare R2，管理员通过“站点设置 → 壁纸资源”上传、选择和删除。公开页面通过 `/api/assets/:id` 读取不可变对象，并由 Cloudflare 与 PWA 运行时缓存；版本检查统一请求 `/api/version`。
+壁纸文件存放在 Cloudflare R2，管理员通过“壁纸管理”上传、预览、下载、选择和删除。单文件最大 50MB；服务端根据文件头识别 JPEG、PNG、WebP 或 AVIF 的真实格式，并规范化对象扩展名和 MIME。公开页面通过 `/api/assets/:id` 读取不可变对象，并由 Cloudflare 与 PWA 运行时缓存；版本检查统一请求 `/api/version`。
 
 ### 音乐
 
 > 本项目采用原生 HTML Audio 播放引擎与 React 自定义界面，可实现歌单、歌词、全屏、底栏进度和媒体快捷键
 > \*仅支持 **中国大陆地区**
 
-音乐平台、类型和 ID 在原位设置面板的“内容 → 音乐来源”中修改；Meting API 上游地址只通过 Worker Secret `MUSIC_API_URL` 配置，不会下发到浏览器。
+音乐平台、类型和 ID 在设置面板的“音乐设置”中修改；Meting API 上游地址只通过 Worker Secret `MUSIC_API_URL` 配置，不会下发到浏览器。
 >首版只维护一个播放队列。<p>
 
 >[!WARNING]

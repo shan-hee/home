@@ -32,7 +32,7 @@ export default (): UserConfig => {
                             },
                         },
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/"),
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("download") !== "1",
                             handler: "CacheFirst",
                             options: {
                                 cacheName: "wallpaper-assets-v1",

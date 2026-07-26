@@ -29,15 +29,20 @@ export interface R2ObjectBody {
   };
 }
 
+export interface R2PutResult {
+  etag: string;
+  httpEtag: string;
+}
+
 export interface R2Bucket {
   put(
     key: string,
-    value: ArrayBuffer | ReadableStream,
+    value: ArrayBuffer | ReadableStream | Blob,
     options?: {
       httpMetadata?: { contentType?: string; cacheControl?: string };
       customMetadata?: Record<string, string>;
     },
-  ): Promise<unknown>;
+  ): Promise<R2PutResult>;
   get(key: string): Promise<R2ObjectBody | null>;
   delete(key: string): Promise<void>;
 }
