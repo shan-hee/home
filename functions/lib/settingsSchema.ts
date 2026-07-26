@@ -89,7 +89,7 @@ const weatherLocation = (value: unknown) => {
 };
 
 const validators: Record<SettingKey, (value: unknown) => unknown> = {
-  theme: (value) => enumValue(value, ["system", "time", "bg", "light", "dark"] as const),
+  theme: (value) => enumValue(value, ["system", "time", "light", "dark"] as const),
   coverType: (value) => integerValue(value, [0, 1, 2, 3]),
   wallpaperLocalId: optionalWallpaperId,
   autoBGSwitchInterval: (value) => integerValue(value, [0, 1, 2, 3]),

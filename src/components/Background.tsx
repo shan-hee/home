@@ -12,7 +12,6 @@ import "@/components/Background.scss";
 
 interface Props {
   onLoadComplete: () => void;
-  onImageLoaded: (image: HTMLImageElement) => void;
 }
 
 interface OnlineWallpaper { imageUrl: string }
@@ -65,7 +64,7 @@ const automaticEffects = (date = new Date()): BackgroundEffect[] => {
 
 const closeAllEffects = () => { closeMeteor(); closeSnowfall(); closeFirefly(); closeLantern(); };
 
-export default function Background({ onLoadComplete, onImageLoaded }: Props) {
+export default function Background({ onLoadComplete }: Props) {
   const coverType = useMainStore((state) => state.coverType);
   const wallpaperLocalId = useMainStore((state) => state.wallpaperLocalId);
   const autoInterval = useMainStore((state) => state.autoBGSwitchInterval);
@@ -155,7 +154,7 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
       activateSolidFallback(requestId);
       return;
     }
-    setSolidFallback(false); onImageLoaded(image);
+    setSolidFallback(false);
     if (!currentRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       clearTimers(); currentRef.current = finalUrl; setCurrentUrl(finalUrl); setNextUrl(null);
       setTransitioning(false); setBlurringIn(false); finishInitial();
@@ -169,7 +168,7 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
       }, 850));
     }
     loading.current = false;
-  }, [activateSolidFallback, clearTimers, collection, coverType, finishInitial, onImageLoaded, wallpaperLocalId]);
+  }, [activateSolidFallback, clearTimers, collection, coverType, finishInitial, wallpaperLocalId]);
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 720px)");

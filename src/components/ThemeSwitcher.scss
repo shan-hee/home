@@ -3,27 +3,38 @@
   top: 18px;
   right: 18px;
   z-index: 3;
-  height: 42px;
   padding: 3px;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
   color: var(--text-color);
 
   &:hover,
-  &:focus-within {
+  &:focus-within,
+  &.is-pinned {
     .theme-options {
-      width: 152px;
+      width: 148px;
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
       transform: translateX(0);
     }
+
+    .effect-options {
+      height: 186px;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
   }
 }
 
+.theme-row {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+}
+
 .theme-trigger,
-.theme-option {
+.switcher-option {
   width: 34px;
   height: 34px;
   flex: 0 0 34px;
@@ -69,8 +80,35 @@
     transform 0.28s ease;
 }
 
-.theme-option {
+.effect-options {
+  position: absolute;
+  top: 40px;
+  right: 3px;
+  width: 34px;
+  height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    height 0.28s ease,
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    transform 0.28s ease;
+}
+
+.switcher-option {
   opacity: 0.4;
+
+  &.is-active {
+    opacity: 0.82;
+    background: rgba(from currentColor r g b / 0.1);
+  }
 }
 
 @media (max-width: 720px) {
@@ -79,23 +117,32 @@
     right: 14px;
 
     &:hover,
-    &:focus-within {
+    &:focus-within,
+    &.is-pinned {
       .theme-options {
-        width: 146px;
+        width: 142px;
       }
     }
   }
 
-  .theme-options {
+  .theme-options,
+  .effect-options {
     gap: 2px;
+  }
+
+  .theme-switcher:hover,
+  .theme-switcher:focus-within,
+  .theme-switcher.is-pinned {
+    .effect-options { height: 178px; }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .theme-switcher,
   .theme-options,
+  .effect-options,
   .theme-trigger,
-  .theme-option {
+  .switcher-option {
     transition: none;
   }
 }

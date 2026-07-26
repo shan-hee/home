@@ -43,5 +43,5 @@ export interface MainState {
     showSnowfall: boolean;
     showLantern: boolean;
     showMeteor: boolean;
-    theme: "system" | "time" | "bg" | "light" | "dark";
+    theme: "system" | "time" | "light" | "dark";
 };

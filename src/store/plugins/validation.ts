@@ -5,7 +5,7 @@ type ValidatedKey = "coverType" | "playerOrder" | "theme" | "autoBGSwitchInterva
 const validationRules: Record<ValidatedKey, readonly (string | number)[]> = {
   coverType: [0, 1, 2, 3],
   playerOrder: ["list", "single", "shuffle"],
-  theme: ["system", "time", "bg", "light", "dark"],
+  theme: ["system", "time", "light", "dark"],
   autoBGSwitchInterval: [0, 1, 2, 3],
   effectsMode: ["auto", "off", "manual"],
 };
