@@ -16,7 +16,7 @@ import { saveSiteContentSection } from "@/services/siteContentEditor";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { SocialLinkConfig } from "@/typings/siteContent";
-import { confirmAction, toast } from "@/ui/toast";
+import { toast } from "@/ui/toast";
 import NavigationSafePointerSensor, { NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS } from "@/utils/NavigationSafePointerSensor";
 import "@/components/SocialLinks.scss";
 
@@ -159,7 +159,6 @@ export default function SocialLinks() {
 
   const deleteAt = async (index: number) => {
     if (saving || !orderedLinks[index]) return;
-    if (!await confirmAction(`确定删除“${orderedLinks[index].name}”吗？`)) return;
     const next = orderedLinks.filter((_, itemIndex) => itemIndex !== index);
     const saved = await saveList(next, "社交方式已删除");
     if (saved && editingIndex === index) setEditingIndex(null);

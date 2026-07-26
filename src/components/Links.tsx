@@ -19,7 +19,7 @@ import { saveSiteContentSection } from "@/services/siteContentEditor";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { SiteLinkConfig } from "@/typings/siteContent";
-import { confirmAction, toast } from "@/ui/toast";
+import { toast } from "@/ui/toast";
 import NavigationSafePointerSensor, { NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS } from "@/utils/NavigationSafePointerSensor";
 import "@/components/Links.scss";
 
@@ -188,7 +188,6 @@ export default function Links() {
 
   const deleteAt = async (index: number) => {
     if (saving || !orderedLinks[index]) return;
-    if (!await confirmAction(`确定删除“${orderedLinks[index].name}”吗？`)) return;
     const next = orderedLinks.filter((_, itemIndex) => itemIndex !== index);
     const saved = await saveList(next, "网站已删除");
     if (saved && editingIndex === index) setEditingIndex(null);
