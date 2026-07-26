@@ -154,11 +154,10 @@ const socialLinks = (value: unknown) => {
   }
   return value.map((item, index) => {
     if (!isRecord(item)) throw new ApiError(400, "INVALID_CONTENT", `社交链接 ${index + 1} 格式无效`);
-    knownKeys(item, ["name", "icon", "tip", "url"]);
+    knownKeys(item, ["name", "icon", "url"]);
     return {
       name: text(item.name, "社交名称", 80, false),
       icon: iconCode(item.icon, "社交图标代码"),
-      tip: text(item.tip, "社交提示", 120),
       url: url(item.url, "社交地址", ["https:", "mailto:"]),
     };
   });
@@ -274,7 +273,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,

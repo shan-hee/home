@@ -23,12 +23,12 @@
     { "name": "站点监测", "link": "https://status.imsyy.top/", "iconMode": "icon", "iconValue": "ri:code-box-fill", "iconColor": "#525866" }
   ],
   "socialLinks": [
-    { "name": "Github", "icon": "ri:github-fill", "tip": "去 Github 看看", "url": "https://github.com/shan-hee" },
-    { "name": "BiliBili", "icon": "ri:bilibili-fill", "tip": "(゜-゜)つロ 干杯 ~", "url": "https://space.bilibili.com/98544142" },
-    { "name": "QQ", "icon": "ri:qq-fill", "tip": "有什么事吗", "url": "https://res.abeim.cn/api/qq/?qq=1539250352" },
-    { "name": "Email", "icon": "ri:mail-fill", "tip": "来封 Email ~", "url": "mailto:one@imsyy.top" },
-    { "name": "Twitter", "icon": "ri:twitter-x-fill", "tip": "你懂的 ~", "url": "https://x.com/iimmsyy" },
-    { "name": "Telegram", "icon": "ri:telegram-fill", "tip": "你懂的 ~", "url": "https://t.me/bottom_user" }
+    { "name": "Github", "icon": "ri:github-fill", "url": "https://github.com/shan-hee" },
+    { "name": "BiliBili", "icon": "ri:bilibili-fill", "url": "https://space.bilibili.com/98544142" },
+    { "name": "QQ", "icon": "ri:qq-fill", "url": "https://res.abeim.cn/api/qq/?qq=1539250352" },
+    { "name": "Email", "icon": "ri:mail-fill", "url": "mailto:one@imsyy.top" },
+    { "name": "Twitter", "icon": "ri:twitter-x-fill", "url": "https://x.com/iimmsyy" },
+    { "name": "Telegram", "icon": "ri:telegram-fill", "url": "https://t.me/bottom_user" }
   ],
   "music": {
     "server": "netease",

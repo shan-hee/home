@@ -7,7 +7,7 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Partial<SiteContentSnapshot>;
   if (
-    snapshot.schemaVersion !== 3
+    snapshot.schemaVersion !== 4
     || typeof snapshot.revision !== "string"
     || typeof snapshot.etag !== "string"
     || !snapshot.sections

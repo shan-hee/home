@@ -98,7 +98,6 @@ const defaultSite: SiteLinkConfig = {
 const defaultSocial: SocialLinkConfig = {
   name: "",
   icon: "ri:links-fill",
-  tip: "",
   url: "https://",
 };
 
@@ -158,7 +157,6 @@ export default function LinkManagerDialog(props: Props) {
       ...socialDraft,
       name: socialDraft.name.trim(),
       icon: socialDraft.icon.trim().toLowerCase(),
-      tip: socialDraft.tip.trim(),
       url: socialDraft.url.trim(),
     };
     if (!draft.name) return toast.error("请填写社交方式名称");
@@ -239,7 +237,6 @@ export default function LinkManagerDialog(props: Props) {
             <div className="manager-preview social-preview"><DynamicIcon code={socialDraft.icon} size={30} /><span>{socialDraft.name || "社交方式"}</span></div>
             <label>名称<input value={socialDraft.name} maxLength={80} placeholder="例如 Github" autoFocus onChange={(event) => setSocialDraft({ ...socialDraft, name: event.target.value })} /></label>
             <label>地址<input value={socialDraft.url} maxLength={500} placeholder="https://… 或 mailto:…" onChange={(event) => setSocialDraft({ ...socialDraft, url: event.target.value })} /></label>
-            <label>悬浮提示<input value={socialDraft.tip} maxLength={120} placeholder="鼠标悬浮时显示的文字" onChange={(event) => setSocialDraft({ ...socialDraft, tip: event.target.value })} /></label>
             <label>图标库代码<input value={socialDraft.icon} maxLength={80} placeholder="ri:github-fill" onChange={(event) => setSocialDraft({ ...socialDraft, icon: event.target.value })} /><small>可以直接填写 Iconify 图标代码</small></label>
             <div className="icon-presets" aria-label="常用社交图标">{SOCIAL_ICON_PRESETS.map((icon) => <button key={icon} type="button" className={socialDraft.icon === icon ? "active" : ""} title={icon} onClick={() => setSocialDraft({ ...socialDraft, icon })}><DynamicIcon code={icon} size={21} /></button>)}</div>
           </>}

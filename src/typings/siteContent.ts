@@ -27,7 +27,6 @@ export interface SiteLinkConfig {
 export interface SocialLinkConfig {
   name: string;
   icon: string;
-  tip: string;
   url: string;
 }
 
@@ -68,7 +67,7 @@ export interface SiteContentSections {
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 3;
+  schemaVersion: 4;
   revision: string;
   generatedAt: string;
   etag: string;
