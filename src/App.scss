@@ -24,6 +24,17 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
+
+      &.owner-panel-open {
+        .left {
+          display: none;
+        }
+
+        .right {
+          width: min(820px, calc(100vw - 32px));
+          margin-left: 0;
+        }
+      }
     }
 
     @media (max-width: 1200px) {

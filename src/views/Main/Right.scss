@@ -8,6 +8,10 @@
     width: 100%;
   }
 
+  &.has-owner-panel {
+    flex: 0 0 auto;
+  }
+
   .logo {
     padding: 0;
     border: 0;

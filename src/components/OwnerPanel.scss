@@ -1,9 +1,7 @@
 .owner-panel {
   width: 100%;
-  height: min(610px, 76vh);
-  min-height: 430px;
-  display: flex;
-  flex-direction: column;
+  height: min(640px, calc(100vh - 96px));
+  min-height: 480px;
   overflow: hidden;
   animation: fade 0.35s;
 
@@ -17,14 +15,167 @@
     height: 240px;
     min-height: 0;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.owner-shell {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 184px minmax(0, 1fr);
+}
+
+.settings-sidebar {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 14px;
+  border-right: 1px solid rgba(from currentColor r g b / 0.1);
+  background: rgba(from currentColor r g b / 0.045);
+}
+
+.sidebar-heading {
+  padding: 0 8px 18px;
+
+  > strong {
+    display: block;
+    margin-bottom: 15px;
+    font-size: 1.08rem;
+    font-weight: 600;
+  }
+}
+
+.session-summary {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  opacity: 0.7;
+
+  > .i-icon {
+    flex: 0 0 auto;
+  }
+
+  > span {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    font-size: 0.76rem;
+    font-weight: 500;
+  }
+
+  small {
+    font-size: 0.65rem;
+    opacity: 0.66;
+  }
+}
+
+.settings-tabs {
+  display: grid;
+  gap: 4px;
+
+  button {
+    width: 100%;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.62;
+    transition: opacity 0.2s, background 0.2s;
+
+    .i-icon {
+      flex: 0 0 auto;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &.active,
+    &:hover,
+    &:focus-visible {
+      opacity: 1;
+      background: rgba(from currentColor r g b / 0.1);
+    }
+  }
+}
+
+.sidebar-logout {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.56;
+  transition: opacity 0.2s, background 0.2s;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    background: rgba(from currentColor r g b / 0.08);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.3;
+  }
+}
+
+.settings-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-main-header,
+.panel-header {
+  min-height: 58px;
+  align-items: center;
+  border-bottom: 1px solid rgba(from currentColor r g b / 0.08);
+}
+
+.settings-main-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 13px 7px 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: 0;
   }
 }
 
 .panel-header {
-  min-height: 54px;
   display: grid;
   grid-template-columns: 40px 1fr 40px;
-  align-items: center;
   padding: 7px 10px;
   text-align: center;
   font-size: 1rem;
@@ -87,7 +238,7 @@
   display: grid;
   grid-template-columns: 1fr 44px;
   border: 1px solid rgba(from currentColor r g b / 0.24);
-  border-radius: 9px;
+  border-radius: 8px;
   background: rgba(from currentColor r g b / 0.08);
   transition: border-color 0.2s, background 0.2s;
 
@@ -128,53 +279,75 @@
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px;
-}
-
-.session-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 4px 12px;
-  font-size: 0.84rem;
-
-  small {
-    opacity: 0.58;
-  }
-}
-
-.settings-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  margin-bottom: 12px;
-  padding: 3px;
-  border-radius: 8px;
-  background: rgba(from currentColor r g b / 0.055);
-
-  button {
-    min-height: 31px;
-    padding: 0 8px;
-    border: 0;
-    border-radius: 6px;
-    color: inherit;
-    background: transparent;
-    cursor: pointer;
-    opacity: 0.52;
-    transition: opacity 0.2s, background 0.2s;
-
-    &.active,
-    &:hover,
-    &:focus-visible {
-      opacity: 0.92;
-      background: rgba(from currentColor r g b / 0.09);
-    }
-  }
+  padding: 20px 24px 24px;
 }
 
 @media (max-width: 720px) {
   .owner-panel {
-    height: min(600px, 72vh);
-    min-height: 400px;
+    width: 100%;
+    height: min(620px, calc(100vh - 32px));
+    min-height: 430px;
+  }
+
+  .owner-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .settings-sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    gap: 6px;
+    padding: 8px 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(from currentColor r g b / 0.1);
+  }
+
+  .sidebar-heading {
+    display: none;
+  }
+
+  .settings-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+
+    button {
+      justify-content: center;
+      gap: 6px;
+      padding: 0 6px;
+      font-size: 0.78rem;
+    }
+  }
+
+  .sidebar-logout {
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+
+    span {
+      display: none;
+    }
+  }
+
+  .settings-main-header {
+    min-height: 52px;
+    padding: 6px 8px 6px 17px;
+  }
+
+  .settings-content {
+    padding: 14px 14px 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .settings-tabs button {
+    gap: 4px;
+    font-size: 0.72rem;
+
+    .i-icon {
+      display: none;
+    }
   }
 }
