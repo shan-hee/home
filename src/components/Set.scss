@@ -5,11 +5,10 @@
   summary { padding: 14px 18px; cursor: pointer; font-size: 15px; user-select: none; }
   .collapse-content { padding: 18px 20px; display: grid; gap: 16px; background: var(--set-coll-background-ck-color); }
   .item { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 14px; }
-  .choice-group, .checkbox-group, .inline-control { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+  .choice-group, .inline-control { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
   .choice-group label { padding: 7px 10px; border: 1px solid transparent; border-radius: 7px; background: var(--set-radio-bg-color); cursor: pointer; }
   .choice-group label.is-selected { border-color: var(--set-radio-border-color); }
   .choice-group input { position: absolute; opacity: 0; pointer-events: none; }
-  .checkbox-group label { cursor: pointer; }
   .inline-control input, .inline-control button { min-height: 32px; border: 1px solid var(--set-radio-border-color); border-radius: 6px; color: inherit; background: var(--set-radio-bg-color); }
   .inline-control input { width: 76px; padding: 0 8px; }
   .inline-control button { padding: 0 10px; cursor: pointer; }
