@@ -19,7 +19,6 @@ export interface MainState {
     musicBoxOpenState: boolean;
     musicIsOk: boolean;
     musicVolume: number;
-    backgroundShow: boolean;
     boxOpenState: boolean;
     mobileOpenState: boolean;
     mobileFuncState: boolean;

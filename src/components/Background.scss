@@ -6,9 +6,6 @@
   z-index: -1;
   overflow: hidden;
   background: linear-gradient(145deg, #243447, #101820);
-  transition: 0.25s;
-
-  &.show { z-index: 1; }
 
   &.solid-fallback {
     background:
@@ -64,38 +61,11 @@
     background-image:
       radial-gradient(rgb(0 0 0 / 0%) 0, rgb(0 0 0 / 50%) 100%),
       radial-gradient(rgb(0 0 0 / 0%) 33%, rgb(0 0 0 / 30%) 166%);
-    transition: opacity 0.8s;
-
-    &.o-hidden { opacity: 0; }
-  }
-
-  .down {
-    position: absolute;
-    right: 0;
-    bottom: 30px;
-    left: 0;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 120px;
-    height: 40px;
-    margin: 0 auto;
-    border-radius: 8px;
-    color: white;
-    background-color: rgb(0 0 0 / 30%);
-
-    &:hover {
-      transform: scale(1.05);
-      background-color: rgb(0 0 0 / 60%);
-    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cover,
-  .cover .bg,
-  .cover .gray {
+  .cover .bg {
     transition: none;
   }
 }

@@ -19,7 +19,6 @@ export const storeState: MainState = {
   musicBoxOpenState: false,
   musicIsOk: false,
   musicVolume: 0.3,
-  backgroundShow: false,
   boxOpenState: false,
   mobileOpenState: false,
   mobileFuncState: false,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { BackgroundEffect } from "@/typings/store";
@@ -15,7 +15,7 @@ interface Props {
   onImageLoaded: (image: HTMLImageElement) => void;
 }
 
-interface OnlineWallpaper { imageUrl: string; downloadUrl: string }
+interface OnlineWallpaper { imageUrl: string }
 
 const defaultConfig: WallpaperContentConfig = {
   version: 1,
@@ -66,7 +66,6 @@ const automaticEffects = (date = new Date()): BackgroundEffect[] => {
 const closeAllEffects = () => { closeMeteor(); closeSnowfall(); closeFirefly(); closeLantern(); };
 
 export default function Background({ onLoadComplete, onImageLoaded }: Props) {
-  const backgroundShow = useMainStore((state) => state.backgroundShow);
   const coverType = useMainStore((state) => state.coverType);
   const wallpaperLocalId = useMainStore((state) => state.wallpaperLocalId);
   const autoInterval = useMainStore((state) => state.autoBGSwitchInterval);
@@ -81,7 +80,6 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
   const [transitioning, setTransitioning] = useState(false);
   const [blurringIn, setBlurringIn] = useState(false);
   const [solidFallback, setSolidFallback] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const currentRef = useRef<string | null>(null);
   const sequence = useRef(0);
   const initialComplete = useRef(false);
@@ -106,7 +104,7 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
     clearTimers();
     currentRef.current = null;
     setCurrentUrl(null); setNextUrl(null); setTransitioning(false); setBlurringIn(false);
-    setSolidFallback(true); setDownloadUrl(null);
+    setSolidFallback(true);
     finishInitial();
   }, [clearTimers, finishInitial]);
 
@@ -120,7 +118,6 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
     const localUrl = (id: number) => collection.pattern.replace("{id}", String(id));
     const randomId = () => Math.floor(Math.random() * collection.count) + 1;
     let candidate: string;
-    let resolvedDownload: string;
 
     if (source === 0) {
       const preferred = temporaryId ?? wallpaperLocalId ?? randomId();
@@ -128,7 +125,6 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
         toast.error(`当前设备的壁纸 ID 应在 1–${collection.count} 之间，已改为随机`);
         candidate = localUrl(randomId());
       } else candidate = localUrl(preferred);
-      resolvedDownload = candidate;
     } else {
       try {
         const sourceName = source === 1 ? "bing" : source === 2 ? "wallhaven" : "wallhaven-anime";
@@ -137,12 +133,12 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
         });
         if (!response.ok) throw new Error(`在线壁纸接口返回 ${response.status}`);
         const value = await response.json() as Partial<OnlineWallpaper>;
-        if (!value.imageUrl || !value.downloadUrl) throw new Error("在线壁纸响应格式无效");
-        candidate = value.imageUrl; resolvedDownload = value.downloadUrl;
+        if (!value.imageUrl) throw new Error("在线壁纸响应格式无效");
+        candidate = value.imageUrl;
       } catch (error) {
         if (requestController.signal.aborted || requestId !== sequence.current) return;
         console.error("无法获取在线壁纸，使用本地 fallback：", error);
-        candidate = collection.fallback; resolvedDownload = candidate;
+        candidate = collection.fallback;
         toast.error("在线壁纸加载失败，已切换到本地壁纸");
       }
     }
@@ -152,7 +148,6 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
     if (!image) {
       image = await preloadImage(collection.fallback);
       finalUrl = collection.fallback;
-      resolvedDownload = finalUrl;
     }
     if (requestId !== sequence.current) return;
     if (!image) {
@@ -160,7 +155,7 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
       activateSolidFallback(requestId);
       return;
     }
-    setSolidFallback(false); setDownloadUrl(resolvedDownload); onImageLoaded(image);
+    setSolidFallback(false); onImageLoaded(image);
     if (!currentRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       clearTimers(); currentRef.current = finalUrl; setCurrentUrl(finalUrl); setNextUrl(null);
       setTransitioning(false); setBlurringIn(false); finishInitial();
@@ -222,13 +217,11 @@ export default function Background({ onLoadComplete, onImageLoaded }: Props) {
     sequence.current += 1; controller.current?.abort(); clearTimers(); closeAllEffects();
   }, [clearTimers]);
 
-  const coverClass = useMemo(() => `cover${backgroundShow ? " show" : ""}${solidFallback ? " solid-fallback" : ""}`, [backgroundShow, solidFallback]);
   return (
-    <div className={coverClass}>
+    <div className={`cover${solidFallback ? " solid-fallback" : ""}`}>
       {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
       {nextUrl && transitioning && <img src={nextUrl} className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
-      <div className={`gray${backgroundShow ? " o-hidden" : ""}`} />
-      {backgroundShow && downloadUrl && <a className="down" href={downloadUrl} target="_blank" rel="noopener noreferrer">下载壁纸</a>}
+      <div className="gray" />
     </div>
   );
 }

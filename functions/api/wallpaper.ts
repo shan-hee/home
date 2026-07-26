@@ -16,7 +16,7 @@ interface BingResponse {
 }
 
 interface WallhavenResponse {
-  data?: Array<{ path?: string; short_url?: string; id?: string }>;
+  data?: Array<{ path?: string; id?: string }>;
 }
 
 const imageProxyUrl = (request: Request, remoteUrl: string) => {
@@ -36,7 +36,6 @@ const loadBing = async (request: Request) => {
     title: image.title || "Bing 每日壁纸",
     author: image.copyright || "",
     imageUrl: imageProxyUrl(request, remoteUrl),
-    downloadUrl: remoteUrl,
   }, {}, "public, max-age=21600");
 };
 
@@ -58,7 +57,6 @@ const loadWallhaven = async (request: Request, env: Environment, anime: boolean)
     title: image.id ? `Wallhaven #${image.id}` : "Wallhaven 随机壁纸",
     author: "Wallhaven",
     imageUrl: imageProxyUrl(request, image.path),
-    downloadUrl: image.short_url || image.path,
   }, {}, "public, max-age=600");
 };
 
