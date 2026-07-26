@@ -32,6 +32,18 @@ export default (): UserConfig => {
                             },
                         },
                         {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/music",
+                            handler: "NetworkFirst",
+                            options: {
+                                cacheName: "music-playlist-v2",
+                                networkTimeoutSeconds: 5,
+                                expiration: {
+                                    maxEntries: 1,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("download") !== "1",
                             handler: "CacheFirst",
                             options: {

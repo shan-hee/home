@@ -18,7 +18,6 @@ export const storeState: MainState = {
   playerCanplay: false,
   playerTitle: null,
   playerArtist: null,
-  playerAlbum: null,
   playerLyric: "",
   footerPlayerShow: false,
   playerOrder: "shuffle",
@@ -37,7 +36,7 @@ export interface MainActions {
   setPlayerStatus: (value: MainState["playerStatus"]) => void;
   setPlayerCanplay: (value: boolean) => void;
   setPlayerLyric: (value: string) => void;
-  setPlayerData: (title: string, artist: string, album?: string | null) => void;
+  setPlayerData: (title: string, artist: string) => void;
   setImgLoadStatus: (value: boolean) => void;
 }
 
@@ -60,10 +59,9 @@ export const useMainStore = create<MainStore>()(subscribeWithSelector((set, get)
   })),
   setPlayerCanplay: (value) => set({ playerCanplay: value }),
   setPlayerLyric: (value) => set({ playerLyric: value }),
-  setPlayerData: (title, artist, album = null) => set({
+  setPlayerData: (title, artist) => set({
     playerTitle: title,
     playerArtist: artist,
-    playerAlbum: album,
   }),
   setImgLoadStatus: (value) => set({ imgLoadStatus: value }),
 })));

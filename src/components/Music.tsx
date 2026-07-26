@@ -6,9 +6,11 @@ import { getPlayerList } from "@/api";
 import type { PlaylistItem } from "@/api";
 import PlayerSeekBar from "@/components/PlayerSeekBar";
 import VolumeSlider from "@/components/VolumeSlider";
+import { ApiClientError } from "@/services/apiClient";
 import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MainState } from "@/typings/store";
+import type { MusicContentConfig } from "@/typings/siteContent";
 import "@/components/Music.scss";
 
 type LyricLine = [number, string];
@@ -17,6 +19,17 @@ const modes: Array<{ value: MainState["playerOrder"]; label: string; icon: typeo
   { value: "single", label: "单曲循环", icon: LoopOnce },
   { value: "shuffle", label: "随机播放", icon: Shuffle },
 ];
+const musicServerLabels = {
+  netease: "网易云音乐",
+  tencent: "QQ 音乐",
+  kugou: "酷狗音乐",
+  baidu: "百度音乐",
+  kuwo: "酷我音乐",
+} satisfies Record<MusicContentConfig["server"], string>;
+
+function QueueTrackCover({ track, playing = false }: { track: PlaylistItem; playing?: boolean }) {
+  return <span className="queue-track-cover" aria-hidden="true">{track.cover ? <img src={track.cover} alt="" /> : <span className="queue-cover-placeholder"><MusicOne theme="outline" size="24" /></span>}<span className="queue-track-action">{playing ? <Pause theme="filled" size="22" fill="currentColor" /> : <PlayOne theme="filled" size="22" fill="currentColor" />}</span></span>;
+}
 
 const parseLrc = (source: string): LyricLine[] => {
   const result: LyricLine[] = [];
@@ -43,7 +56,9 @@ export default function Music() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [fullscreen, setFullscreen] = useState(false);
   const [volume, setVolume] = useState(() => useMainStore.getState().musicVolume ?? 0.3);
+  const [reloadToken, setReloadToken] = useState(0);
   const musicConfig = useSiteContentStore((state) => state.snapshot.sections.music);
+  const musicRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.music);
   const preferences = useSiteContentStore((state) => state.snapshot.sections.preferences);
   const status = useMainStore((state) => state.playerStatus);
   const currentTime = useMainStore((state) => state.playerCurrentTime);
@@ -82,10 +97,16 @@ export default function Music() {
     setVolume(preferences.playerDefaultVolume);
   }, [patch, preferences.playerDefaultOrder, preferences.playerDefaultVolume]);
 
+  useEffect(() => {
+    const reload = () => setReloadToken((value) => value + 1);
+    window.addEventListener("online", reload);
+    return () => window.removeEventListener("online", reload);
+  }, []);
+
   const applyMetadata = useCallback((track: PlaylistItem) => {
-    setPlayerData(track.name, track.artist, track.album);
+    setPlayerData(track.name, track.artist);
     if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({ title: track.name, artist: track.artist, album: track.album, artwork: track.cover ? [{ src: track.cover }] : [] });
+    navigator.mediaSession.metadata = new MediaMetadata({ title: track.name, artist: track.artist, artwork: track.cover ? [{ src: track.cover }] : [] });
   }, [setPlayerData]);
 
   const play = useCallback(async () => {
@@ -118,6 +139,17 @@ export default function Music() {
     setIndex(nextIndex);
     patch({ musicBoxOpenState: false });
   }, [index, patch, playlist]);
+  const selectFromQueue = useCallback((nextIndex: number) => {
+    if (nextIndex === index || !playlist[nextIndex]) return;
+    shouldPlay.current = true;
+    patch({ playerCurrentTime: 0, playerDuration: 0, playerCanplay: false, playerStatus: "loading", playerError: null });
+    setPlaylist((currentPlaylist) => {
+      if (!currentPlaylist[index] || !currentPlaylist[nextIndex]) return currentPlaylist;
+      const nextPlaylist = [...currentPlaylist];
+      [nextPlaylist[index], nextPlaylist[nextIndex]] = [nextPlaylist[nextIndex]!, nextPlaylist[index]!];
+      return nextPlaylist;
+    });
+  }, [index, patch, playlist]);
   const change = useCallback((direction: -1 | 1) => select(pickNext(direction)), [pickNext, select]);
   const seek = useCallback((time: number) => {
     if (!audio.current || !Number.isFinite(time)) return;
@@ -126,6 +158,8 @@ export default function Music() {
 
   useEffect(() => {
     let alive = true;
+    let retryTimer: number | null = null;
+    setPlaylist([]); setIndex(0); setLyrics([]);
     patch({ playerStatus: "loading", musicIsOk: false, playerError: null });
     void getPlayerList().then((tracks) => {
       if (!alive) return;
@@ -135,9 +169,16 @@ export default function Music() {
     }).catch((reason: unknown) => {
       if (!alive) return;
       patch({ playerError: reason instanceof Error ? reason.message : "播放器加载失败", playerStatus: "error", musicIsOk: false });
+      const retryable = !(reason instanceof ApiClientError) || reason.status >= 500;
+      if (retryable && navigator.onLine) {
+        retryTimer = window.setTimeout(() => setReloadToken((value) => value + 1), 30000);
+      }
     });
-    return () => { alive = false; };
-  }, [autoplay, musicConfig.id, musicConfig.server, musicConfig.type, patch]);
+    return () => {
+      alive = false;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
+  }, [autoplay, musicConfig.id, musicConfig.server, musicConfig.type, musicRevision, patch, reloadToken]);
 
   useEffect(() => {
     if (!current) return;
@@ -210,9 +251,9 @@ export default function Music() {
   const cycleMode = () => patch({ playerOrder: modes[(modes.findIndex((mode) => mode.value === order) + 1) % modes.length]!.value });
   const ModeIcon = currentMode.icon;
 
-  const queue = queueOpen ? <div className="queue-layer" onClick={() => patch({ musicBoxOpenState: false })}><aside className="queue-panel" role="dialog" aria-modal="true" aria-label="播放列表" onClick={(event) => event.stopPropagation()}><header><h2>队列</h2><button type="button" aria-label="关闭播放列表" onClick={() => patch({ musicBoxOpenState: false })}><Close theme="outline" size="24" fill="currentColor" /></button></header><div className="queue-content">{current && <section className="queue-section"><h3>当前播放</h3><button type="button" className="queue-track is-current" onClick={() => select(index)}>{current.cover ? <img src={current.cover} alt={`${current.name}封面`} /> : <span className="queue-cover-placeholder"><MusicOne theme="outline" size="24" /></span>}<span className="queue-track-info"><strong>{current.name}</strong><small>{current.artist || "未知歌手"}</small></span>{playing && <span className="playing-bars" aria-label="正在播放"><i /><i /><i /></span>}</button></section>}<section className="queue-section"><h3>播放队列</h3>{queued.length ? <div className="queue-tracks">{queued.map((item) => <button key={`${item.index}-${item.track.url}`} type="button" className="queue-track" onClick={() => select(item.index)}>{item.track.cover ? <img src={item.track.cover} alt={`${item.track.name}封面`} /> : <span className="queue-cover-placeholder"><MusicOne theme="outline" size="24" /></span>}<span className="queue-track-info"><strong>{item.track.name}</strong><small>{item.track.artist || "未知歌手"}</small></span></button>)}</div> : <p className="empty-queue">暂无其他歌曲</p>}</section></div></aside></div> : null;
+  const queue = queueOpen ? <div className="queue-layer" onClick={() => patch({ musicBoxOpenState: false })}><aside className="queue-panel" role="dialog" aria-modal="true" aria-label="播放列表" onClick={(event) => event.stopPropagation()}><header><h2>队列</h2><button type="button" aria-label="关闭播放列表" onClick={() => patch({ musicBoxOpenState: false })}><Close theme="outline" size="24" fill="currentColor" /></button></header><div className="queue-content">{current && <section className="queue-section"><h3>当前播放</h3><button type="button" className="queue-track is-current" aria-label={playing ? `暂停 ${current.name}` : `播放 ${current.name}`} onClick={toggle}><QueueTrackCover track={current} playing={playing} /><span className="queue-track-info"><strong>{current.name}</strong><small>{current.artist || "未知歌手"}</small></span>{playing && <span className="playing-bars" aria-label="正在播放"><i /><i /><i /></span>}</button></section>}<section className="queue-section"><h3>播放队列</h3>{queued.length ? <div className="queue-tracks">{queued.map((item) => <button key={`${item.index}-${item.track.url}`} type="button" className="queue-track" aria-label={`播放 ${item.track.name}`} onClick={() => selectFromQueue(item.index)}><QueueTrackCover track={item.track} /><span className="queue-track-info"><strong>{item.track.name}</strong><small>{item.track.artist || "未知歌手"}</small></span></button>)}</div> : <p className="empty-queue">暂无其他歌曲</p>}</section></div></aside></div> : null;
 
-  const full = fullscreen ? <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="全屏音乐播放器"><div className="fullscreen-background" style={backgroundStyle} aria-hidden="true" /><button type="button" className="exit-fullscreen" aria-label="退出全屏播放器" onClick={() => setFullscreen(false)}><OffScreen theme="outline" size="26" fill="currentColor" /></button><div className="fullscreen-content"><header className="fullscreen-header"><h1>{displayName}</h1><p><span>专辑：{current?.album || "暂无"}</span><span>歌手：{current?.artist || "未知歌手"}</span><span>来源：{musicConfig.server}</span></p><div className="content-tabs" aria-label="歌曲内容"><button type="button" className="is-active">歌词</button><button type="button" disabled>百科</button><button type="button" disabled>相似推荐</button></div></header><div className="fullscreen-main"><div className="cover-area">{current?.cover ? <img src={current.cover} alt={`${displayName}封面`} /> : <div className="cover-placeholder"><MusicOne theme="outline" size="72" fill="currentColor" /></div>}</div><div ref={lyricsPanel} className="lyrics-panel" aria-label="歌词">{lyrics.length ? lyrics.map((line, lineIndex) => <p key={`${line[0]}-${lineIndex}`} className={`lyric-line${activeLyric === lineIndex ? " is-active" : ""}`}>{line[1]}</p>) : <div className="lyrics-placeholder"><strong>{current?.artist || "未知歌手"}</strong><span>歌词数据将在播放后显示</span></div>}</div></div></div><footer className="fullscreen-controls"><button type="button" aria-label="上一首" disabled={!ready} onClick={() => change(-1)}><GoStart theme="filled" size="25" fill="currentColor" /></button><button type="button" className="fullscreen-play" aria-label={playing ? "暂停" : "播放"} disabled={!ready} onClick={toggle}>{playing ? <Pause theme="filled" size="28" fill="currentColor" /> : <PlayOne theme="filled" size="28" fill="currentColor" />}</button><button type="button" aria-label="下一首" disabled={!ready} onClick={() => change(1)}><GoEnd theme="filled" size="25" fill="currentColor" /></button><PlayerSeekBar className="fullscreen-seek" currentTime={currentTime} duration={duration} loading={loading} showTime onSeek={seek} /><div className="volume-control fullscreen-volume"><button type="button" aria-label={volume === 0 ? "恢复音量" : "静音"} onClick={toggleMute}>{volumeIcon}</button><div className="volume-popover"><VolumeSlider value={volume} onPreview={previewVolume} onCommit={saveVolume} /></div></div><button type="button" aria-label={`播放模式：${currentMode.label}`} title={`播放模式：${currentMode.label}`} onClick={cycleMode}><ModeIcon theme="outline" size="23" fill="currentColor" /></button><button type="button" aria-label="打开播放列表" onClick={() => patch({ musicBoxOpenState: true })}><MusicList theme="outline" size="24" fill="currentColor" /></button></footer></section> : null;
+  const full = fullscreen ? <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="全屏音乐播放器"><div className="fullscreen-background" style={backgroundStyle} aria-hidden="true" /><button type="button" className="exit-fullscreen" aria-label="退出全屏播放器" onClick={() => setFullscreen(false)}><OffScreen theme="outline" size="26" fill="currentColor" /></button><div className="fullscreen-content"><header className="fullscreen-header"><h1>{displayName}</h1><p><span>歌手：{current?.artist || "未知歌手"}</span><span>来源：{musicServerLabels[musicConfig.server]}</span></p><div className="content-tabs" aria-label="歌曲内容"><button type="button" className="is-active">歌词</button><button type="button" disabled>百科</button><button type="button" disabled>相似推荐</button></div></header><div className="fullscreen-main"><div className="cover-area">{current?.cover ? <img src={current.cover} alt={`${displayName}封面`} /> : <div className="cover-placeholder"><MusicOne theme="outline" size="72" fill="currentColor" /></div>}</div><div ref={lyricsPanel} className="lyrics-panel" aria-label="歌词">{lyrics.length ? lyrics.map((line, lineIndex) => <p key={`${line[0]}-${lineIndex}`} className={`lyric-line${activeLyric === lineIndex ? " is-active" : ""}`}>{line[1]}</p>) : <div className="lyrics-placeholder"><strong>{current?.artist || "未知歌手"}</strong><span>歌词数据将在播放后显示</span></div>}</div></div></div><footer className="fullscreen-controls"><button type="button" aria-label="上一首" disabled={!ready} onClick={() => change(-1)}><GoStart theme="filled" size="25" fill="currentColor" /></button><button type="button" className="fullscreen-play" aria-label={playing ? "暂停" : "播放"} disabled={!ready} onClick={toggle}>{playing ? <Pause theme="filled" size="28" fill="currentColor" /> : <PlayOne theme="filled" size="28" fill="currentColor" />}</button><button type="button" aria-label="下一首" disabled={!ready} onClick={() => change(1)}><GoEnd theme="filled" size="25" fill="currentColor" /></button><PlayerSeekBar className="fullscreen-seek" currentTime={currentTime} duration={duration} loading={loading} showTime onSeek={seek} /><div className="volume-control fullscreen-volume"><button type="button" aria-label={volume === 0 ? "恢复音量" : "静音"} onClick={toggleMute}>{volumeIcon}</button><div className="volume-popover"><VolumeSlider value={volume} onPreview={previewVolume} onCommit={saveVolume} /></div></div><button type="button" aria-label={`播放模式：${currentMode.label}`} title={`播放模式：${currentMode.label}`} onClick={cycleMode}><ModeIcon theme="outline" size="23" fill="currentColor" /></button><button type="button" aria-label="打开播放列表" onClick={() => patch({ musicBoxOpenState: true })}><MusicList theme="outline" size="24" fill="currentColor" /></button></footer></section> : null;
 
   return <><section className="music" aria-label="音乐播放器"><button type="button" className={`footer-player-button${footerShow ? " is-active" : ""}`} aria-pressed={footerShow} aria-label={footerShow ? "隐藏底栏歌词和进度" : "显示底栏歌词和进度"} onClick={() => patch({ footerPlayerShow: !footerShow })}><TextMessage theme="outline" size="20" strokeWidth={4} fill="currentColor" /></button><button type="button" className="fullscreen-button" aria-label="打开全屏播放器" onClick={() => setFullscreen(true)}><FullScreen theme="filled" size="20" strokeWidth={5} fill="currentColor" /></button><div className="compact-controls"><button type="button" aria-label="打开播放列表" onClick={() => patch({ musicBoxOpenState: true })}><MusicList theme="filled" size="24" strokeWidth={5} fill="currentColor" /></button><button type="button" aria-label="上一首" disabled={!ready} onClick={() => change(-1)}><GoStart theme="filled" size="27" strokeWidth={5} fill="currentColor" /></button><button type="button" className="play-button" aria-label={playing ? "暂停" : "播放"} disabled={!ready} onClick={toggle}>{playing ? <Pause theme="filled" size="34" strokeWidth={5} fill="currentColor" /> : <PlayOne theme="filled" size="34" strokeWidth={5} fill="currentColor" />}</button><button type="button" aria-label="下一首" disabled={!ready} onClick={() => change(1)}><GoEnd theme="filled" size="27" strokeWidth={5} fill="currentColor" /></button><div className="volume-control"><button type="button" aria-label={volume === 0 ? "恢复音量" : "静音"} onClick={toggleMute}>{volumeIcon}</button><div className="volume-popover" aria-label="音量调节"><VolumeSlider value={volume} onPreview={previewVolume} onCommit={saveVolume} /></div></div></div><div className="compact-meta"><span className="track-name">{displayName}</span>{current?.artist && <span className="track-artist">{current.artist}</span>}</div><div className={`compact-seek-shell${footerActive ? " is-hidden" : ""}`}><PlayerSeekBar className="compact-seek" currentTime={currentTime} duration={duration} loading={loading} onSeek={seek} /></div><audio ref={audio} data-music-engine preload="metadata" src={current?.url} onLoadStart={() => { setCanPlay(false); if (current) applyMetadata(current); }} onCanPlay={() => { setCanPlay(true); if (shouldPlay.current) { shouldPlay.current = false; void play(); } else if (!useMainStore.getState().playerHasStarted) setStatus("ready"); }} onPlay={() => setStatus("playing")} onPause={() => { if (useMainStore.getState().playerStatus !== "error") setStatus(useMainStore.getState().playerHasStarted ? "paused" : "ready"); }} onWaiting={() => setCanPlay(false)} onTimeUpdate={(event) => { const element = event.currentTarget; patch({ playerCurrentTime: Number.isFinite(element.currentTime) ? element.currentTime : 0, playerDuration: Number.isFinite(element.duration) ? element.duration : 0 }); }} onLoadedMetadata={(event) => patch({ playerDuration: Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0 })} onEnded={() => { if (order === "single" && audio.current) { audio.current.currentTime = 0; void play(); } else change(1); }} onError={() => patch({ playerError: "当前歌曲加载失败", playerStatus: "error", playerCanplay: false })} /></section>{typeof document !== "undefined" && createPortal(<>{full}{queue}</>, document.body)}</>;
 }

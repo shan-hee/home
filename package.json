@@ -33,7 +33,6 @@
     "@icon-park/react": "^1.4.2",
     "@iconify/react": "^6.0.2",
     "dayjs": "^1.11.21",
-    "fetch-jsonp": "^1.4.0",
     "idb": "^8.0.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

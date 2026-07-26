@@ -18,7 +18,6 @@ export interface MainState {
     playerCanplay: boolean;
     playerTitle: string | null;
     playerArtist: string | null;
-    playerAlbum: string | null;
     playerLyric: string;
     footerPlayerShow: boolean;
     playerOrder: "list" | "single" | "shuffle";
