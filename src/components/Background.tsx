@@ -78,6 +78,7 @@ export default function Background({ onLoadComplete }: Props) {
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
   const [blurringIn, setBlurringIn] = useState(false);
+  const [skipTransition, setSkipTransition] = useState(false);
   const [solidFallback, setSolidFallback] = useState(false);
   const currentRef = useRef<string | null>(null);
   const sequence = useRef(0);
@@ -163,8 +164,10 @@ export default function Background({ onLoadComplete }: Props) {
       timers.current.push(window.setTimeout(() => requestId === sequence.current && setBlurringIn(true), 30));
       timers.current.push(window.setTimeout(() => {
         if (requestId !== sequence.current) return;
+        setSkipTransition(true);
         currentRef.current = finalUrl; setCurrentUrl(finalUrl); setNextUrl(null);
         setTransitioning(false); setBlurringIn(false);
+        requestAnimationFrame(() => requestAnimationFrame(() => setSkipTransition(false)));
       }, 850));
     }
     loading.current = false;
@@ -218,7 +221,7 @@ export default function Background({ onLoadComplete }: Props) {
 
   return (
     <div className={`cover${solidFallback ? " solid-fallback" : ""}`}>
-      {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
+      {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}${skipTransition ? " no-transition" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
       {nextUrl && transitioning && <img src={nextUrl} className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
       <div className="gray" />
     </div>
