@@ -4,7 +4,7 @@ import { useSiteContentStore } from "@/stores/siteContent";
 import "@/components/Footer.scss";
 
 export default function Footer({ className = "" }: { className?: string }) {
-  const blur = useMainStore((state) => state.footerBlur);
+  const blur = useSiteContentStore((state) => state.snapshot.sections.preferences.footerBlur);
   const footerPlayer = useMainStore((state) => state.footerPlayerShow);
   const musicReady = useMainStore((state) => state.musicIsOk);
   const status = useMainStore((state) => state.playerStatus);

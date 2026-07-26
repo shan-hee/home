@@ -36,16 +36,24 @@ export interface MusicContentConfig {
   id: string;
 }
 
-export interface WallpaperCollectionConfig {
-  count: number;
-  pattern: string;
-  fallback: string;
+export interface WallpaperContentConfig {
+  desktopAssetId: string | null;
+  mobileAssetId: string | null;
 }
 
-export interface WallpaperContentConfig {
-  version: number;
-  desktop: WallpaperCollectionConfig;
-  mobile: WallpaperCollectionConfig;
+export interface SitePreferences {
+  siteStartShow: boolean;
+  footerBlur: boolean;
+  messageNameShow: boolean;
+  playerAutoplay: boolean;
+  playerKeyboardShortcuts: boolean;
+  playerDefaultVolume: number;
+  playerDefaultOrder: "list" | "single" | "shuffle";
+  weatherLocation: {
+    city: string;
+    latitude: number;
+    longitude: number;
+  } | null;
 }
 
 export interface HitokotoContentConfig {
@@ -63,11 +71,12 @@ export interface SiteContentSections {
   socialLinks: SocialLinkConfig[];
   music: MusicContentConfig;
   wallpaper: WallpaperContentConfig;
+  preferences: SitePreferences;
   hitokoto: HitokotoContentConfig;
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 4;
+  schemaVersion: 5;
   revision: string;
   generatedAt: string;
   etag: string;

@@ -1,4 +1,5 @@
-import { ApiClientError, requestJson } from "@/services/apiClient";
+import { ApiClientError } from "@/services/apiClient";
+import { useAdminOfflineStore } from "@/stores/adminOffline";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { SiteContentSections } from "@/typings/siteContent";
@@ -16,13 +17,22 @@ export const saveSiteContentSection = async <Section extends keyof SiteContentSe
 ) => {
   const snapshot = useSiteContentStore.getState().snapshot;
   try {
-    const result = await requestJson<SectionUpdate<Section>>(`/api/admin/content/${section}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        baseRevision: snapshot.sectionRevisions[section],
+    const outcome = await useAdminOfflineStore.getState().saveSection(
+      section,
+      snapshot.sectionRevisions[section],
+      snapshot.sections[section],
+      content,
+    );
+    if (outcome.status === "queued") {
+      useSiteContentStore.getState().replaceSection(
+        section,
         content,
-      }),
-    });
+        snapshot.sectionRevisions[section],
+        new Date().toISOString(),
+      );
+      return content;
+    }
+    const result = outcome.result as SectionUpdate<Section>;
     useSiteContentStore.getState().replaceSection(
       section,
       result.content,

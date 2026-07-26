@@ -10,22 +10,6 @@ export interface WeatherApiResponse {
   updatedAt: string;
 }
 
-export interface WeatherLocation {
-  name: string;
-  latitude: number;
-  longitude: number;
-}
-
-export interface GeocodingResult extends WeatherLocation {
-  id: string;
-  admin1: string;
-  country: string;
-}
-
-export interface GeocodingApiResponse {
-  results: GeocodingResult[];
-}
-
 export interface WeatherAlert {
   id: string;
   title: string;

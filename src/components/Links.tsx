@@ -115,7 +115,7 @@ function SiteLinkDragOverlay({ item, size }: { item: SiteLinkConfig; size: DragO
 
 export default function Links() {
   const links = useSiteContentStore((state) => state.snapshot.sections.siteLinks);
-  const authenticated = useAuthStore((state) => state.status === "authenticated");
+  const authenticated = useAuthStore((state) => state.status === "authenticated" || state.status === "offline-owner");
   const [orderedLinks, setOrderedLinks] = useState<SiteLinkConfig[]>(links);
   const [editingIndex, setEditingIndex] = useState<number | "new" | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);

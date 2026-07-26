@@ -1,7 +1,7 @@
 import type { SiteContentSnapshot } from "@/typings/siteContent";
 
 export const siteContentFallback: SiteContentSnapshot = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   revision: "build-fallback",
   generatedAt: "",
   etag: "",
@@ -11,6 +11,7 @@ export const siteContentFallback: SiteContentSnapshot = {
     socialLinks: 0,
     music: 0,
     wallpaper: 0,
+    preferences: 0,
     hitokoto: 0,
   },
   sections: {
@@ -51,17 +52,18 @@ export const siteContentFallback: SiteContentSnapshot = {
       id: "9379831714",
     },
     wallpaper: {
-      version: 1,
-      desktop: {
-        count: 10,
-        pattern: "/images/background{id}.jpg",
-        fallback: "/images/background1.jpg",
-      },
-      mobile: {
-        count: 2,
-        pattern: "/images/phone/backgroundphone{id}.jpg",
-        fallback: "/images/phone/backgroundphone1.jpg",
-      },
+      desktopAssetId: null,
+      mobileAssetId: null,
+    },
+    preferences: {
+      siteStartShow: true,
+      footerBlur: true,
+      messageNameShow: false,
+      playerAutoplay: false,
+      playerKeyboardShortcuts: true,
+      playerDefaultVolume: 0.3,
+      playerDefaultOrder: "shuffle",
+      weatherLocation: null,
     },
     hitokoto: {
       mode: "remote",

@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { HourglassFull } from "@icon-park/react";
 import { getTimeCapsule, siteDateStatistics } from "@/utils/getTime";
-import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
 import "@/components/TimeCapsule.scss";
 
 export default function TimeCapsule() {
-  const showStart = useMainStore((state) => state.siteStartShow);
+  const showStart = useSiteContentStore((state) => state.snapshot.sections.preferences.siteStartShow);
   const startDate = useSiteContentStore((state) => state.snapshot.sections.profile.startDate);
   const [timeData, setTimeData] = useState(getTimeCapsule());
   const [startText, setStartText] = useState(() => startDate ? siteDateStatistics(new Date(startDate)) : "");

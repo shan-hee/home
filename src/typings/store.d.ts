@@ -1,28 +1,17 @@
-import type { WeatherLocation } from "@/typings/weather";
-
 export type PlayerStatus = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 export type BackgroundEffect = "snow" | "firefly" | "lantern" | "meteor";
 export type BackgroundEffectMode = "auto" | "off" | "manual";
+export type ThemePreference = "system" | "time" | "light" | "dark";
 
 export interface MainState {
     imgLoadStatus: boolean;
     innerWidth: number | null;
-    coverType: number;
-    sBGCount: string | null;
-    autoBGSwitchInterval : number;
-    wallpaperLocalId: number | null;
-    wallpaperMaxId: number;
-    effectsMode: BackgroundEffectMode;
-    selectedEffects: BackgroundEffect[];
-    msgNameShow: boolean;
-    siteStartShow: boolean;
     musicBoxOpenState: boolean;
     musicIsOk: boolean;
     musicVolume: number;
     boxOpenState: boolean;
     mobileOpenState: boolean;
     mobileFuncState: boolean;
-    setV: boolean;
     playerStatus: PlayerStatus;
     playerHasStarted: boolean;
     playerError: string | null;
@@ -32,16 +21,11 @@ export interface MainState {
     playerAlbum: string | null;
     playerLyric: string;
     footerPlayerShow: boolean;
-    footerBlur: boolean;
-    playerAutoplay: boolean;
     playerOrder: "list" | "single" | "shuffle";
-    playerKeyboardShortcuts: boolean;
-    weatherLocation: WeatherLocation | null;
     playerCurrentTime: number;
     playerDuration: number;
     showFirefly: boolean;
     showSnowfall: boolean;
     showLantern: boolean;
     showMeteor: boolean;
-    theme: "system" | "time" | "light" | "dark";
 };

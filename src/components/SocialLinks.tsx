@@ -96,7 +96,7 @@ function SortableSocialLink({ id, item, disabled, onOpenMenu }: SortableSocialLi
 
 export default function SocialLinks() {
   const links = useSiteContentStore((state) => state.snapshot.sections.socialLinks);
-  const authenticated = useAuthStore((state) => state.status === "authenticated");
+  const authenticated = useAuthStore((state) => state.status === "authenticated" || state.status === "offline-owner");
   const [orderedLinks, setOrderedLinks] = useState<SocialLinkConfig[]>(links);
   const [editingIndex, setEditingIndex] = useState<number | "new" | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);

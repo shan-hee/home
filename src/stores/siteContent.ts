@@ -1,13 +1,12 @@
 import { create } from "zustand";
 import { siteContentFallback } from "@/config/siteContentFallback";
 import type { SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
-import { STORAGE_KEYS } from "@/utils/storageKeys";
 
 const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => {
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Partial<SiteContentSnapshot>;
   if (
-    snapshot.schemaVersion !== 4
+    snapshot.schemaVersion !== 5
     || typeof snapshot.revision !== "string"
     || typeof snapshot.etag !== "string"
     || !snapshot.sections
@@ -27,7 +26,15 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
       typeof item.name === "string"
       && typeof item.icon === "string"
       && typeof item.url === "string"
-    ));
+    ))
+    && (sections.wallpaper?.desktopAssetId === null || typeof sections.wallpaper?.desktopAssetId === "string")
+    && (sections.wallpaper?.mobileAssetId === null || typeof sections.wallpaper?.mobileAssetId === "string")
+    && typeof sections.preferences?.siteStartShow === "boolean"
+    && typeof sections.preferences?.footerBlur === "boolean"
+    && typeof sections.preferences?.messageNameShow === "boolean"
+    && typeof sections.preferences?.playerAutoplay === "boolean"
+    && typeof sections.preferences?.playerKeyboardShortcuts === "boolean"
+    && typeof sections.preferences?.playerDefaultVolume === "number";
 };
 
 const applyDocumentMetadata = (snapshot: SiteContentSnapshot) => {
@@ -63,29 +70,12 @@ interface SiteContentStore {
   ) => void;
 }
 
-const persistSnapshot = (snapshot: SiteContentSnapshot) => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.siteContent, JSON.stringify(snapshot));
-  } catch {
-    // 存储不可用时仍保留当前页面内的最新配置。
-  }
-};
-
 export const useSiteContentStore = create<SiteContentStore>((set, get) => ({
   snapshot: structuredClone(siteContentFallback),
   ready: false,
   refreshing: false,
   initialize: () => {
-    let snapshot = structuredClone(siteContentFallback);
-    try {
-      const raw = localStorage.getItem(STORAGE_KEYS.siteContent);
-      if (raw) {
-        const cached: unknown = JSON.parse(raw);
-        if (isSiteContentSnapshot(cached)) snapshot = cached;
-      }
-    } catch {
-      snapshot = structuredClone(siteContentFallback);
-    }
+    const snapshot = structuredClone(siteContentFallback);
     applyDocumentMetadata(snapshot);
     set({ snapshot, ready: true });
   },
@@ -101,7 +91,6 @@ export const useSiteContentStore = create<SiteContentStore>((set, get) => ({
       const payload: unknown = await response.json();
       if (!isSiteContentSnapshot(payload)) throw new Error("站点配置格式无效");
       get().replaceSnapshot(payload);
-      persistSnapshot(payload);
     } catch {
       // 刷新失败时继续使用本地快照或构建期 fallback。
     } finally {
@@ -124,7 +113,6 @@ export const useSiteContentStore = create<SiteContentStore>((set, get) => ({
       sections: { ...current.sections, [section]: structuredClone(content) } as SiteContentSections,
     };
     applyDocumentMetadata(snapshot);
-    persistSnapshot(snapshot);
     set({ snapshot });
   },
 }));

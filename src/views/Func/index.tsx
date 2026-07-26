@@ -22,6 +22,7 @@ const getCalendarText = (date: Date) => {
 export default function Func() {
   const mobile = useMainStore((state) => state.mobileFuncState);
   const musicRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.music);
+  const preferencesRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.preferences);
   const [time, setTime] = useState<CurrentTime>(() => getCurrentTime());
   const [calendar, setCalendar] = useState(() => getCalendarText(new Date()));
 
@@ -46,7 +47,7 @@ export default function Func() {
   return (
     <div className={`function${mobile ? " mobile" : ""}`}>
       <div className="function-row">
-        <div className="function-column function-music"><div className="function-card"><Music key={musicRevision} /></div></div>
+        <div className="function-column function-music"><div className="function-card"><Music key={`${musicRevision}:${preferencesRevision}`} /></div></div>
         <div className="function-column function-info">
           <div className="function-card function-summary cards">
             <div className="time">

@@ -1,13 +1,9 @@
 import type { MainState } from "@/typings/store";
 
-type ValidatedKey = "coverType" | "playerOrder" | "theme" | "autoBGSwitchInterval" | "effectsMode";
+type ValidatedKey = "playerOrder";
 
 const validationRules: Record<ValidatedKey, readonly (string | number)[]> = {
-  coverType: [0, 1, 2, 3],
   playerOrder: ["list", "single", "shuffle"],
-  theme: ["system", "time", "light", "dark"],
-  autoBGSwitchInterval: [0, 1, 2, 3],
-  effectsMode: ["auto", "off", "manual"],
 };
 
 export const validateMainPatch = (patch: Partial<MainState>, current: MainState) => {

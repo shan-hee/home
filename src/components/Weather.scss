@@ -6,93 +6,19 @@
   .weather-summary {
     max-width: 100%;
     padding: 4px 8px;
-    border: 0;
-    border-radius: 6px;
     color: inherit;
-    background: transparent;
-    cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-
-    &:hover,
-    &:focus-visible {
-      background: rgb(255 255 255 / 12%);
-    }
-  }
-
-  .city-inline {
-    width: min(100%, 190px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-
-    input {
-      width: 100%;
-      min-width: 0;
-      height: 28px;
-      padding: 0 8px;
-      border: 1px solid rgba(from currentColor r g b / 0.24);
-      border-radius: 6px;
-      color: inherit;
-      background: rgba(from currentColor r g b / 0.08);
-      font: inherit;
-      text-align: center;
-      outline: none;
-
-      &::placeholder {
-        color: inherit;
-        opacity: 0.68;
-      }
-
-      &:focus {
-        border-color: rgba(from currentColor r g b / 0.48);
-        background: rgba(from currentColor r g b / 0.12);
-      }
-
-      &[aria-invalid="true"] {
-        border-color: rgb(255 150 150 / 70%);
-      }
-    }
-
-    button {
-      width: 28px;
-      height: 28px;
-      flex: 0 0 28px;
-      display: grid;
-      place-items: center;
-      padding: 0;
-      border: 0;
-      border-radius: 6px;
-      color: inherit;
-      background: rgba(from currentColor r g b / 0.08);
-      cursor: pointer;
-
-      &:hover,
-      &:focus-visible {
-        background: rgba(from currentColor r g b / 0.14);
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.42;
-      }
-    }
   }
 }
 
-.status-badge,
 .alert-badge {
   display: inline-block;
   margin-left: 6px;
   padding: 1px 5px;
   border-radius: 999px;
   font-size: 0.72rem;
-}
-
-.status-badge {
-  background: rgb(255 193 7 / 25%);
 }
 
 .alert-badge {

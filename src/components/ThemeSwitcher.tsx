@@ -1,10 +1,10 @@
 import { useState, type ComponentType } from "react";
 import { Bug, Effects, Lamp, Moon, Planet, Pushpin, Snowflake, Sun, System, Time } from "@icon-park/react";
-import { useMainStore } from "@/store";
-import type { BackgroundEffect, MainState } from "@/typings/store";
+import { useVisitorAppearanceStore } from "@/stores/visitorAppearance";
+import type { BackgroundEffect, ThemePreference } from "@/typings/store";
 import "@/components/ThemeSwitcher.scss";
 
-interface ThemeOption { value: MainState["theme"]; label: string; icon: ComponentType<any> }
+interface ThemeOption { value: ThemePreference; label: string; icon: ComponentType<any> }
 interface EffectOption { value: BackgroundEffect; label: string; icon: ComponentType<any> }
 
 const themeOptions: ThemeOption[] = [
@@ -22,11 +22,10 @@ const effectOptions: EffectOption[] = [
 ];
 
 export default function ThemeSwitcher() {
-  const theme = useMainStore((state) => state.theme);
-  const effectsMode = useMainStore((state) => state.effectsMode);
-  const selectedEffects = useMainStore((state) => state.selectedEffects);
-  const patch = useMainStore((state) => state.patch);
-  const setSetting = useMainStore((state) => state.setSetting);
+  const theme = useVisitorAppearanceStore((state) => state.theme);
+  const effectsMode = useVisitorAppearanceStore((state) => state.effectsMode);
+  const selectedEffects = useVisitorAppearanceStore((state) => state.selectedEffects);
+  const update = useVisitorAppearanceStore((state) => state.update);
   const [pinned, setPinned] = useState(false);
   const current = themeOptions.find((option) => option.value === theme) ?? themeOptions[0]!;
   const CurrentIcon = current.icon;
@@ -35,7 +34,7 @@ export default function ThemeSwitcher() {
     const nextEffects = currentEffects.includes(effect)
       ? currentEffects.filter((item) => item !== effect)
       : [...currentEffects, effect];
-    patch({ effectsMode: nextEffects.length ? "manual" : "off", selectedEffects: nextEffects });
+    update({ effectsMode: nextEffects.length ? "manual" : "off", selectedEffects: nextEffects });
   };
 
   return (
@@ -51,12 +50,12 @@ export default function ThemeSwitcher() {
           {themeOptions.filter(({ value }) => value !== theme).map((option) => {
             const OptionIcon = option.icon;
             return <button key={option.value} type="button" className="switcher-option" aria-label={option.label} title={option.label}
-              onClick={() => setSetting("theme", option.value)}><OptionIcon theme="outline" size="20" fill="currentColor" /></button>;
+              onClick={() => update({ theme: option.value })}><OptionIcon theme="outline" size="20" fill="currentColor" /></button>;
           })}
         </div>
       </div>
       <div className="effect-options" role="group" aria-label="背景特效">
-        <button type="button" className={`switcher-option${effectsMode === "auto" ? " is-active" : ""}`} aria-label={effectsMode === "auto" ? "关闭自动特效" : "启用自动特效"} title="自动特效" aria-pressed={effectsMode === "auto"} onClick={() => patch({ effectsMode: effectsMode === "auto" ? "off" : "auto", selectedEffects: [] })}>
+        <button type="button" className={`switcher-option${effectsMode === "auto" ? " is-active" : ""}`} aria-label={effectsMode === "auto" ? "关闭自动特效" : "启用自动特效"} title="自动特效" aria-pressed={effectsMode === "auto"} onClick={() => update({ effectsMode: effectsMode === "auto" ? "off" : "auto", selectedEffects: [] })}>
           <Effects theme="outline" size="20" fill="currentColor" />
         </button>
         {effectOptions.map((option) => {

@@ -44,6 +44,7 @@ export default function Music() {
   const [fullscreen, setFullscreen] = useState(false);
   const [volume, setVolume] = useState(() => useMainStore.getState().musicVolume ?? 0.3);
   const musicConfig = useSiteContentStore((state) => state.snapshot.sections.music);
+  const preferences = useSiteContentStore((state) => state.snapshot.sections.preferences);
   const status = useMainStore((state) => state.playerStatus);
   const currentTime = useMainStore((state) => state.playerCurrentTime);
   const duration = useMainStore((state) => state.playerDuration);
@@ -53,9 +54,9 @@ export default function Music() {
   const footerShow = useMainStore((state) => state.footerPlayerShow);
   const queueOpen = useMainStore((state) => state.musicBoxOpenState);
   const order = useMainStore((state) => state.playerOrder);
-  const shortcuts = useMainStore((state) => state.playerKeyboardShortcuts);
   const storeVolume = useMainStore((state) => state.musicVolume);
-  const autoplay = useMainStore((state) => state.playerAutoplay);
+  const shortcuts = preferences.playerKeyboardShortcuts;
+  const autoplay = preferences.playerAutoplay;
   const patch = useMainStore((state) => state.patch);
   const setStatus = useMainStore((state) => state.setPlayerStatus);
   const setCanPlay = useMainStore((state) => state.setPlayerCanplay);
@@ -75,6 +76,11 @@ export default function Music() {
     return active;
   }, [currentTime, lyrics]);
   const backgroundStyle = useMemo<CSSProperties>(() => current?.cover ? { backgroundImage: `url(${JSON.stringify(current.cover)})` } : {}, [current?.cover]);
+
+  useEffect(() => {
+    patch({ musicVolume: preferences.playerDefaultVolume, playerOrder: preferences.playerDefaultOrder });
+    setVolume(preferences.playerDefaultVolume);
+  }, [patch, preferences.playerDefaultOrder, preferences.playerDefaultVolume]);
 
   const applyMetadata = useCallback((track: PlaylistItem) => {
     setPlayerData(track.name, track.artist, track.album);

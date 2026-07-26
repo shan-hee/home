@@ -1,10 +1,10 @@
 import { useCallback, useEffect } from "react";
-import { useMainStore } from "@/store";
+import { useVisitorAppearanceStore } from "@/stores/visitorAppearance";
 
 type AppliedTheme = "light" | "dark";
 
 export const useTheme = () => {
-  const theme = useMainStore((state) => state.theme);
+  const theme = useVisitorAppearanceStore((state) => state.theme);
 
   const setTheme = useCallback((value: AppliedTheme) => {
     document.documentElement.dataset.theme = value;
@@ -28,7 +28,7 @@ export const useTheme = () => {
       timer = window.setTimeout(applyTime, next.getTime() - now.getTime());
     };
     const onSystemChange = () => {
-      if (useMainStore.getState().theme === "system") applySystem();
+      if (useVisitorAppearanceStore.getState().theme === "system") applySystem();
     };
 
     if (theme === "light" || theme === "dark") setTheme(theme);

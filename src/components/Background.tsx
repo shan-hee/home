@@ -1,26 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
+import { useVisitorAppearanceStore } from "@/stores/visitorAppearance";
 import type { BackgroundEffect } from "@/typings/store";
-import type { WallpaperContentConfig } from "@/typings/siteContent";
 import { initSnowfall, closeSnowfall } from "@/utils/season/snow";
 import { initFirefly, closeFirefly } from "@/utils/season/firefly";
 import { initLantern, closeLantern } from "@/utils/season/lantern";
 import { initMeteor, closeMeteor } from "@/utils/season/meteor";
-import { toast } from "@/ui/toast";
 import "@/components/Background.scss";
 
 interface Props {
   onLoadComplete: () => void;
 }
-
-interface OnlineWallpaper { imageUrl: string }
-
-const defaultConfig: WallpaperContentConfig = {
-  version: 1,
-  desktop: { count: 10, pattern: "/images/background{id}.jpg", fallback: "/images/background1.jpg" },
-  mobile: { count: 2, pattern: "/images/phone/backgroundphone{id}.jpg", fallback: "/images/phone/backgroundphone1.jpg" },
-};
 
 const preloadImage = (url: string, timeout = 12000) => new Promise<HTMLImageElement | null>((resolve) => {
   const image = new Image();
@@ -63,17 +54,15 @@ const automaticEffects = (date = new Date()): BackgroundEffect[] => {
 };
 
 const closeAllEffects = () => { closeMeteor(); closeSnowfall(); closeFirefly(); closeLantern(); };
+const assetUrl = (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}`;
 
 export default function Background({ onLoadComplete }: Props) {
-  const coverType = useMainStore((state) => state.coverType);
-  const wallpaperLocalId = useMainStore((state) => state.wallpaperLocalId);
-  const autoInterval = useMainStore((state) => state.autoBGSwitchInterval);
-  const effectsMode = useMainStore((state) => state.effectsMode);
-  const selectedEffects = useMainStore((state) => state.selectedEffects);
-  const config = useSiteContentStore((state) => state.snapshot.sections.wallpaper || defaultConfig);
+  const wallpaper = useSiteContentStore((state) => state.snapshot.sections.wallpaper);
   const wallpaperRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.wallpaper);
+  const effectsMode = useVisitorAppearanceStore((state) => state.effectsMode);
+  const selectedEffects = useVisitorAppearanceStore((state) => state.selectedEffects);
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
-  const collection = mobile ? config.mobile : config.desktop;
+  const assetId = mobile ? wallpaper.mobileAssetId : wallpaper.desktopAssetId;
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -83,8 +72,6 @@ export default function Background({ onLoadComplete }: Props) {
   const currentRef = useRef<string | null>(null);
   const sequence = useRef(0);
   const initialComplete = useRef(false);
-  const loading = useRef(false);
-  const controller = useRef<AbortController | null>(null);
   const timers = useRef<number[]>([]);
 
   const clearTimers = useCallback(() => {
@@ -96,7 +83,7 @@ export default function Background({ onLoadComplete }: Props) {
     useMainStore.getState().setImgLoadStatus(true);
     if (initialComplete.current) return;
     initialComplete.current = true;
-    queueMicrotask(onLoadComplete);
+    onLoadComplete();
   }, [onLoadComplete]);
 
   const activateSolidFallback = useCallback((requestId: number) => {
@@ -108,71 +95,6 @@ export default function Background({ onLoadComplete }: Props) {
     finishInitial();
   }, [clearTimers, finishInitial]);
 
-  const loadWallpaper = useCallback(async (source = coverType, temporaryId?: number) => {
-    const requestId = ++sequence.current;
-    controller.current?.abort();
-    const requestController = new AbortController();
-    controller.current = requestController;
-    loading.current = true;
-    useMainStore.getState().patch({ wallpaperMaxId: collection.count });
-    const localUrl = (id: number) => collection.pattern.replace("{id}", String(id));
-    const randomId = () => Math.floor(Math.random() * collection.count) + 1;
-    let candidate: string;
-
-    if (source === 0) {
-      const preferred = temporaryId ?? wallpaperLocalId ?? randomId();
-      if (!Number.isInteger(preferred) || preferred < 1 || preferred > collection.count) {
-        toast.error(`当前设备的壁纸 ID 应在 1–${collection.count} 之间，已改为随机`);
-        candidate = localUrl(randomId());
-      } else candidate = localUrl(preferred);
-    } else {
-      try {
-        const sourceName = source === 1 ? "bing" : source === 2 ? "wallhaven" : "wallhaven-anime";
-        const response = await fetch(`/api/wallpaper?source=${sourceName}`, {
-          headers: { accept: "application/json" }, cache: "no-store", signal: requestController.signal,
-        });
-        if (!response.ok) throw new Error(`在线壁纸接口返回 ${response.status}`);
-        const value = await response.json() as Partial<OnlineWallpaper>;
-        if (!value.imageUrl) throw new Error("在线壁纸响应格式无效");
-        candidate = value.imageUrl;
-      } catch (error) {
-        if (requestController.signal.aborted || requestId !== sequence.current) return;
-        console.error("无法获取在线壁纸，使用本地 fallback：", error);
-        candidate = collection.fallback;
-        toast.error("在线壁纸加载失败，已切换到本地壁纸");
-      }
-    }
-
-    let image = await preloadImage(candidate);
-    let finalUrl = candidate;
-    if (!image) {
-      image = await preloadImage(collection.fallback);
-      finalUrl = collection.fallback;
-    }
-    if (requestId !== sequence.current) return;
-    if (!image) {
-      toast.error("本地壁纸也无法加载，已使用纯色背景");
-      activateSolidFallback(requestId);
-      return;
-    }
-    setSolidFallback(false);
-    if (!currentRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      clearTimers(); currentRef.current = finalUrl; setCurrentUrl(finalUrl); setNextUrl(null);
-      setTransitioning(false); setBlurringIn(false); finishInitial();
-    } else {
-      setNextUrl(finalUrl); setTransitioning(true); setBlurringIn(false);
-      timers.current.push(window.setTimeout(() => requestId === sequence.current && setBlurringIn(true), 30));
-      timers.current.push(window.setTimeout(() => {
-        if (requestId !== sequence.current) return;
-        setSkipTransition(true);
-        currentRef.current = finalUrl; setCurrentUrl(finalUrl); setNextUrl(null);
-        setTransitioning(false); setBlurringIn(false);
-        requestAnimationFrame(() => requestAnimationFrame(() => setSkipTransition(false)));
-      }, 850));
-    }
-    loading.current = false;
-  }, [activateSolidFallback, clearTimers, collection, coverType, finishInitial, wallpaperLocalId]);
-
   useEffect(() => {
     const query = window.matchMedia("(max-width: 720px)");
     const change = () => setMobile(query.matches);
@@ -180,23 +102,40 @@ export default function Background({ onLoadComplete }: Props) {
     return () => query.removeEventListener("change", change);
   }, []);
 
-  useEffect(() => { void loadWallpaper(); }, [loadWallpaper, wallpaperRevision]);
-
-  useEffect(() => useMainStore.subscribe(
-    (state) => state.sBGCount,
-    (value) => {
-      if (!value || useMainStore.getState().coverType !== 0) return;
-      useMainStore.getState().patch({ sBGCount: null });
-      void loadWallpaper(0, Number(value));
-    },
-  ), [loadWallpaper]);
+  useEffect(() => {
+    const requestId = ++sequence.current;
+    clearTimers();
+    if (!assetId) {
+      activateSolidFallback(requestId);
+      return;
+    }
+    const candidate = assetUrl(assetId);
+    void preloadImage(candidate).then((image) => {
+      if (requestId !== sequence.current) return;
+      if (!image) return activateSolidFallback(requestId);
+      setSolidFallback(false);
+      if (!currentRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        currentRef.current = candidate; setCurrentUrl(candidate); setNextUrl(null);
+        setTransitioning(false); setBlurringIn(false); finishInitial();
+        return;
+      }
+      setNextUrl(candidate); setTransitioning(true); setBlurringIn(false);
+      timers.current.push(window.setTimeout(() => requestId === sequence.current && setBlurringIn(true), 30));
+      timers.current.push(window.setTimeout(() => {
+        if (requestId !== sequence.current) return;
+        setSkipTransition(true);
+        currentRef.current = candidate; setCurrentUrl(candidate); setNextUrl(null);
+        setTransitioning(false); setBlurringIn(false);
+        requestAnimationFrame(() => requestAnimationFrame(() => setSkipTransition(false)));
+      }, 850));
+    });
+  }, [activateSolidFallback, assetId, clearTimers, finishInitial, wallpaperRevision]);
 
   useEffect(() => {
-    const milliseconds = ({ 0: 0, 1: 15000, 2: 30000, 3: 45000 } as Record<number, number>)[autoInterval] || 0;
-    if (!milliseconds) return;
-    const timer = window.setInterval(() => !document.hidden && !loading.current && void loadWallpaper(), milliseconds);
-    return () => window.clearInterval(timer);
-  }, [autoInterval, loadWallpaper]);
+    [wallpaper.desktopAssetId, wallpaper.mobileAssetId]
+      .filter((value): value is string => Boolean(value) && value !== assetId)
+      .forEach((value) => { const image = new Image(); image.decoding = "async"; image.src = assetUrl(value); });
+  }, [assetId, wallpaper.desktopAssetId, wallpaper.mobileAssetId]);
 
   useEffect(() => {
     const apply = () => {
@@ -215,15 +154,11 @@ export default function Background({ onLoadComplete }: Props) {
     return () => { window.clearInterval(refresh); document.removeEventListener("visibilitychange", apply); closeAllEffects(); };
   }, [effectsMode, selectedEffects]);
 
-  useEffect(() => () => {
-    sequence.current += 1; controller.current?.abort(); clearTimers(); closeAllEffects();
-  }, [clearTimers]);
+  useEffect(() => () => { sequence.current += 1; clearTimers(); closeAllEffects(); }, [clearTimers]);
 
-  return (
-    <div className={`cover${solidFallback ? " solid-fallback" : ""}`}>
-      {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}${skipTransition ? " no-transition" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
-      {nextUrl && transitioning && <img src={nextUrl} className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
-      <div className="gray" />
-    </div>
-  );
+  return <div className={`cover${solidFallback ? " solid-fallback" : ""}`}>
+    {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}${skipTransition ? " no-transition" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
+    {nextUrl && transitioning && <img src={nextUrl} className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
+    <div className="gray" />
+  </div>;
 }

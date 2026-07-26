@@ -13,7 +13,7 @@ const displayUrl = (value: string) => {
 interface Props { onOpenOwnerPanel: () => void }
 
 export default function Message({ onOpenOwnerPanel }: Props) {
-  const msgNameShow = useMainStore((state) => state.msgNameShow);
+  const msgNameShow = useSiteContentStore((state) => state.snapshot.sections.preferences.messageNameShow);
   const innerWidth = useMainStore((state) => state.innerWidth);
   const boxOpenState = useMainStore((state) => state.boxOpenState);
   const setSetting = useMainStore((state) => state.setSetting);

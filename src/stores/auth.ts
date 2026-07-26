@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { requestJson } from "@/services/apiClient";
-import { STORAGE_KEYS } from "@/utils/storageKeys";
+import { forgetOwner, readRememberedOwner, rememberOwner } from "@/services/offlineDatabase";
 
 export interface AuthDevice {
   id: string;
@@ -14,19 +14,7 @@ interface SessionResponse {
   expiresAt?: string;
 }
 
-export type AuthStatus = "checking" | "anonymous" | "authenticated";
-
-const createDeviceId = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.ownerDeviceId);
-    if (stored) return stored;
-    const id = crypto.randomUUID();
-    localStorage.setItem(STORAGE_KEYS.ownerDeviceId, id);
-    return id;
-  } catch {
-    return crypto.randomUUID();
-  }
-};
+export type AuthStatus = "checking" | "anonymous" | "authenticated" | "offline-owner";
 
 const browserName = () => {
   const agent = navigator.userAgent;
@@ -51,7 +39,6 @@ interface AuthStore {
   status: AuthStatus;
   device: AuthDevice | null;
   expiresAt: string | null;
-  deviceId: string;
   checkPromise: Promise<boolean> | null;
   applySession: (response: SessionResponse) => void;
   checkSession: () => Promise<boolean>;
@@ -65,7 +52,6 @@ export const useAuthStore = create<AuthStore>()(subscribeWithSelector((set, get)
   status: "checking",
   device: null,
   expiresAt: null,
-  deviceId: createDeviceId(),
   checkPromise: null,
   applySession: (response) => set({
     status: response.authenticated ? "authenticated" : "anonymous",
@@ -78,9 +64,19 @@ export const useAuthStore = create<AuthStore>()(subscribeWithSelector((set, get)
     const promise = requestJson<SessionResponse>("/api/auth/session")
       .then((response) => {
         get().applySession(response);
+        if (response.authenticated && response.device && response.expiresAt) {
+          void rememberOwner({ deviceId: response.device.id, deviceName: response.device.name, expiresAt: response.expiresAt });
+        } else {
+          void forgetOwner();
+        }
         return response.authenticated;
       })
-      .catch(() => {
+      .catch(async () => {
+        const remembered = await readRememberedOwner();
+        if (remembered) {
+          set({ status: "offline-owner", device: { id: remembered.deviceId, name: remembered.deviceName }, expiresAt: remembered.expiresAt });
+          return true;
+        }
         get().applySession({ authenticated: false });
         return false;
       })
@@ -93,20 +89,24 @@ export const useAuthStore = create<AuthStore>()(subscribeWithSelector((set, get)
       method: "POST",
       body: JSON.stringify({
         password,
-        deviceId: get().deviceId,
         deviceName: `${browserName()} · ${platformName()}`,
       }),
     });
     get().applySession(response);
+    if (response.authenticated && response.device && response.expiresAt) {
+      await rememberOwner({ deviceId: response.device.id, deviceName: response.device.name, expiresAt: response.expiresAt });
+    }
     return response.authenticated;
   },
   logout: async () => {
     const response = await requestJson<SessionResponse>("/api/auth/logout", { method: "POST", body: "{}" });
     get().applySession(response);
+    await forgetOwner();
   },
   logoutAll: async () => {
     const response = await requestJson<SessionResponse>("/api/auth/logout-all", { method: "POST", body: "{}" });
     get().applySession(response);
+    await forgetOwner();
   },
-  expireSession: () => get().applySession({ authenticated: false }),
+  expireSession: () => { get().applySession({ authenticated: false }); void forgetOwner(); },
 })));

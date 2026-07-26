@@ -1,17 +1,15 @@
-import { ArrowRight, BackOne, CloseSmall, Devices, FileSettingsOne, Logout, SettingTwo, Sync } from "@icon-park/react";
+import { ArrowRight, BackOne, CloseSmall, Devices, FileSettingsOne, Logout, Sync } from "@icon-park/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ApiClientError } from "@/services/apiClient";
 import { useAuthStore } from "@/stores/auth";
-import { getSyncStatusLabel, useSettingsSyncStore } from "@/stores/settingsSync";
-import Set from "@/components/Set";
+import { getAdminOfflineLabel, useAdminOfflineStore } from "@/stores/adminOffline";
 import ContentSettings from "@/components/ContentSettings";
 import SecuritySettings from "@/components/SecuritySettings";
 import "@/components/OwnerPanel.scss";
 
-type Tab = "preferences" | "content" | "security";
+type Tab = "content" | "security";
 const tabs = [
-  { key: "preferences", label: "偏好设置", icon: SettingTwo },
-  { key: "content", label: "站点内容", icon: FileSettingsOne },
+  { key: "content", label: "站点设置", icon: FileSettingsOne },
   { key: "security", label: "设备安全", icon: Devices },
 ] as const;
 
@@ -20,10 +18,12 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
   const device = useAuthStore((state) => state.device);
   const loginAction = useAuthStore((state) => state.login);
   const logoutAction = useAuthStore((state) => state.logout);
-  const syncStatus = useSettingsSyncStore((state) => state.status);
-  const pendingMutations = useSettingsSyncStore((state) => state.pendingMutations);
-  const authenticated = status === "authenticated";
-  const [tab, setTab] = useState<Tab>("preferences");
+  const flushing = useAdminOfflineStore((state) => state.flushing);
+  const pendingCount = useAdminOfflineStore((state) => state.pendingCount);
+  const conflictCount = useAdminOfflineStore((state) => state.conflictCount);
+  const authenticated = status === "authenticated" || status === "offline-owner";
+  const offlineOwner = status === "offline-owner";
+  const [tab, setTab] = useState<Tab>("content");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +38,7 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
   };
   const logout = async () => {
     if (loggingOut) return; setLoggingOut(true);
-    try { await logoutAction(); setTab("preferences"); }
+    try { await logoutAction(); setTab("content"); }
     catch (reason) { setError(reason instanceof ApiClientError ? reason.message : "退出失败，请稍后再试"); }
     finally { setLoggingOut(false); }
   };
@@ -67,16 +67,16 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
           <strong>设置</strong>
           <div className="session-summary">
             <Sync theme="outline" size="18" />
-            <span><strong>{getSyncStatusLabel({ status: syncStatus, pendingMutations })}</strong><small>{device?.name || "当前设备"}</small></span>
+            <span><strong>{offlineOwner ? "离线编辑模式" : getAdminOfflineLabel({ flushing, pendingCount, conflictCount })}</strong><small>{device?.name || "当前设备"}</small></span>
           </div>
         </div>
         <nav className="settings-tabs" aria-label="设置分类">
           {tabs.map((item) => {
             const Icon = item.icon;
-            return <button key={item.key} type="button" className={tab === item.key ? "active" : ""} aria-current={tab === item.key ? "page" : undefined} onClick={() => setTab(item.key)}><Icon theme="outline" size="19" /><span>{item.label}</span></button>;
+            return <button key={item.key} type="button" disabled={offlineOwner && item.key === "security"} className={tab === item.key ? "active" : ""} aria-current={tab === item.key ? "page" : undefined} onClick={() => setTab(item.key)}><Icon theme="outline" size="19" /><span>{item.label}</span></button>;
           })}
         </nav>
-        <button type="button" className="sidebar-logout" aria-label="退出登录" title="退出登录" disabled={loggingOut} onClick={() => void logout()}><Logout theme="outline" size="19" /><span>{loggingOut ? "退出中…" : "退出登录"}</span></button>
+        <button type="button" className="sidebar-logout" aria-label="退出登录" title="退出登录" disabled={loggingOut || offlineOwner} onClick={() => void logout()}><Logout theme="outline" size="19" /><span>{offlineOwner ? "离线状态" : loggingOut ? "退出中…" : "退出登录"}</span></button>
       </aside>
       <div className="settings-main">
         <header className="settings-main-header">
@@ -84,7 +84,7 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
           <button type="button" className="icon-button" aria-label="关闭设置" title="关闭设置" onClick={onClose}><CloseSmall theme="outline" size="23" /></button>
         </header>
         <div className="settings-content">
-          {tab === "preferences" ? <Set /> : tab === "content" ? <ContentSettings /> : <SecuritySettings onLoggedOut={() => setTab("preferences")} />}
+          {tab === "content" ? <ContentSettings /> : <SecuritySettings onLoggedOut={() => setTab("content")} />}
         </div>
       </div>
     </div>
