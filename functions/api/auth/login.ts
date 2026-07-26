@@ -17,11 +17,8 @@ import type { PagesContext } from "../../lib/types";
 
 interface LoginBody {
   password?: unknown;
-  deviceId?: unknown;
   deviceName?: unknown;
 }
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const onRequestPost = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
@@ -29,10 +26,10 @@ export const onRequestPost = async (context: PagesContext) => {
     requireSameOrigin(context.request, context.env);
     const body = await parseJsonBody<LoginBody>(context.request);
     const password = typeof body.password === "string" ? body.password : "";
-    const deviceId = typeof body.deviceId === "string" ? body.deviceId.trim() : "";
+    const deviceId = crypto.randomUUID();
     const deviceName = typeof body.deviceName === "string" ? body.deviceName.trim() : "";
 
-    if (!password || password.length > 128 || !UUID_PATTERN.test(deviceId) || !deviceName || deviceName.length > 80) {
+    if (!password || password.length > 128 || !deviceName || deviceName.length > 80) {
       throw new ApiError(400, "INVALID_LOGIN_REQUEST", "登录信息格式无效");
     }
 

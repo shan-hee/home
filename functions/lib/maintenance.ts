@@ -10,7 +10,7 @@ export const cleanupExpiredData = async (env: AppEnvironment) => {
       WHERE COALESCE(revoked_at, expires_at) < ?
     `).bind(daysAgo(30)),
     env.DB.prepare(`
-      DELETE FROM processed_mutations
+      DELETE FROM admin_mutations
       WHERE created_at < ?
     `).bind(daysAgo(30)),
     env.DB.prepare(`

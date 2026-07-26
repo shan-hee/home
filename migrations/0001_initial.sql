@@ -1,20 +1,5 @@
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE owner_state (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
-  settings_revision INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-INSERT INTO owner_state (id, settings_revision, created_at, updated_at)
-VALUES (
-  1,
-  0,
-  strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
-  strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-);
-
 CREATE TABLE owner_devices (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -45,27 +30,6 @@ CREATE TABLE auth_rate_limits (
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE settings_fields (
-  setting_key TEXT PRIMARY KEY,
-  value_json TEXT NOT NULL CHECK (json_valid(value_json)),
-  revision INTEGER NOT NULL,
-  device_id TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY (device_id) REFERENCES owner_devices(id)
-);
-
-CREATE INDEX idx_settings_fields_revision ON settings_fields(revision);
-
-CREATE TABLE processed_mutations (
-  mutation_id TEXT PRIMARY KEY,
-  device_id TEXT NOT NULL,
-  applied_revision INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY (device_id) REFERENCES owner_devices(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_processed_mutations_created ON processed_mutations(created_at);
-
 CREATE TABLE content_sections (
   section_key TEXT PRIMARY KEY,
   content_json TEXT NOT NULL CHECK (json_valid(content_json)),
@@ -86,3 +50,31 @@ CREATE TABLE audit_logs (
 );
 
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+
+CREATE TABLE assets (
+  id TEXT PRIMARY KEY,
+  object_key TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('wallpaper')),
+  variant TEXT NOT NULL CHECK (variant IN ('desktop', 'mobile')),
+  original_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  checksum TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  created_by_device TEXT NOT NULL,
+  FOREIGN KEY (created_by_device) REFERENCES owner_devices(id)
+);
+
+CREATE INDEX idx_assets_kind_variant_created
+ON assets(kind, variant, created_at DESC);
+
+CREATE TABLE admin_mutations (
+  mutation_id TEXT PRIMARY KEY,
+  device_id TEXT NOT NULL,
+  section_key TEXT NOT NULL,
+  response_json TEXT NOT NULL CHECK (json_valid(response_json)),
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (device_id) REFERENCES owner_devices(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_admin_mutations_created ON admin_mutations(created_at);

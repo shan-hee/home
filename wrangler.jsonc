@@ -11,6 +11,12 @@
       "migrations_dir": "migrations"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "WALLPAPER_BUCKET",
+      "bucket_name": "home-assets-dev"
+    }
+  ],
   "vars": {
     "APP_ENV": "development",
     "APP_ORIGIN": "http://localhost:3000",

@@ -12,9 +12,6 @@ DEFAULT_CITY = ""
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"
 
-# 可选：Wallhaven API Key。留空时只请求公开 SFW 壁纸。
-WALLHAVEN_API_KEY = ""
-
 # 音乐上游 API。后端接管音乐配置后使用，不能改为 VITE_*。
 MUSIC_API_URL = ""
 

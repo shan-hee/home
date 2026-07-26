@@ -20,8 +20,31 @@ export interface D1Database {
   exec(query: string): Promise<{ count: number; duration: number }>;
 }
 
+export interface R2ObjectBody {
+  body: ReadableStream;
+  httpEtag: string;
+  httpMetadata?: {
+    contentType?: string;
+    cacheControl?: string;
+  };
+}
+
+export interface R2Bucket {
+  put(
+    key: string,
+    value: ArrayBuffer | ReadableStream,
+    options?: {
+      httpMetadata?: { contentType?: string; cacheControl?: string };
+      customMetadata?: Record<string, string>;
+    },
+  ): Promise<unknown>;
+  get(key: string): Promise<R2ObjectBody | null>;
+  delete(key: string): Promise<void>;
+}
+
 export interface AppEnvironment {
   DB: D1Database;
+  WALLPAPER_BUCKET: R2Bucket;
   APP_ENV?: string;
   APP_ORIGIN?: string;
   SESSION_TTL_DAYS?: string;
@@ -30,7 +53,6 @@ export interface AppEnvironment {
   MUSIC_API_URL?: string;
   QWEATHER_API_KEY?: string;
   QWEATHER_API_HOST?: string;
-  WALLHAVEN_API_KEY?: string;
   GITHUB_REPOSITORY?: string;
   GITHUB_TOKEN?: string;
   DEFAULT_LATITUDE?: string;

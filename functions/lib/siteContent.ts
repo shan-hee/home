@@ -7,6 +7,7 @@ export const CONTENT_SECTION_KEYS = [
   "socialLinks",
   "music",
   "wallpaper",
+  "preferences",
   "hitokoto",
 ] as const;
 
@@ -37,13 +38,6 @@ const text = (value: unknown, name: string, maxLength: number, allowEmpty = true
     throw new ApiError(400, "INVALID_CONTENT", `${name}长度无效`);
   }
   return normalized;
-};
-
-const integer = (value: unknown, name: string, min: number, max: number) => {
-  if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
-    throw new ApiError(400, "INVALID_CONTENT", `${name}范围无效`);
-  }
-  return value as number;
 };
 
 const url = (value: unknown, name: string, protocols = ["https:"]) => {
@@ -181,27 +175,67 @@ const music = (value: unknown) => {
   };
 };
 
-const wallpaperGroup = (value: unknown, name: string) => {
-  if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", `${name}壁纸格式无效`);
-  knownKeys(value, ["count", "pattern", "fallback"]);
-  const pattern = text(value.pattern, `${name}壁纸模板`, 300, false);
-  if (!pattern.startsWith("/") || !pattern.includes("{id}")) {
-    throw new ApiError(400, "INVALID_CONTENT", `${name}壁纸模板无效`);
-  }
-  return {
-    count: integer(value.count, `${name}壁纸数量`, 1, 200),
-    pattern,
-    fallback: assetUrl(value.fallback, `${name}回退壁纸`),
-  };
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const nullableAssetId = (value: unknown, name: string) => {
+  if (value === null) return null;
+  const normalized = text(value, name, 36, false);
+  if (!UUID_PATTERN.test(normalized)) throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
+  return normalized;
 };
 
 const wallpaper = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "壁纸配置格式无效");
-  knownKeys(value, ["version", "desktop", "mobile"]);
+  knownKeys(value, ["desktopAssetId", "mobileAssetId"]);
   return {
-    version: integer(value.version, "壁纸配置版本", 1, 1000),
-    desktop: wallpaperGroup(value.desktop, "桌面端"),
-    mobile: wallpaperGroup(value.mobile, "移动端"),
+    desktopAssetId: nullableAssetId(value.desktopAssetId, "桌面端壁纸"),
+    mobileAssetId: nullableAssetId(value.mobileAssetId, "移动端壁纸"),
+  };
+};
+
+const boolean = (value: unknown, name: string) => {
+  if (typeof value !== "boolean") throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
+  return value;
+};
+
+const preferences = (value: unknown) => {
+  if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "全局偏好格式无效");
+  knownKeys(value, [
+    "siteStartShow", "footerBlur", "messageNameShow", "playerAutoplay",
+    "playerKeyboardShortcuts", "playerDefaultVolume", "playerDefaultOrder", "weatherLocation",
+  ]);
+  const playerDefaultOrder = text(value.playerDefaultOrder, "默认播放顺序", 10, false);
+  if (!(["list", "single", "shuffle"] as string[]).includes(playerDefaultOrder)) {
+    throw new ApiError(400, "INVALID_CONTENT", "默认播放顺序无效");
+  }
+  const playerDefaultVolume = Number(value.playerDefaultVolume);
+  if (!Number.isFinite(playerDefaultVolume) || playerDefaultVolume < 0 || playerDefaultVolume > 1) {
+    throw new ApiError(400, "INVALID_CONTENT", "默认音量范围无效");
+  }
+  let weatherLocation = null;
+  if (value.weatherLocation !== null) {
+    if (!isRecord(value.weatherLocation)) throw new ApiError(400, "INVALID_CONTENT", "默认天气城市格式无效");
+    knownKeys(value.weatherLocation, ["city", "latitude", "longitude"]);
+    const latitude = Number(value.weatherLocation.latitude);
+    const longitude = Number(value.weatherLocation.longitude);
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      throw new ApiError(400, "INVALID_CONTENT", "默认天气坐标无效");
+    }
+    weatherLocation = {
+      city: text(value.weatherLocation.city, "默认天气城市", 80, false),
+      latitude,
+      longitude,
+    };
+  }
+  return {
+    siteStartShow: boolean(value.siteStartShow, "建站日期显示"),
+    footerBlur: boolean(value.footerBlur, "底栏背景模糊"),
+    messageNameShow: boolean(value.messageNameShow, "主页名称显示"),
+    playerAutoplay: boolean(value.playerAutoplay, "自动播放"),
+    playerKeyboardShortcuts: boolean(value.playerKeyboardShortcuts, "播放器快捷键"),
+    playerDefaultVolume: Math.round(playerDefaultVolume * 100) / 100,
+    playerDefaultOrder,
+    weatherLocation,
   };
 };
 
@@ -231,6 +265,7 @@ const validators: Record<ContentSectionKey, (value: unknown) => unknown> = {
   socialLinks,
   music,
   wallpaper,
+  preferences,
   hitokoto,
 };
 
@@ -273,7 +308,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,
@@ -283,7 +318,7 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config-v3", request.url).toString();
+  return new URL("/__edge-cache/site-config-v5", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {

@@ -11,12 +11,12 @@ const seedPath = existsSync(localSeedPath)
   ? localSeedPath
   : resolve(projectRoot, "scripts/site-content.seed.example.json");
 const sections = JSON.parse(readFileSync(seedPath, "utf8"));
-const requiredSections = ["profile", "siteLinks", "socialLinks", "music", "wallpaper", "hitokoto"];
+const requiredSections = ["profile", "siteLinks", "socialLinks", "music", "wallpaper", "preferences", "hitokoto"];
 if (
   !sections || typeof sections !== "object" || Array.isArray(sections)
   || requiredSections.some((key) => !(key in sections))
 ) {
-  throw new Error("Seed 文件必须包含 profile、siteLinks、socialLinks、music、wallpaper 和 hitokoto");
+  throw new Error("Seed 文件必须包含 profile、siteLinks、socialLinks、music、wallpaper、preferences 和 hitokoto");
 }
 
 const statements = [
