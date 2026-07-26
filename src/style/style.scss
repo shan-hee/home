@@ -34,10 +34,6 @@ p {
   user-select: none;
   text-decoration: none;
   box-sizing: border-box;
-
-  &:hover {
-    transition: 0.3s;
-  }
 }
 
 // 所有链接状态均不显示下划线
@@ -186,6 +182,12 @@ a:hover {
       transform: scale(0.5);
     }
   }
+}
+
+// 排序期间不再根据指针下方的链接、图标或空白区域切换光标
+html.is-sort-dragging,
+html.is-sort-dragging * {
+  cursor: grabbing !important;
 }
 
 // 滚动条样式

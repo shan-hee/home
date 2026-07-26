@@ -17,12 +17,6 @@
       text-shadow: 0 0 5px rgba(15, 15, 15, 0.6);
       color: rgba(245, 245, 245, 1);
     }
-
-    .manage-hint {
-      margin-left: auto;
-      font-size: 0.7rem;
-      opacity: 0.52;
-    }
   }
 
   .swiper {
@@ -95,7 +89,8 @@
       color: rgba(245, 245, 245, 0.96);
       animation: fade 0.5s;
 
-      &:focus-visible {
+      &:focus-visible,
+      .site-icon:focus-visible {
         outline: 2px solid rgba(245, 245, 245, 0.62);
         outline-offset: 3px;
       }
@@ -189,7 +184,6 @@
   padding: 4px;
   color: rgba(245, 245, 245, 0.96);
   pointer-events: none;
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.28));
 
   .site-icon {
     width: 54px;
@@ -198,6 +192,7 @@
     display: grid;
     place-items: center;
     border-radius: 15px;
+    background-color: var(--cards-background-color);
 
     .site-icon-image {
       width: 34px;

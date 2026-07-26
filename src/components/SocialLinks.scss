@@ -2,7 +2,7 @@
   margin-top: 1rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   max-width: 460px;
   width: 100%;
   height: 42px;
@@ -23,18 +23,14 @@
       justify-content: space-evenly !important;
       width: 90%;
     }
-
-    .tip {
-      display: none !important;
-      color: var(--social-font-color);
-    }
   }
 
   .link {
+    width: 100%;
     height: 24px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
 
     .social-item {
       position: relative;
@@ -64,7 +60,6 @@
         display: block;
         width: 24px;
         height: 24px;
-        margin: 0 12px;
         transition: transform 0.3s;
       }
 
@@ -75,6 +70,10 @@
       &:active .icon {
         transform: scale(1);
       }
+    }
+
+    .social-item a {
+      margin: 0 12px;
     }
 
     .add-social {
@@ -90,26 +89,11 @@
 
   }
 
-  .tip {
-    color: var(--social-font-color);
-    display: none;
-    height: 24px;
-    margin-right: 12px;
-    line-height: 24px;
-    transform: translateY(-1px);
-    animation: fade 0.5s;
-  }
-
   @media (min-width: 768px) {
     &:hover {
       background-color: var(--social-background-color);
       -webkit-backdrop-filter: blur(5px);
       backdrop-filter: blur(5px);
-
-      .tip {
-        display: block;
-        color: var(--social-font-color);
-      }
     }
   }
 
@@ -125,15 +109,17 @@
 
 .social-drag-overlay {
   width: 48px;
-  height: 42px;
+  height: 24px;
   display: grid;
   place-items: center;
   color: var(--social-font-color);
   pointer-events: none;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.32));
 
   .icon {
+    display: block;
     width: 24px;
     height: 24px;
+    transform: none;
+    transition: none;
   }
 }

@@ -1,7 +1,6 @@
 import { AddOne, Link } from "@icon-park/react";
-import { DndContext, DragOverlay, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragOverlay, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { restrictToWindowEdges, snapCenterToCursor } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,6 +12,7 @@ import ItemContextMenu, { getContextMenuPosition } from "@/components/ItemContex
 import type { ContextMenuPosition } from "@/components/ItemContextMenu";
 import LinkManagerDialog from "@/components/LinkManagerDialog";
 import SiteLinkIcon from "@/components/SiteLinkIcon";
+import useDragCursorLock from "@/composables/useDragCursorLock";
 import useLongPressContextMenu from "@/composables/useLongPressContextMenu";
 import { ApiClientError } from "@/services/apiClient";
 import { saveSiteContentSection } from "@/services/siteContentEditor";
@@ -20,6 +20,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { SiteLinkConfig } from "@/typings/siteContent";
 import { confirmAction, toast } from "@/ui/toast";
+import NavigationSafePointerSensor, { NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS } from "@/utils/NavigationSafePointerSensor";
 import "@/components/Links.scss";
 
 const PAGE_SIZE = 12;
@@ -78,14 +79,17 @@ function SortableSiteLink({ id, item, disabled, onOpenMenu }: SortableSiteLinkPr
       className={`link-column${isDragging ? " is-dragging" : ""}`}
       style={{ transform: CSS.Transform.toString(transform), transition }}
     >
-      <a className="item" href={item.link} target="_blank" rel="noopener noreferrer" draggable={false} onKeyDown={openContextMenuFromKeyboard}>
-        <span
+      <div className="item">
+        <a
           ref={setActivatorNodeRef}
           className="site-icon cards swiper-no-swiping"
+          href={item.link}
+          draggable={false}
+          aria-label={item.name}
           style={{ color: item.iconColor }}
-          aria-hidden="true"
-          title={disabled ? undefined : "拖动排序，右键或长按管理"}
+          title={item.name}
           onContextMenu={openContextMenu}
+          onKeyDown={openContextMenuFromKeyboard}
           onPointerDown={startPointerInteraction}
           onPointerMove={longPress.onPointerMove}
           onPointerUp={longPress.onPointerUp}
@@ -93,9 +97,9 @@ function SortableSiteLink({ id, item, disabled, onOpenMenu }: SortableSiteLinkPr
           onClickCapture={longPress.onClickCapture}
         >
           <SiteLinkIcon link={item} />
-        </span>
+        </a>
         <span className="name text-truncate-ellipsis">{item.name}</span>
-      </a>
+      </div>
     </div>
   );
 }
@@ -103,7 +107,7 @@ function SortableSiteLink({ id, item, disabled, onOpenMenu }: SortableSiteLinkPr
 function SiteLinkDragOverlay({ item, size }: { item: SiteLinkConfig; size: DragOverlaySize | null }) {
   return (
     <div className="site-drag-overlay" style={size || undefined}>
-      <span className="site-icon cards" style={{ color: item.iconColor }} aria-hidden="true"><SiteLinkIcon link={item} /></span>
+      <span className="site-icon" style={{ color: item.iconColor }} aria-hidden="true"><SiteLinkIcon link={item} /></span>
       <span className="name text-truncate-ellipsis">{item.name}</span>
     </div>
   );
@@ -120,8 +124,9 @@ export default function Links() {
   const [saving, setSaving] = useState(false);
   const itemIdsRef = useRef(new WeakMap<SiteLinkConfig, string>());
   const nextIdRef = useRef(0);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(useSensor(NavigationSafePointerSensor, NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS));
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  useDragCursorLock(activeId !== null);
 
   useEffect(() => {
     setOrderedLinks(links);
@@ -213,14 +218,19 @@ export default function Links() {
     void saveList(next, "网站顺序已保存");
   };
 
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDragOverlaySize(null);
+  };
+
   const activeEntry = activeId ? entries.find((entry) => entry.id === activeId) : undefined;
   const menuEntry = contextMenu ? entries.find((entry) => entry.id === contextMenu.id) : undefined;
   const sortingDisabled = !authenticated || saving;
 
   return (
     <div className={`links${authenticated ? " is-managing" : ""}`}>
-      <div className="line"><Link className="iconl" size={20} /><span className="title text-truncate-ellipsis">网站列表</span>{authenticated && <span className="manage-hint">拖动排序 · 右键管理</span>}</div>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); setDragOverlaySize(null); }}>
+      <div className="line"><Link className="iconl" size={20} /><span className="title text-truncate-ellipsis">网站列表</span></div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <Swiper
           modules={[Pagination, Mousewheel]}
           slidesPerView={1}
@@ -244,7 +254,10 @@ export default function Links() {
           {pages.length > 1 && <div className="swiper-pagination site-pagination" />}
         </Swiper>
         {createPortal(
-          <DragOverlay adjustScale={false} modifiers={[snapCenterToCursor, restrictToWindowEdges]}>
+          <DragOverlay
+            adjustScale={false}
+            style={{ pointerEvents: "none", transition: "none", willChange: "transform" }}
+          >
             {activeEntry ? <SiteLinkDragOverlay item={activeEntry.item} size={dragOverlaySize} /> : null}
           </DragOverlay>,
           document.body,

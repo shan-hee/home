@@ -1,6 +1,5 @@
-import { DndContext, DragOverlay, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragOverlay, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { restrictToWindowEdges, snapCenterToCursor } from "@dnd-kit/modifiers";
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -10,6 +9,7 @@ import DynamicIcon from "@/components/DynamicIcon";
 import ItemContextMenu, { getContextMenuPosition } from "@/components/ItemContextMenu";
 import type { ContextMenuPosition } from "@/components/ItemContextMenu";
 import LinkManagerDialog from "@/components/LinkManagerDialog";
+import useDragCursorLock from "@/composables/useDragCursorLock";
 import useLongPressContextMenu from "@/composables/useLongPressContextMenu";
 import { ApiClientError } from "@/services/apiClient";
 import { saveSiteContentSection } from "@/services/siteContentEditor";
@@ -17,9 +17,8 @@ import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { SocialLinkConfig } from "@/typings/siteContent";
 import { confirmAction, toast } from "@/ui/toast";
+import NavigationSafePointerSensor, { NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS } from "@/utils/NavigationSafePointerSensor";
 import "@/components/SocialLinks.scss";
-
-const DEFAULT_TIP = "通过这里联系我吧";
 
 interface SocialLinkEntry {
   id: string;
@@ -39,8 +38,6 @@ interface DragOverlaySize {
 interface SortableSocialLinkProps extends SocialLinkEntry {
   disabled: boolean;
   onOpenMenu: (clientX: number, clientY: number, id: string) => void;
-  onShowTip: (tip: string) => void;
-  onHideTip: () => void;
 }
 
 const saveErrorMessage = (reason: unknown) => {
@@ -48,7 +45,7 @@ const saveErrorMessage = (reason: unknown) => {
   return reason instanceof ApiClientError ? reason.message : "保存失败，请稍后再试";
 };
 
-function SortableSocialLink({ id, item, disabled, onOpenMenu, onShowTip, onHideTip }: SortableSocialLinkProps) {
+function SortableSocialLink({ id, item, disabled, onOpenMenu }: SortableSocialLinkProps) {
   const { setNodeRef, setActivatorNodeRef, transform, transition, isDragging, listeners } = useSortable({ id, disabled });
   const longPress = useLongPressContextMenu((clientX, clientY) => onOpenMenu(clientX, clientY, id), disabled);
 
@@ -80,13 +77,9 @@ function SortableSocialLink({ id, item, disabled, onOpenMenu, onShowTip, onHideT
       <a
         ref={setActivatorNodeRef}
         href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
         draggable={false}
         aria-label={item.name}
-        title={disabled ? undefined : "拖动排序，右键或长按管理"}
-        onMouseEnter={() => onShowTip(item.tip || item.name)}
-        onMouseLeave={onHideTip}
+        title={item.name}
         onContextMenu={openContextMenu}
         onKeyDown={openContextMenuFromKeyboard}
         onPointerDown={startPointerInteraction}
@@ -105,7 +98,6 @@ export default function SocialLinks() {
   const links = useSiteContentStore((state) => state.snapshot.sections.socialLinks);
   const authenticated = useAuthStore((state) => state.status === "authenticated");
   const [orderedLinks, setOrderedLinks] = useState<SocialLinkConfig[]>(links);
-  const [tip, setTip] = useState(DEFAULT_TIP);
   const [editingIndex, setEditingIndex] = useState<number | "new" | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverlaySize, setDragOverlaySize] = useState<DragOverlaySize | null>(null);
@@ -113,8 +105,9 @@ export default function SocialLinks() {
   const [saving, setSaving] = useState(false);
   const itemIdsRef = useRef(new WeakMap<SocialLinkConfig, string>());
   const nextIdRef = useRef(0);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(useSensor(NavigationSafePointerSensor, NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS));
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  useDragCursorLock(activeId !== null);
 
   useEffect(() => {
     setOrderedLinks(links);
@@ -196,13 +189,18 @@ export default function SocialLinks() {
     void saveList(next, "社交方式顺序已保存");
   };
 
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDragOverlaySize(null);
+  };
+
   const activeEntry = activeId ? entries.find((entry) => entry.id === activeId) : undefined;
   const menuEntry = contextMenu ? entries.find((entry) => entry.id === contextMenu.id) : undefined;
   const sortingDisabled = !authenticated || saving;
 
   return (
     <div className={`social${authenticated ? " is-managing" : ""}`}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); setDragOverlaySize(null); }}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <SortableContext items={entries.map((entry) => entry.id)} strategy={horizontalListSortingStrategy}>
           <div className="link">
             {entries.map((entry) => (
@@ -211,21 +209,21 @@ export default function SocialLinks() {
                 {...entry}
                 disabled={sortingDisabled}
                 onOpenMenu={openContextMenu}
-                onShowTip={setTip}
-                onHideTip={() => setTip(DEFAULT_TIP)}
               />
             ))}
             {authenticated && <button type="button" className="add-social" aria-label="添加社交方式" title="添加社交方式" disabled={saving} onClick={() => setEditingIndex("new")}><DynamicIcon code="ri:add-circle-line" size={24} /></button>}
           </div>
         </SortableContext>
         {createPortal(
-          <DragOverlay adjustScale={false} modifiers={[snapCenterToCursor, restrictToWindowEdges]}>
+          <DragOverlay
+            adjustScale={false}
+            style={{ pointerEvents: "none", transition: "none", willChange: "transform" }}
+          >
             {activeEntry ? <div className="social-drag-overlay" style={dragOverlaySize || undefined}><DynamicIcon className="icon" code={activeEntry.item.icon} size={24} /></div> : null}
           </DragOverlay>,
           document.body,
         )}
       </DndContext>
-      <span className="tip">{authenticated ? "拖动排序 · 右键管理" : tip}</span>
       <LinkManagerDialog
         kind="social"
         open={editingIndex !== null}
