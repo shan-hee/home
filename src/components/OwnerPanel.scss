@@ -155,12 +155,12 @@
 
 .settings-main-header,
 .panel-header {
-  min-height: 58px;
   align-items: center;
   border-bottom: 1px solid rgba(from currentColor r g b / 0.08);
 }
 
 .settings-main-header {
+  min-height: 58px;
   display: flex;
   justify-content: space-between;
   padding: 7px 13px 7px 24px;
@@ -174,6 +174,7 @@
 }
 
 .panel-header {
+  min-height: 54px;
   display: grid;
   grid-template-columns: 40px 1fr 40px;
   padding: 7px 10px;
@@ -238,7 +239,7 @@
   display: grid;
   grid-template-columns: 1fr 44px;
   border: 1px solid rgba(from currentColor r g b / 0.24);
-  border-radius: 8px;
+  border-radius: 9px;
   background: rgba(from currentColor r g b / 0.08);
   transition: border-color 0.2s, background 0.2s;
 

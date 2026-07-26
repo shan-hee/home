@@ -46,12 +46,12 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
     return <section className="owner-panel cards is-login" aria-live="polite">
       <header className="panel-header">
         <button type="button" className="icon-button" aria-label="返回主页内容" onClick={onClose}><BackOne theme="outline" size="22" /></button>
-        <span>所有者登录</span>
+        <span>管理员登录</span>
         <span className="header-spacer" aria-hidden="true" />
       </header>
       {status === "checking" ? <div className="panel-state">正在确认登录状态…</div> : <form className="login-form" onSubmit={(event) => void login(event)}>
         <div className={`password-control${error ? " invalid" : ""}`}>
-          <input id="owner-password" ref={input} value={password} type="password" autoComplete="off" placeholder="请输入密码" aria-label="所有者密码" disabled={submitting} aria-invalid={Boolean(error)} aria-describedby={error ? "owner-login-error" : undefined} onChange={(event) => { setPassword(event.target.value); if (event.target.value) setError(""); }} />
+          <input id="owner-password" ref={input} value={password} type="password" autoComplete="off" placeholder="请输入密码" aria-label="管理员密码" disabled={submitting} aria-invalid={Boolean(error)} aria-describedby={error ? "owner-login-error" : undefined} onChange={(event) => { setPassword(event.target.value); if (event.target.value) setError(""); }} />
           <button type="submit" aria-label="登录" disabled={submitting || !password}><ArrowRight theme="outline" size="21" /></button>
         </div>
         {error && <p id="owner-login-error" className="login-error">{error}</p>}
