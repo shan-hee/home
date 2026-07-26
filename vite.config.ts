@@ -17,38 +17,34 @@ export default (): UserConfig => {
                 // selfDestroying: true,
                 // injectRegister: false,
                 workbox: {
-                    globIgnores: [
-                        "**/images/background*.jpg",
-                        "**/images/phone/backgroundphone*.jpg",
-                    ],
+                    cleanupOutdatedCaches: true,
                     runtimeCaching: [
                         {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config",
                             handler: "NetworkFirst",
                             options: {
-                                cacheName: "site-config-v1",
+                                cacheName: "site-config-v2",
                                 networkTimeoutSeconds: 3,
                                 expiration: {
                                     maxEntries: 1,
-                                    maxAgeSeconds: 86400,
                                 },
+                                cacheableResponse: { statuses: [200] },
                             },
                         },
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/image",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/"),
                             handler: "CacheFirst",
                             options: {
-                                cacheName: "online-wallpaper-v1",
+                                cacheName: "wallpaper-assets-v1",
                                 expiration: {
-                                    maxEntries: 12,
-                                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                                    maxEntries: 4,
                                     purgeOnQuotaError: true,
                                 },
                                 cacheableResponse: { statuses: [200] },
                             },
                         },
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpe?g|svg|webp|gif|ico)$/i.test(url.pathname),
+                            urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|svg|webp|gif|ico)$/i.test(url.pathname),
                             handler: "CacheFirst",
                             options: {
                                 cacheName: "local-images-v1",

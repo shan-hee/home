@@ -5,8 +5,12 @@ import { confirmAction, toast } from "@/ui/toast";
 export const setupPwaUpdate = () => {
   let refreshWhenPaused = false;
 
+  if ("storage" in navigator && "persist" in navigator.storage) {
+    void navigator.storage.persist().catch(() => false);
+  }
+
   if ("caches" in window) {
-    void Promise.all(["js-css-cache", "image-cache"].map((name) => window.caches.delete(name))).catch(() => undefined);
+    void Promise.all(["js-css-cache", "image-cache", "site-config-v1", "online-wallpaper-v1"].map((name) => window.caches.delete(name))).catch(() => undefined);
   }
 
   const updateSW = registerSW({
