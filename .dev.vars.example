@@ -12,9 +12,6 @@ DEFAULT_CITY = ""
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"
 
-# 音乐上游 API。后端接管音乐配置后使用，不能改为 VITE_*。
-MUSIC_API_URL = ""
-
 # 版本检查目标仓库与可选 GitHub Token。
 GITHUB_REPOSITORY = "shan-hee/home"
 GITHUB_TOKEN = ""

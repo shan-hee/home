@@ -31,8 +31,8 @@ export interface SocialLinkConfig {
 }
 
 export interface MusicContentConfig {
-  server: "netease" | "tencent";
-  type: "playlist" | "song";
+  server: "netease" | "tencent" | "kugou" | "baidu" | "kuwo";
+  type: "search" | "song" | "album" | "artist" | "playlist";
   id: string;
 }
 

@@ -55,7 +55,6 @@ export interface AppEnvironment {
   SESSION_TTL_DAYS?: string;
   OWNER_PASSWORD?: string;
   IP_HASH_SECRET?: string;
-  MUSIC_API_URL?: string;
   QWEATHER_API_KEY?: string;
   QWEATHER_API_HOST?: string;
   GITHUB_REPOSITORY?: string;

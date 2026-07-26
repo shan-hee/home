@@ -162,10 +162,10 @@ const music = (value: unknown) => {
   knownKeys(value, ["server", "type", "id"]);
   const server = text(value.server, "音乐平台", 20, false);
   const type = text(value.type, "音乐类型", 20, false);
-  if (!(["netease", "tencent"] as string[]).includes(server)) {
+  if (!(["netease", "tencent", "kugou", "baidu", "kuwo"] as string[]).includes(server)) {
     throw new ApiError(400, "INVALID_CONTENT", "不支持的音乐平台");
   }
-  if (!(["playlist", "song"] as string[]).includes(type)) {
+  if (!(["search", "song", "album", "artist", "playlist"] as string[]).includes(type)) {
     throw new ApiError(400, "INVALID_CONTENT", "不支持的音乐类型");
   }
   return {
@@ -322,7 +322,7 @@ export const siteConfigCacheUrl = (request: Request) => {
 };
 
 export const musicCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/music-v2", request.url).toString();
+  return new URL("/__edge-cache/music-v4", request.url).toString();
 };
 
 export const hitokotoCacheUrl = (request: Request) => {

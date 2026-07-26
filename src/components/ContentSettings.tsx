@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
-import { CloseSmall, Delete, Download, Upload } from "@icon-park/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CloseSmall, Delete, Download, Search, Upload } from "@icon-park/react";
+import type { PlaylistItem } from "@/api";
 import { ApiClientError, requestJson } from "@/services/apiClient";
 import { useAdminOfflineStore } from "@/stores/adminOffline";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
-import type { SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
+import type { MusicContentConfig, SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
 import "@/components/ContentSettings.scss";
 
 type Section = keyof SiteContentSections;
 type SaveState = { saving: boolean; message: string; error: boolean };
+type MusicPreviewState = { status: "idle" | "loading" | "success" | "error"; message: string; tracks: PlaylistItem[] };
 export type ContentSettingsView = "general" | "wallpaper" | "profile" | "music" | "hitokoto";
 interface AssetRecord {
   id: string;
@@ -23,6 +25,7 @@ interface AssetRecord {
 const keys: Section[] = ["profile", "siteLinks", "socialLinks", "music", "wallpaper", "preferences", "hitokoto"];
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 const initialStates = () => Object.fromEntries(keys.map((key) => [key, { saving: false, message: "", error: false }])) as Record<Section, SaveState>;
+const initialMusicPreview = (): MusicPreviewState => ({ status: "idle", message: "", tracks: [] });
 
 function SaveRow({ state, dirty, onSave, onDiscard }: { state: SaveState; dirty: boolean; onSave: () => void; onDiscard: () => void }) {
   return <div className="save-row"><span className={state.error ? "save-error" : "save-message"}>{state.message}</span><div className="save-actions"><button type="button" disabled={!dirty || state.saving} onClick={onDiscard}>放弃草稿</button><button type="button" className="save-button" disabled={!dirty || state.saving} onClick={onSave}>{state.saving ? "保存中…" : "保存本节"}</button></div></div>;
@@ -72,6 +75,8 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   const [assetMessage, setAssetMessage] = useState("");
   const [assetBusy, setAssetBusy] = useState(false);
   const [previewAsset, setPreviewAsset] = useState<AssetRecord | null>(null);
+  const [musicPreview, setMusicPreview] = useState<MusicPreviewState>(initialMusicPreview);
+  const musicPreviewRequest = useRef(0);
   const offline = authStatus === "offline-owner";
 
   const update = (mutator: (draft: SiteContentSections) => void) => setDrafts((current) => {
@@ -80,6 +85,11 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     mutator(next);
     return next;
   });
+
+  const resetMusicPreview = () => {
+    musicPreviewRequest.current += 1;
+    setMusicPreview(initialMusicPreview());
+  };
 
   const restoreDrafts = useCallback(async (base: SiteContentSnapshot) => {
     const next = structuredClone(base.sections);
@@ -181,6 +191,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   const discard = async (section: Section) => {
     if (!snapshot) return;
     await discardSection(section);
+    if (section === "music") resetMusicPreview();
     setDrafts((current) => current ? { ...current, [section]: structuredClone(snapshot.sections[section]) } as SiteContentSections : current);
     setSaveStates((states) => ({ ...states, [section]: { saving: false, message: "已放弃本机草稿", error: false } }));
   };
@@ -218,8 +229,48 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     } finally { setAssetBusy(false); }
   };
 
+  const updateMusic = <Key extends keyof MusicContentConfig>(key: Key, value: MusicContentConfig[Key]) => {
+    resetMusicPreview();
+    update((draft) => { draft.music = { ...draft.music, [key]: value }; });
+  };
+
+  const previewMusic = async () => {
+    if (!drafts || musicPreview.status === "loading") return;
+    const query = { ...drafts.music, id: drafts.music.id.trim() };
+    if (!query.id) {
+      setMusicPreview({ status: "error", message: "请输入资源 ID 或搜索词", tracks: [] });
+      return;
+    }
+    if (offline) {
+      setMusicPreview({ status: "error", message: "离线时无法查询音乐内容", tracks: [] });
+      return;
+    }
+
+    const requestId = ++musicPreviewRequest.current;
+    setMusicPreview({ status: "loading", message: "正在查询音乐内容…", tracks: [] });
+    try {
+      const params = new URLSearchParams(query);
+      const result = await requestJson<{ tracks: PlaylistItem[] }>(`/api/admin/music-preview?${params}`);
+      if (musicPreviewRequest.current !== requestId) return;
+      setMusicPreview({
+        status: "success",
+        message: result.tracks.length ? `找到 ${result.tracks.length} 首歌曲` : "未找到匹配内容",
+        tracks: result.tracks,
+      });
+    } catch (reason) {
+      if (musicPreviewRequest.current !== requestId) return;
+      if (reason instanceof ApiClientError && reason.status === 401) expire();
+      setMusicPreview({
+        status: "error",
+        message: reason instanceof ApiClientError ? reason.message : "音乐内容暂时无法查询",
+        tracks: [],
+      });
+    }
+  };
+
   const copy = viewCopy[view];
   const reload = () => {
+    if (view === "music") resetMusicPreview();
     void load();
     if (view === "wallpaper") void loadAssets();
   };
@@ -261,7 +312,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
 
     if (view === "profile") return <div className="admin-section"><div className="form-grid">{profileFields.map(([field, label, type, wide]) => <label key={field} className={wide ? "wide" : ""}>{label}{type === "textarea" ? <textarea value={profile[field]} rows={2} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} /> : <input value={profile[field]} type={type} placeholder={field === "startDate" ? "YYYY-MM-DD" : undefined} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} />}</label>)}</div><SaveRow state={saveStates.profile} dirty={dirty("profile")} onSave={() => void save("profile")} onDiscard={() => void discard("profile")} /></div>;
 
-    if (view === "music") return <div className="admin-section"><div className="form-grid"><label>平台<select value={drafts.music.server} onChange={(event) => update((draft) => { draft.music.server = event.target.value as SiteContentSections["music"]["server"]; })}><option value="netease">网易云音乐</option><option value="tencent">QQ 音乐</option></select></label><label>类型<select value={drafts.music.type} onChange={(event) => update((draft) => { draft.music.type = event.target.value as SiteContentSections["music"]["type"]; })}><option value="playlist">歌单</option><option value="song">单曲</option></select></label><label className="wide">音乐 ID<input value={drafts.music.id} onChange={(event) => update((draft) => { draft.music.id = event.target.value; })} /></label></div><SaveRow state={saveStates.music} dirty={dirty("music")} onSave={() => void save("music")} onDiscard={() => void discard("music")} /></div>;
+    if (view === "music") return <div className="admin-section"><div className="form-grid"><label>平台<select value={drafts.music.server} onChange={(event) => updateMusic("server", event.target.value as MusicContentConfig["server"])}><option value="netease">网易云音乐</option><option value="tencent">QQ 音乐</option><option value="kugou">酷狗音乐</option><option value="baidu">百度音乐</option><option value="kuwo">酷我音乐</option></select></label><label>类型<select value={drafts.music.type} onChange={(event) => updateMusic("type", event.target.value as MusicContentConfig["type"])}><option value="playlist">歌单</option><option value="song">单曲</option><option value="album">专辑</option><option value="artist">歌手</option><option value="search">搜索</option></select></label><label className="wide">资源 ID / 搜索词<span className="music-query-control"><input value={drafts.music.id} onChange={(event) => updateMusic("id", event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void previewMusic(); } }} /><button type="button" title={offline ? "离线时无法查询" : "查询音乐内容"} aria-label="查询音乐内容" disabled={offline || musicPreview.status === "loading" || !drafts.music.id.trim()} onClick={() => void previewMusic()}><Search theme="outline" size="18" /></button></span></label>{musicPreview.status !== "idle" && <section className={`music-preview ${musicPreview.status === "error" ? "is-error" : ""}`} aria-live="polite"><header><strong>{musicPreview.message}</strong></header>{musicPreview.tracks.length > 0 && <ol>{musicPreview.tracks.slice(0, 100).map((track, index) => <li key={`${track.url}-${index}`}>{track.cover ? <img src={track.cover} alt="" loading="lazy" /> : <span className="music-preview-cover" aria-hidden="true" />}<span><strong>{track.name}</strong><small>{track.artist}</small></span></li>)}</ol>}</section>}</div><SaveRow state={saveStates.music} dirty={dirty("music")} onSave={() => void save("music")} onDiscard={() => void discard("music")} /></div>;
 
     return <div className="admin-section"><div className="form-grid"><label>模式<select value={drafts.hitokoto.mode} onChange={(event) => update((draft) => { draft.hitokoto.mode = event.target.value as SiteContentSections["hitokoto"]["mode"]; })}><option value="remote">远程一言</option><option value="fixed">固定内容</option></select></label><label className="wide">远程分类（逗号分隔）<input value={drafts.hitokoto.categories.join(", ")} onChange={(event) => update((draft) => { draft.hitokoto.categories = event.target.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean); })} /></label><label className="wide">固定内容<textarea rows={2} value={drafts.hitokoto.fixedText} onChange={(event) => update((draft) => { draft.hitokoto.fixedText = event.target.value; })} /></label><label>固定内容来源<input value={drafts.hitokoto.fixedFrom} onChange={(event) => update((draft) => { draft.hitokoto.fixedFrom = event.target.value; })} /></label><label className="wide">失败时内容<textarea rows={2} value={drafts.hitokoto.fallbackText} onChange={(event) => update((draft) => { draft.hitokoto.fallbackText = event.target.value; })} /></label><label>失败时来源<input value={drafts.hitokoto.fallbackFrom} onChange={(event) => update((draft) => { draft.hitokoto.fallbackFrom = event.target.value; })} /></label></div><SaveRow state={saveStates.hitokoto} dirty={dirty("hitokoto")} onSave={() => void save("hitokoto")} onDiscard={() => void discard("hitokoto")} /></div>;
   };
