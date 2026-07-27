@@ -7,9 +7,9 @@ import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
 import "@/views/Main/Right.scss";
 
-interface Props { ownerPanelOpen: boolean; onCloseOwnerPanel: () => void }
+interface Props { boxOpen: boolean; ownerPanelOpen: boolean; onCloseOwnerPanel: () => void }
 
-export default function MainRight({ ownerPanelOpen, onCloseOwnerPanel }: Props) {
+export default function MainRight({ boxOpen, ownerPanelOpen, onCloseOwnerPanel }: Props) {
   const mobileOpen = useMainStore((state) => state.mobileOpenState);
   const mobileFunc = useMainStore((state) => state.mobileFuncState);
   const patch = useMainStore((state) => state.patch);
@@ -22,5 +22,5 @@ export default function MainRight({ ownerPanelOpen, onCloseOwnerPanel }: Props) 
     const parts = raw.split(".");
     return [parts[0] || "imsyy", parts.slice(1).join(".") || "top"];
   }, [siteUrl]);
-  return <div className={`right${mobileOpen ? "" : " is-hidden"}${ownerPanelOpen && authStatus === "authenticated" ? " has-owner-panel" : ""}`}><div className={`right-home${ownerPanelOpen ? " is-owner-panel-hidden" : ""}`} aria-hidden={ownerPanelOpen || undefined}><button type="button" className="logo text-truncate-ellipsis" onClick={() => patch({ mobileFuncState: !mobileFunc })}><span className="bg">{domain[0]}</span><span className="sm">.{domain[1]}</span></button><Func /><Links /></div>{ownerPanelOpen && <OwnerPanel onClose={onCloseOwnerPanel} />}</div>;
+  return <div className={`right${mobileOpen ? "" : " is-hidden"}${boxOpen ? " is-box-hidden" : ""}${ownerPanelOpen && authStatus === "authenticated" ? " has-owner-panel" : ""}`} aria-hidden={boxOpen || undefined}><div className={`right-home${ownerPanelOpen ? " is-owner-panel-hidden" : ""}`} aria-hidden={ownerPanelOpen || undefined}><button type="button" className="logo text-truncate-ellipsis" onClick={() => patch({ mobileFuncState: !mobileFunc })}><span className="bg">{domain[0]}</span><span className="sm">.{domain[1]}</span></button><Func /><Links /></div>{ownerPanelOpen && <OwnerPanel onClose={onCloseOwnerPanel} />}</div>;
 }
