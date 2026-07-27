@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CloseSmall, Delete, Download, Search, Upload } from "@icon-park/react";
+import { CheckSmall, CloseSmall, Download, Refresh, Search, Upload } from "@icon-park/react";
 import type { PlaylistItem } from "@/api";
 import { ApiClientError, requestJson } from "@/services/apiClient";
 import { useAdminOfflineStore } from "@/stores/adminOffline";
@@ -11,6 +11,7 @@ import "@/components/ContentSettings.scss";
 type Section = keyof SiteContentSections;
 type SaveState = { saving: boolean; message: string; error: boolean };
 type MusicPreviewState = { status: "idle" | "loading" | "success" | "error"; message: string; tracks: PlaylistItem[] };
+type WallpaperSource = SiteContentSections["wallpaper"]["source"];
 export type ContentSettingsView = "general" | "wallpaper" | "profile" | "music" | "hitokoto";
 interface AssetRecord {
   id: string;
@@ -21,11 +22,29 @@ interface AssetRecord {
   createdAt: string;
   url: string;
 }
+interface RemoteWallpaperPreview {
+  source: "bing" | "wallhaven";
+  variant: AssetRecord["variant"];
+  title: string;
+  description: string;
+  imageUrl: string;
+  pageUrl: string;
+}
+interface PreviewImage {
+  title: string;
+  subtitle: string;
+  url: string;
+  downloadUrl: string;
+  fileName?: string;
+}
+type RemotePreviewState = { loading: boolean; message: string; items: RemoteWallpaperPreview[] };
 
 const keys: Section[] = ["profile", "siteLinks", "socialLinks", "music", "wallpaper", "preferences", "hitokoto"];
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 const initialStates = () => Object.fromEntries(keys.map((key) => [key, { saving: false, message: "", error: false }])) as Record<Section, SaveState>;
 const initialMusicPreview = (): MusicPreviewState => ({ status: "idle", message: "", tracks: [] });
+const initialRemotePreview = (): RemotePreviewState => ({ loading: false, message: "", items: [] });
+const rotationPresets = [0, 5, 15, 30, 60, 180, 360, 720, 1440] as const;
 
 function SaveRow({ state, dirty, onSave, onDiscard }: { state: SaveState; dirty: boolean; onSave: () => void; onDiscard: () => void }) {
   return <div className="save-row"><span className={state.error ? "save-error" : "save-message"}>{state.message}</span><div className="save-actions"><button type="button" disabled={!dirty || state.saving} onClick={onDiscard}>放弃草稿</button><button type="button" className="save-button" disabled={!dirty || state.saving} onClick={onSave}>{state.saving ? "保存中…" : "保存本节"}</button></div></div>;
@@ -38,19 +57,54 @@ const setSelectedWallpaperId = (wallpaper: SiteContentSections["wallpaper"], var
   else wallpaper.mobileAssetId = id;
 };
 const assetDownloadUrl = (asset: AssetRecord) => `${asset.url}?download=1`;
+const remoteDownloadUrl = (item: RemoteWallpaperPreview) => `/api/wallpaper-download?url=${encodeURIComponent(item.imageUrl)}`;
 
-function AssetPreview({ asset, onClose }: { asset: AssetRecord; onClose: () => void }) {
+function WallpaperCard({
+  title,
+  subtitle,
+  imageUrl,
+  downloadUrl,
+  downloadName,
+  selected,
+  onPreview,
+  onApply,
+  onDelete,
+  deleteDisabledReason = "",
+}: {
+  title: string;
+  subtitle: string;
+  imageUrl?: string;
+  downloadUrl?: string;
+  downloadName?: string;
+  selected: boolean;
+  onPreview?: () => void;
+  onApply: () => void;
+  onDelete?: () => void;
+  deleteDisabledReason?: string;
+}) {
+  return <article className={`wallpaper-card${selected ? " is-selected" : ""}${onDelete ? " has-delete" : ""}`}>
+    {imageUrl && onPreview
+      ? <button type="button" className="wallpaper-card-preview" title={`预览 ${title}`} aria-label={`预览 ${title}`} onClick={onPreview}><img src={imageUrl} referrerPolicy="no-referrer" alt="" loading="lazy" /></button>
+      : <div className="wallpaper-card-empty"><span>纯色背景</span></div>}
+    <span className="wallpaper-card-caption"><strong>{subtitle}</strong><small>{title}</small></span>
+    {downloadUrl && <a className="wallpaper-card-icon wallpaper-card-download" href={downloadUrl} download={downloadName || true} title="下载壁纸" aria-label={`下载 ${title}`}><Download theme="outline" size="18" /></a>}
+    {onDelete && <button type="button" className="wallpaper-card-icon wallpaper-card-delete" disabled={Boolean(deleteDisabledReason)} title={deleteDisabledReason || "删除壁纸"} aria-label={`删除 ${title}`} onClick={onDelete}><CloseSmall theme="outline" size="20" /></button>}
+    <button type="button" className="wallpaper-card-apply" aria-pressed={selected} title={selected ? "当前已应用" : `应用 ${title}`} aria-label={selected ? `${title} 已应用` : `应用 ${title}`} onClick={onApply}><CheckSmall theme="outline" size="24" strokeWidth={4} /></button>
+  </article>;
+}
+
+function WallpaperPreview({ image, onClose }: { image: PreviewImage; onClose: () => void }) {
   return <div className="asset-preview-backdrop" role="dialog" aria-modal="true" aria-labelledby="asset-preview-title" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="asset-preview-dialog">
-      <header><div><strong id="asset-preview-title">{asset.originalName}</strong><small>{formatSize(asset.sizeBytes)} · {asset.variant === "desktop" ? "桌面端" : "移动端"}</small></div><div className="asset-preview-actions"><a href={assetDownloadUrl(asset)} download={asset.originalName} title="下载壁纸" aria-label={`下载 ${asset.originalName}`}><Download theme="outline" size="19" /></a><button type="button" title="关闭预览" aria-label="关闭壁纸预览" onClick={onClose}><CloseSmall theme="outline" size="21" /></button></div></header>
-      <img src={asset.url} alt={asset.originalName} />
+      <header><div><strong id="asset-preview-title">{image.title}</strong><small>{image.subtitle}</small></div><div className="asset-preview-actions"><a href={image.downloadUrl} download={image.fileName || true} title="下载壁纸" aria-label={`下载 ${image.title}`}><Download theme="outline" size="19" /></a><button type="button" title="关闭预览" aria-label="关闭壁纸预览" onClick={onClose}><CloseSmall theme="outline" size="21" /></button></div></header>
+      <img src={image.url} referrerPolicy="no-referrer" alt={image.title} />
     </div>
   </div>;
 }
 
 const viewCopy: Record<ContentSettingsView, { heading: string; description: string }> = {
   general: { heading: "默认行为", description: "控制公开页面的展示、播放和天气默认值" },
-  wallpaper: { heading: "R2 壁纸资源", description: "上传并选择桌面端和移动端使用的背景" },
+  wallpaper: { heading: "壁纸管理", description: "选择在线来源或管理自定义 R2 壁纸" },
   profile: { heading: "公开站点资料", description: "维护页面标题、作者、图标和备案信息" },
   music: { heading: "默认音乐来源", description: "设置公开页面加载的音乐平台、类型和 ID" },
   hitokoto: { heading: "一言内容", description: "设置远程分类、固定内容和失败回退文案" },
@@ -74,10 +128,15 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [assetMessage, setAssetMessage] = useState("");
   const [assetBusy, setAssetBusy] = useState(false);
-  const [previewAsset, setPreviewAsset] = useState<AssetRecord | null>(null);
+  const [previewImage, setPreviewImage] = useState<PreviewImage | null>(null);
+  const [remotePreview, setRemotePreview] = useState<RemotePreviewState>(initialRemotePreview);
+  const [wallpaperTab, setWallpaperTab] = useState<WallpaperSource | null>(null);
   const [musicPreview, setMusicPreview] = useState<MusicPreviewState>(initialMusicPreview);
   const musicPreviewRequest = useRef(0);
+  const wallpaperPreviewRequest = useRef(0);
   const offline = authStatus === "offline-owner";
+  const draftWallpaperSource = drafts?.wallpaper.source;
+  const activeWallpaperTab = wallpaperTab ?? draftWallpaperSource;
 
   const update = (mutator: (draft: SiteContentSections) => void) => setDrafts((current) => {
     if (!current) return current;
@@ -150,11 +209,11 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   }, [assetsLoaded, loadAssets, view]);
 
   useEffect(() => {
-    if (!previewAsset) return;
-    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPreviewAsset(null); };
+    if (!previewImage) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setPreviewImage(null); };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, [previewAsset]);
+  }, [previewImage]);
 
   useEffect(() => {
     if (!snapshot || !drafts) return;
@@ -209,8 +268,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
       const payload = await response.json() as { asset?: AssetRecord; error?: { message?: string } };
       if (!response.ok || !payload.asset) throw new Error(payload.error?.message || "上传失败");
       setAssets((current) => [payload.asset!, ...current]);
-      update((draft) => { setSelectedWallpaperId(draft.wallpaper, variant, payload.asset!.id); });
-      setAssetMessage("壁纸已上传并选中，保存本节后对外生效");
+      setAssetMessage("壁纸已上传，点击卡片上的勾选按钮即可应用");
     } catch (reason) {
       setAssetMessage(reason instanceof Error ? reason.message : "壁纸上传失败");
     } finally { setAssetBusy(false); }
@@ -222,7 +280,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     try {
       await requestJson(`/api/admin/assets/${asset.id}`, { method: "DELETE" });
       setAssets((current) => current.filter((item) => item.id !== asset.id));
-      setPreviewAsset((current) => current?.id === asset.id ? null : current);
+      setPreviewImage((current) => current?.url === asset.url ? null : current);
       setAssetMessage("壁纸资源已删除");
     } catch (reason) {
       setAssetMessage(reason instanceof ApiClientError ? reason.message : "壁纸删除失败");
@@ -233,6 +291,39 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     resetMusicPreview();
     update((draft) => { draft.music = { ...draft.music, [key]: value }; });
   };
+
+  const loadRemoteWallpaperPreview = useCallback(async (source: Exclude<WallpaperSource, "custom">) => {
+    const requestId = ++wallpaperPreviewRequest.current;
+    if (offline) {
+      setRemotePreview({ loading: false, message: "离线时无法刷新在线壁纸预览", items: [] });
+      return;
+    }
+    setRemotePreview({ loading: true, message: "", items: [] });
+    try {
+      const items = await Promise.all((["desktop", "mobile"] as const).map((variant) => {
+        const params = new URLSearchParams({ source, variant });
+        return requestJson<RemoteWallpaperPreview>(`/api/wallpaper?${params}`, { cache: "no-store" });
+      }));
+      if (wallpaperPreviewRequest.current !== requestId) return;
+      setRemotePreview({ loading: false, message: "", items });
+    } catch (reason) {
+      if (wallpaperPreviewRequest.current !== requestId) return;
+      setRemotePreview({
+        loading: false,
+        message: reason instanceof ApiClientError ? reason.message : "在线壁纸预览暂时无法读取",
+        items: [],
+      });
+    }
+  }, [offline]);
+
+  useEffect(() => {
+    if (view !== "wallpaper" || !activeWallpaperTab || activeWallpaperTab === "custom") {
+      wallpaperPreviewRequest.current += 1;
+      setRemotePreview(initialRemotePreview());
+      return;
+    }
+    void loadRemoteWallpaperPreview(activeWallpaperTab);
+  }, [activeWallpaperTab, loadRemoteWallpaperPreview, view]);
 
   const previewMusic = async () => {
     if (!drafts || musicPreview.status === "loading") return;
@@ -278,6 +369,9 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   if (!drafts) return <div className="content-settings"><div className="empty-state">正在读取{copy.heading}…</div></div>;
   const profile = drafts.profile;
   const preferences = drafts.preferences;
+  const rotationValue = rotationPresets.includes(preferences.wallpaperRotationMinutes as typeof rotationPresets[number])
+    ? String(preferences.wallpaperRotationMinutes)
+    : "custom";
   const assetOptions = (variant: AssetRecord["variant"]) => {
     const current = assets.filter((asset) => asset.variant === variant);
     const selectedId = selectedWallpaperId(drafts.wallpaper, variant);
@@ -292,6 +386,45 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
       url: `/api/assets/${selectedId}`,
     }, ...current];
   };
+  const openAssetPreview = (asset: AssetRecord) => setPreviewImage({
+    title: asset.originalName,
+    subtitle: `${asset.sizeBytes ? formatSize(asset.sizeBytes) : "离线缓存资源"} · ${asset.variant === "desktop" ? "桌面端" : "移动端"}`,
+    url: asset.url,
+    downloadUrl: assetDownloadUrl(asset),
+    fileName: asset.originalName,
+  });
+  const openRemotePreview = (item: RemoteWallpaperPreview) => setPreviewImage({
+    title: item.title,
+    subtitle: `${item.variant === "desktop" ? "桌面端" : "移动端"}${item.description ? ` · ${item.description}` : ""}`,
+    url: item.imageUrl,
+    downloadUrl: remoteDownloadUrl(item),
+  });
+
+  const applyCustomWallpaper = (variant: AssetRecord["variant"], assetId: string | null) => update((draft) => {
+    draft.wallpaper.source = "custom";
+    setSelectedWallpaperId(draft.wallpaper, variant, assetId);
+  });
+  const assetIsReferenced = (asset: AssetRecord) => [drafts.wallpaper, snapshot?.sections.wallpaper]
+    .some((wallpaper) => wallpaper?.desktopAssetId === asset.id || wallpaper?.mobileAssetId === asset.id);
+  const assetDeleteDisabledReason = (asset: AssetRecord) => {
+    if (offline) return "离线时无法删除壁纸";
+    if (assetBusy) return "正在处理其他壁纸操作";
+    if (assetIsReferenced(asset)) return "当前壁纸正在使用，保存其他选择后才能删除";
+    return "";
+  };
+
+  const renderCustomWallpapers = () => <>
+    <div className="wallpaper-upload-row">{(["desktop", "mobile"] as const).map((variant) => <label key={variant} className="upload-button"><Upload theme="outline" size="18" /><span>{variant === "desktop" ? "上传桌面壁纸" : "上传移动端壁纸"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={offline || assetBusy} onChange={(event) => { void uploadAsset(variant, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>)}</div>
+    {assetMessage && <p className="asset-message">{assetMessage}</p>}
+    {(["desktop", "mobile"] as const).map((variant) => <div key={variant} className="asset-group"><strong>{variant === "desktop" ? "桌面端" : "移动端"}</strong><div className="wallpaper-card-grid"><WallpaperCard title="纯色背景" subtitle={variant === "desktop" ? "桌面端" : "移动端"} selected={drafts.wallpaper.source === "custom" && !selectedWallpaperId(drafts.wallpaper, variant)} onApply={() => applyCustomWallpaper(variant, null)} />{assetOptions(variant).map((asset) => <WallpaperCard key={asset.id} title={asset.originalName} subtitle={variant === "desktop" ? "桌面端" : "移动端"} imageUrl={asset.url} downloadUrl={assetDownloadUrl(asset)} downloadName={asset.originalName} selected={drafts.wallpaper.source === "custom" && selectedWallpaperId(drafts.wallpaper, variant) === asset.id} onPreview={() => openAssetPreview(asset)} onApply={() => applyCustomWallpaper(variant, asset.id)} onDelete={asset.createdAt ? () => void deleteAsset(asset) : undefined} deleteDisabledReason={assetDeleteDisabledReason(asset)} />)}</div></div>)}
+  </>;
+
+  const renderRemoteWallpapers = (source: Exclude<WallpaperSource, "custom">) => <section className="remote-wallpapers">
+    <div className="remote-wallpaper-toolbar"><strong>{source === "bing" ? "Bing 每日壁纸" : "Wallhaven 随机壁纸"}</strong><button type="button" title="刷新预览" aria-label="刷新在线壁纸预览" disabled={offline || remotePreview.loading} onClick={() => void loadRemoteWallpaperPreview(source)}><Refresh theme="outline" size="18" /></button></div>
+    {remotePreview.loading && <p className="asset-message">正在读取在线壁纸…</p>}
+    {remotePreview.message && <p className="asset-message is-error">{remotePreview.message}</p>}
+    {remotePreview.items.length > 0 && <div className="wallpaper-card-grid">{remotePreview.items.map((item) => <WallpaperCard key={item.variant} title={item.title} subtitle={item.variant === "desktop" ? "桌面端" : "移动端"} imageUrl={item.imageUrl} downloadUrl={remoteDownloadUrl(item)} selected={drafts.wallpaper.source === source} onPreview={() => openRemotePreview(item)} onApply={() => update((draft) => { draft.wallpaper.source = source; })} />)}</div>}
+  </section>;
   const profileFields: Array<[keyof typeof profile, string, "text" | "url" | "textarea", boolean?]> = [["siteName", "站点名称", "text"], ["author", "作者", "text"], ["mainName", "主页名称", "text"], ["siteUrl", "站点地址", "url"], ["keywords", "关键词", "text", true], ["description", "简介", "textarea", true], ["siteLogo", "站点图标", "text"], ["mainLogo", "主页图标", "text"], ["appleLogo", "Apple 图标", "text"], ["startDate", "建站日期", "text"], ["icp", "ICP备案号", "text"], ["mps", "公安备案号", "text"], ["repositoryUrl", "代码仓库", "url", true]];
 
   const renderPage = () => {
@@ -303,12 +436,18 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
       <label>播放器快捷键<select value={String(preferences.playerKeyboardShortcuts)} onChange={(event) => update((draft) => { draft.preferences.playerKeyboardShortcuts = event.target.value === "true"; })}><option value="true">开启</option><option value="false">关闭</option></select></label>
       <label>默认播放顺序<select value={preferences.playerDefaultOrder} onChange={(event) => update((draft) => { draft.preferences.playerDefaultOrder = event.target.value as typeof preferences.playerDefaultOrder; })}><option value="shuffle">随机</option><option value="list">顺序</option><option value="single">单曲循环</option></select></label>
       <label>默认音量<input type="number" min="0" max="1" step="0.05" value={preferences.playerDefaultVolume} onChange={(event) => update((draft) => { draft.preferences.playerDefaultVolume = Number(event.target.value); })} /></label>
+      <label>壁纸自动切换<select value={rotationValue} onChange={(event) => update((draft) => { draft.preferences.wallpaperRotationMinutes = event.target.value === "custom" ? 10 : Number(event.target.value); })}><option value="0">不切换</option><option value="5">每 5 分钟</option><option value="15">每 15 分钟</option><option value="30">每 30 分钟</option><option value="60">每小时</option><option value="180">每 3 小时</option><option value="360">每 6 小时</option><option value="720">每 12 小时</option><option value="1440">每天</option><option value="custom">自定义</option></select></label>
+      {rotationValue === "custom" && <label>自定义切换时间（分钟）<input type="number" min="1" max="10080" step="1" value={preferences.wallpaperRotationMinutes} onChange={(event) => update((draft) => { draft.preferences.wallpaperRotationMinutes = Number(event.target.value); })} /></label>}
       <label>天气城市<input value={preferences.weatherLocation?.city || ""} placeholder="留空使用访问者 IP 粗定位" onChange={(event) => update((draft) => { const city = event.target.value; draft.preferences.weatherLocation = city ? { city, latitude: draft.preferences.weatherLocation?.latitude || 0, longitude: draft.preferences.weatherLocation?.longitude || 0 } : null; })} /></label>
       <label>纬度<input type="number" min="-90" max="90" step="0.01" disabled={!preferences.weatherLocation} value={preferences.weatherLocation?.latitude ?? ""} onChange={(event) => update((draft) => { if (draft.preferences.weatherLocation) draft.preferences.weatherLocation.latitude = Number(event.target.value); })} /></label>
       <label>经度<input type="number" min="-180" max="180" step="0.01" disabled={!preferences.weatherLocation} value={preferences.weatherLocation?.longitude ?? ""} onChange={(event) => update((draft) => { if (draft.preferences.weatherLocation) draft.preferences.weatherLocation.longitude = Number(event.target.value); })} /></label>
     </div><SaveRow state={saveStates.preferences} dirty={dirty("preferences")} onSave={() => void save("preferences")} onDiscard={() => void discard("preferences")} /></div>;
 
-    if (view === "wallpaper") return <div className="admin-section"><div className="wallpaper-upload-row">{(["desktop", "mobile"] as const).map((variant) => <label key={variant} className="upload-button"><Upload theme="outline" size="18" /><span>{variant === "desktop" ? "上传桌面壁纸" : "上传移动端壁纸"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={offline || assetBusy} onChange={(event) => { void uploadAsset(variant, event.target.files?.[0]); event.currentTarget.value = ""; }} /></label>)}</div>{assetMessage && <p className="asset-message">{assetMessage}</p>}{(["desktop", "mobile"] as const).map((variant) => <div key={variant} className="asset-group"><strong>{variant === "desktop" ? "桌面端" : "移动端"}</strong><div className="asset-list"><div className={`asset-option asset-option-empty${!selectedWallpaperId(drafts.wallpaper, variant) ? " selected" : ""}`}><label className="asset-choice asset-choice-empty"><input type="radio" name={`${variant}-wallpaper`} checked={!selectedWallpaperId(drafts.wallpaper, variant)} onChange={() => update((draft) => { setSelectedWallpaperId(draft.wallpaper, variant, null); })} /><span className="asset-empty">纯色</span><span className="asset-meta"><strong>纯色背景</strong><small>不加载壁纸资源</small></span></label></div>{assetOptions(variant).map((asset) => <div key={asset.id} className={`asset-option${selectedWallpaperId(drafts.wallpaper, variant) === asset.id ? " selected" : ""}`}><button type="button" className="asset-preview-trigger" title="预览壁纸" aria-label={`预览 ${asset.originalName}`} onClick={() => setPreviewAsset(asset)}><img src={asset.url} alt="" /></button><label className="asset-choice"><input type="radio" name={`${variant}-wallpaper`} checked={selectedWallpaperId(drafts.wallpaper, variant) === asset.id} onChange={() => update((draft) => { setSelectedWallpaperId(draft.wallpaper, variant, asset.id); })} /><span className="asset-meta"><strong>{asset.originalName}</strong><small>{asset.sizeBytes ? formatSize(asset.sizeBytes) : "离线缓存资源"}</small></span></label><div className="asset-actions"><a href={assetDownloadUrl(asset)} download={asset.originalName} title="下载壁纸" aria-label={`下载 ${asset.originalName}`}><Download theme="outline" size="17" /></a><button type="button" title="删除壁纸" aria-label={`删除 ${asset.originalName}`} disabled={assetBusy || !asset.createdAt || drafts.wallpaper.desktopAssetId === asset.id || drafts.wallpaper.mobileAssetId === asset.id} onClick={() => void deleteAsset(asset)}><Delete theme="outline" size="17" /></button></div></div>)}</div></div>)}<SaveRow state={saveStates.wallpaper} dirty={dirty("wallpaper")} onSave={() => void save("wallpaper")} onDiscard={() => void discard("wallpaper")} /></div>;
+    if (view === "wallpaper") return <div className="admin-section">
+      <div className="wallpaper-source-tabs" role="tablist" aria-label="壁纸来源">{(["bing", "wallhaven", "custom"] as const).map((source) => <button key={source} type="button" role="tab" aria-selected={activeWallpaperTab === source} className={activeWallpaperTab === source ? "is-active" : ""} onClick={() => setWallpaperTab(source)}>{source === "bing" ? "Bing" : source === "wallhaven" ? "Wallhaven" : "自定义"}</button>)}</div>
+      <div className="wallpaper-source-panel" role="tabpanel">{activeWallpaperTab === "custom" ? renderCustomWallpapers() : renderRemoteWallpapers(activeWallpaperTab || "bing")}</div>
+      <SaveRow state={saveStates.wallpaper} dirty={dirty("wallpaper")} onSave={() => void save("wallpaper")} onDiscard={() => void discard("wallpaper")} />
+    </div>;
 
     if (view === "profile") return <div className="admin-section"><div className="form-grid">{profileFields.map(([field, label, type, wide]) => <label key={field} className={wide ? "wide" : ""}>{label}{type === "textarea" ? <textarea value={profile[field]} rows={2} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} /> : <input value={profile[field]} type={type} placeholder={field === "startDate" ? "YYYY-MM-DD" : undefined} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} />}</label>)}</div><SaveRow state={saveStates.profile} dirty={dirty("profile")} onSave={() => void save("profile")} onDiscard={() => void discard("profile")} /></div>;
 
@@ -317,5 +456,5 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     return <div className="admin-section"><div className="form-grid"><label>模式<select value={drafts.hitokoto.mode} onChange={(event) => update((draft) => { draft.hitokoto.mode = event.target.value as SiteContentSections["hitokoto"]["mode"]; })}><option value="remote">远程一言</option><option value="fixed">固定内容</option></select></label><label className="wide">远程分类（逗号分隔）<input value={drafts.hitokoto.categories.join(", ")} onChange={(event) => update((draft) => { draft.hitokoto.categories = event.target.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean); })} /></label><label className="wide">固定内容<textarea rows={2} value={drafts.hitokoto.fixedText} onChange={(event) => update((draft) => { draft.hitokoto.fixedText = event.target.value; })} /></label><label>固定内容来源<input value={drafts.hitokoto.fixedFrom} onChange={(event) => update((draft) => { draft.hitokoto.fixedFrom = event.target.value; })} /></label><label className="wide">失败时内容<textarea rows={2} value={drafts.hitokoto.fallbackText} onChange={(event) => update((draft) => { draft.hitokoto.fallbackText = event.target.value; })} /></label><label>失败时来源<input value={drafts.hitokoto.fallbackFrom} onChange={(event) => update((draft) => { draft.hitokoto.fallbackFrom = event.target.value; })} /></label></div><SaveRow state={saveStates.hitokoto} dirty={dirty("hitokoto")} onSave={() => void save("hitokoto")} onDiscard={() => void discard("hitokoto")} /></div>;
   };
 
-  return <div className="content-settings"><div className="section-heading"><div><strong>{copy.heading}</strong><small>{offline ? "当前离线，保存操作会留在本机等待提交" : copy.description}</small></div><button type="button" className="text-button" disabled={loading} onClick={reload}>{loading ? "加载中…" : "重新加载"}</button></div><div className="settings-page-body">{renderPage()}</div>{previewAsset && <AssetPreview asset={previewAsset} onClose={() => setPreviewAsset(null)} />}</div>;
+  return <div className="content-settings"><div className="section-heading"><div><strong>{copy.heading}</strong><small>{offline ? "当前离线，保存操作会留在本机等待提交" : copy.description}</small></div><button type="button" className="text-button" disabled={loading} onClick={reload}>{loading ? "加载中…" : "重新加载"}</button></div><div className="settings-page-body">{renderPage()}</div>{previewImage && <WallpaperPreview image={previewImage} onClose={() => setPreviewImage(null)} />}</div>;
 }

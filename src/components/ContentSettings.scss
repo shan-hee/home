@@ -59,6 +59,258 @@
   gap: 8px;
 }
 
+.wallpaper-source-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border-radius: 7px;
+  background: rgba(from currentColor r g b / 0.07);
+
+  button {
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 8px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 5px;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.74rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(from currentColor r g b / 0.08);
+    }
+
+    &.is-active {
+      background: rgba(from currentColor r g b / 0.16);
+      box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
+    }
+  }
+}
+
+.wallpaper-source-panel {
+  min-height: 190px;
+  padding-top: 14px;
+}
+
+.remote-wallpapers {
+  min-width: 0;
+}
+
+.remote-wallpaper-toolbar {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  > strong {
+    font-size: 0.78rem;
+  }
+
+  button {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    color: inherit;
+    background: rgba(from currentColor r g b / 0.07);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible { background: rgba(from currentColor r g b / 0.13); }
+    &:disabled { cursor: default; opacity: 0.32; }
+  }
+}
+
+.wallpaper-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 8px;
+}
+
+.wallpaper-card {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(from currentColor r g b / 0.13);
+  border-radius: 7px;
+  color: inherit;
+  background: rgba(from currentColor r g b / 0.035);
+  isolation: isolate;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: rgba(from currentColor r g b / 0.4);
+  }
+
+  &.is-selected {
+    border-color: #168cff;
+    box-shadow: 0 0 0 1px #168cff;
+  }
+
+  &:hover .wallpaper-card-apply,
+  &:focus-within .wallpaper-card-apply,
+  &.is-selected .wallpaper-card-apply {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  &:hover .wallpaper-card-delete,
+  &:focus-within .wallpaper-card-delete {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &:hover .wallpaper-card-delete:disabled,
+  &:focus-within .wallpaper-card-delete:disabled {
+    opacity: 0.38;
+  }
+}
+
+.wallpaper-card-preview,
+.wallpaper-card-empty {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: rgba(from currentColor r g b / 0.08);
+}
+
+.wallpaper-card-preview {
+  cursor: zoom-in;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background: rgba(from currentColor r g b / 0.08);
+    transition: transform 180ms ease;
+  }
+
+  &:hover img,
+  &:focus-visible img {
+    transform: scale(1.025);
+  }
+}
+
+.wallpaper-card-empty {
+  display: grid;
+  place-items: center;
+  font-size: 0.76rem;
+  opacity: 0.72;
+}
+
+.wallpaper-card-caption {
+  position: absolute;
+  top: 7px;
+  right: 46px;
+  left: 7px;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  color: #fff;
+  background: rgb(0 0 0 / 58%);
+  pointer-events: none;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong { font-size: 0.68rem; }
+  small { font-size: 0.62rem; opacity: 0.72; }
+}
+
+.wallpaper-card.has-delete .wallpaper-card-caption {
+  right: 82px;
+}
+
+.wallpaper-card-icon,
+.wallpaper-card-apply {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wallpaper-card-icon {
+  top: 7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 62%);
+
+  &:hover,
+  &:focus-visible {
+    background: rgb(0 0 0 / 82%);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.wallpaper-card-download {
+  right: 7px;
+}
+
+.wallpaper-card.has-delete .wallpaper-card-download {
+  right: 44px;
+}
+
+.wallpaper-card-delete {
+  right: 7px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.wallpaper-card-apply {
+  bottom: 12px;
+  left: 50%;
+  width: 38px;
+  height: 38px;
+  border: 2px solid rgb(255 255 255 / 88%);
+  border-radius: 50%;
+  background: rgb(20 25 30 / 78%);
+  box-shadow: 0 3px 14px rgb(0 0 0 / 32%);
+  opacity: 0;
+  transform: translate(-50%, 5px);
+  transition: opacity 150ms ease, transform 150ms ease, background 150ms ease;
+
+  &:hover,
+  &:focus-visible,
+  &[aria-pressed="true"] {
+    background: #168cff;
+  }
+}
+
 .upload-button {
   min-height: 36px;
   display: inline-flex;
@@ -84,6 +336,11 @@
   margin: 9px 2px 0;
   font-size: 0.74rem;
   opacity: 0.72;
+
+  &.is-error {
+    color: rgb(255 165 165);
+    opacity: 1;
+  }
 }
 
 .asset-group {
@@ -93,120 +350,6 @@
 
   > strong {
     font-size: 0.78rem;
-  }
-}
-
-.asset-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-
-  .asset-option {
-    min-width: 0;
-    min-height: 58px;
-    display: grid;
-    grid-template-columns: 68px minmax(0, 1fr) 64px;
-    align-items: center;
-    gap: 8px;
-    padding: 5px;
-    border: 1px solid rgba(from currentColor r g b / 0.12);
-    border-radius: 7px;
-    background: rgba(from currentColor r g b / 0.035);
-
-    &.selected {
-      border-color: rgba(from currentColor r g b / 0.48);
-      background: rgba(from currentColor r g b / 0.09);
-    }
-
-    &.asset-option-empty {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .asset-choice {
-      min-width: 0;
-      display: block;
-      cursor: pointer;
-    }
-
-    .asset-choice-empty {
-      display: grid;
-      grid-template-columns: 68px minmax(0, 1fr);
-      align-items: center;
-      gap: 8px;
-    }
-
-    input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .asset-preview-trigger,
-    .asset-empty {
-      width: 68px;
-      height: 46px;
-      border-radius: 5px;
-      background: rgba(from currentColor r g b / 0.1);
-    }
-
-    .asset-preview-trigger {
-      display: block;
-      padding: 0;
-      overflow: hidden;
-      border: 0;
-      color: inherit;
-      cursor: zoom-in;
-
-      img {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: cover;
-      }
-    }
-
-    .asset-empty {
-      display: grid;
-      place-items: center;
-      font-size: 0.66rem;
-    }
-
-    .asset-meta {
-      min-width: 0;
-      display: grid;
-      gap: 3px;
-
-      strong,
-      small {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      strong { font-size: 0.72rem; }
-      small { font-size: 0.66rem; opacity: 0.58; }
-    }
-
-    .asset-actions {
-      display: grid;
-      grid-template-columns: repeat(2, 32px);
-
-      a,
-      button {
-        width: 32px;
-        height: 32px;
-        display: grid;
-        place-items: center;
-        padding: 0;
-        border: 0;
-        color: inherit;
-        background: transparent;
-        cursor: pointer;
-        text-decoration: none;
-
-        &:disabled { cursor: not-allowed; opacity: 0.22; }
-      }
-    }
   }
 }
 
@@ -490,7 +633,7 @@
     }
   }
 
-  .asset-list {
+  .wallpaper-card-grid {
     grid-template-columns: 1fr;
   }
 
@@ -504,5 +647,21 @@
     > img {
       max-height: calc(100vh - 80px);
     }
+  }
+}
+
+@media (hover: none) {
+  .wallpaper-card .wallpaper-card-apply {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .wallpaper-card .wallpaper-card-delete {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .wallpaper-card .wallpaper-card-delete:disabled {
+    opacity: 0.38;
   }
 }
