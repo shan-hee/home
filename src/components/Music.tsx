@@ -8,6 +8,7 @@ import PlayerSeekBar from "@/components/PlayerSeekBar";
 import VolumeSlider from "@/components/VolumeSlider";
 import { ApiClientError } from "@/services/apiClient";
 import { useMainStore } from "@/store";
+import { loadPlayerPreferences, savePlayerPreferences } from "@/stores/playerPreferences";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MainState } from "@/typings/store";
 import type { MusicContentConfig } from "@/typings/siteContent";
@@ -48,6 +49,10 @@ export default function Music() {
   const audio = useRef<HTMLAudioElement>(null);
   const lyricsPanel = useRef<HTMLDivElement>(null);
   const shouldPlay = useRef(false);
+  const hasLocalPlayerPreferences = useRef<boolean | null>(null);
+  if (hasLocalPlayerPreferences.current === null) {
+    hasLocalPlayerPreferences.current = loadPlayerPreferences() !== null;
+  }
   const previousVolume = useRef(useMainStore.getState().musicVolume || .3);
   const volumeFrame = useRef<number | null>(null);
   const pendingVolume = useRef(0.3);
@@ -93,6 +98,7 @@ export default function Music() {
   const backgroundStyle = useMemo<CSSProperties>(() => current?.cover ? { backgroundImage: `url(${JSON.stringify(current.cover)})` } : {}, [current?.cover]);
 
   useEffect(() => {
+    if (hasLocalPlayerPreferences.current) return;
     patch({ musicVolume: preferences.playerDefaultVolume, playerOrder: preferences.playerDefaultOrder });
     setVolume(preferences.playerDefaultVolume);
   }, [patch, preferences.playerDefaultOrder, preferences.playerDefaultVolume]);
@@ -214,7 +220,20 @@ export default function Music() {
     if (volumeFrame.current !== null) return;
     volumeFrame.current = requestAnimationFrame(() => { if (audio.current) audio.current.volume = pendingVolume.current; volumeFrame.current = null; });
   };
-  const saveVolume = (value: number) => { const next = Math.min(1, Math.max(0, value)); setVolume(next); patch({ musicVolume: next }); };
+  const persistPlayerPreferences = (next: Partial<Pick<MainState, "musicVolume" | "playerOrder">>) => {
+    const state = useMainStore.getState();
+    savePlayerPreferences({
+      musicVolume: next.musicVolume ?? state.musicVolume,
+      playerOrder: next.playerOrder ?? state.playerOrder,
+    });
+    hasLocalPlayerPreferences.current = true;
+  };
+  const saveVolume = (value: number) => {
+    const next = Math.min(1, Math.max(0, value));
+    setVolume(next);
+    patch({ musicVolume: next });
+    persistPlayerPreferences({ musicVolume: next });
+  };
   const toggleMute = () => {
     if (volume > 0) { previousVolume.current = volume; saveVolume(0); }
     else saveVolume(previousVolume.current || .3);
@@ -248,7 +267,11 @@ export default function Music() {
 
   const volumeIcon = volume === 0 ? <VolumeMute theme="filled" size="23" fill="currentColor" /> : volume < .7 ? <VolumeSmall theme="filled" size="23" fill="currentColor" /> : <VolumeNotice theme="filled" size="23" fill="currentColor" />;
   const footerActive = footerShow && playing;
-  const cycleMode = () => patch({ playerOrder: modes[(modes.findIndex((mode) => mode.value === order) + 1) % modes.length]!.value });
+  const cycleMode = () => {
+    const next = modes[(modes.findIndex((mode) => mode.value === order) + 1) % modes.length]!.value;
+    patch({ playerOrder: next });
+    persistPlayerPreferences({ playerOrder: next });
+  };
   const ModeIcon = currentMode.icon;
 
   const queue = queueOpen ? <div className="queue-layer" onClick={() => patch({ musicBoxOpenState: false })}><aside className="queue-panel" role="dialog" aria-modal="true" aria-label="播放列表" onClick={(event) => event.stopPropagation()}><header><h2>队列</h2><button type="button" aria-label="关闭播放列表" onClick={() => patch({ musicBoxOpenState: false })}><Close theme="outline" size="24" fill="currentColor" /></button></header><div className="queue-content">{current && <section className="queue-section"><h3>当前播放</h3><button type="button" className="queue-track is-current" aria-label={playing ? `暂停 ${current.name}` : `播放 ${current.name}`} onClick={toggle}><QueueTrackCover track={current} playing={playing} /><span className="queue-track-info"><strong>{current.name}</strong><small>{current.artist || "未知歌手"}</small></span>{playing && <span className="playing-bars" aria-label="正在播放"><i /><i /><i /></span>}</button></section>}<section className="queue-section"><h3>播放队列</h3>{queued.length ? <div className="queue-tracks">{queued.map((item) => <button key={`${item.index}-${item.track.url}`} type="button" className="queue-track" aria-label={`播放 ${item.track.name}`} onClick={() => selectFromQueue(item.index)}><QueueTrackCover track={item.track} /><span className="queue-track-info"><strong>{item.track.name}</strong><small>{item.track.artist || "未知歌手"}</small></span></button>)}</div> : <p className="empty-queue">暂无其他歌曲</p>}</section></div></aside></div> : null;

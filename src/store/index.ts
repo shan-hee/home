@@ -2,13 +2,16 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { MainState } from "@/typings/store";
 import { validateMainPatch } from "@/store/plugins/validation";
+import { loadPlayerPreferences } from "@/stores/playerPreferences";
+
+const playerPreferences = loadPlayerPreferences();
 
 export const storeState: MainState = {
   imgLoadStatus: false,
   innerWidth: null,
   musicBoxOpenState: false,
   musicIsOk: false,
-  musicVolume: 0.3,
+  musicVolume: playerPreferences?.musicVolume ?? 0.3,
   boxOpenState: false,
   mobileOpenState: false,
   mobileFuncState: false,
@@ -20,7 +23,7 @@ export const storeState: MainState = {
   playerArtist: null,
   playerLyric: "",
   footerPlayerShow: false,
-  playerOrder: "shuffle",
+  playerOrder: playerPreferences?.playerOrder ?? "shuffle",
   playerCurrentTime: 0,
   playerDuration: 0,
   showFirefly: false,
