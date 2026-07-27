@@ -13,6 +13,7 @@ export default function SecuritySettings({ onLoggedOut }: { onLoggedOut: () => v
   const logoutAll = useAuthStore((state) => state.logoutAll);
   const [devices, setDevices] = useState<DeviceRecord[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [deviceTab, setDeviceTab] = useState<"available" | "revoked">("available");
   const [loading, setLoading] = useState(false);
   const [revoking, setRevoking] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
@@ -38,5 +39,24 @@ export default function SecuritySettings({ onLoggedOut }: { onLoggedOut: () => v
     catch (reason) { if (!unauthorized(reason)) setAction({ message: reason instanceof ApiClientError ? reason.message : "注销全部设备失败", error: true }); }
     finally { setLoggingOut(false); }
   };
-  return <div className="security-settings"><section className="security-section"><div className="section-heading"><div><strong>登录设备</strong><small>撤销设备会立即注销该设备上的所有会话</small></div><button type="button" className="text-button" disabled={loading} onClick={() => void load()}>{loading ? "加载中…" : "刷新"}</button></div>{error ? <p className="inline-error">{error}</p> : !devices.length ? <div className="empty-state">{loading ? "正在读取设备…" : "暂无设备记录"}</div> : devices.map((device) => <article key={device.id} className="device-row"><div><strong>{device.name} {device.current && <span>当前设备</span>}</strong><small>最近使用 {formatTime(device.lastSeenAt)} · {device.activeSessions} 个活动会话</small></div><button type="button" className="danger-button" disabled={revoking === device.id || Boolean(device.revokedAt)} onClick={() => void revoke(device)}>{device.revokedAt ? "已撤销" : revoking === device.id ? "撤销中…" : "撤销"}</button></article>)}</section><section className="security-section"><div className="section-heading"><div><strong>会话安全</strong><small>所有者密码只存在于 Cloudflare Secret，不会写入 D1</small></div></div><p className="security-note">如需修改密码，请更新部署环境中的 <code>OWNER_PASSWORD</code>，重新加载服务后注销全部设备，使旧会话立即失效。</p><button type="button" className="logout-all" disabled={loggingOut} onClick={() => void logoutEverywhere()}>{loggingOut ? "正在注销…" : "注销全部设备"}</button>{action.message && <p className={action.error ? "inline-error" : "action-message"}>{action.message}</p>}</section><section className="security-section"><div className="section-heading"><div><strong>最近操作</strong><small>最多显示最近 100 条内容与安全审计记录</small></div></div>{audit.length ? <ol className="audit-list">{audit.map((entry) => <li key={entry.id}><div><strong>{actionNames[entry.action] || entry.action}</strong><span>{entry.target}</span></div><time>{formatTime(entry.createdAt)}</time></li>)}</ol> : <div className="empty-state">暂无审计记录</div>}</section></div>;
+  const availableDevices = devices.filter((device) => !device.revokedAt);
+  const revokedDevices = devices.filter((device) => Boolean(device.revokedAt));
+  const visibleDevices = deviceTab === "available" ? availableDevices : revokedDevices;
+
+  return <div className="security-settings">
+    <section className="security-section">
+      <div className="section-heading"><div><strong>登录设备</strong><small>撤销设备会立即注销该设备上的所有会话</small></div><button type="button" className="text-button" disabled={loading} onClick={() => void load()}>{loading ? "加载中…" : "刷新"}</button></div>
+      <div className="device-tabs" role="tablist" aria-label="登录设备状态">
+        <button type="button" role="tab" aria-selected={deviceTab === "available"} className={deviceTab === "available" ? "is-active" : ""} onClick={() => setDeviceTab("available")}>可用设备 <span>{availableDevices.length}</span></button>
+        <button type="button" role="tab" aria-selected={deviceTab === "revoked"} className={deviceTab === "revoked" ? "is-active" : ""} onClick={() => setDeviceTab("revoked")}>已撤销 <span>{revokedDevices.length}</span></button>
+      </div>
+      {error
+        ? <p className="inline-error">{error}</p>
+        : !visibleDevices.length
+          ? <div className="empty-state">{loading ? "正在读取设备…" : deviceTab === "available" ? "暂无可用设备" : "暂无已撤销设备"}</div>
+          : visibleDevices.map((device) => <article key={device.id} className="device-row"><div><strong>{device.name} {device.current && <span>当前设备</span>}</strong><small>{device.revokedAt ? `撤销于 ${formatTime(device.revokedAt)} · 最近使用 ${formatTime(device.lastSeenAt)}` : `最近使用 ${formatTime(device.lastSeenAt)} · ${device.activeSessions} 个活动会话`}</small></div>{device.revokedAt ? <span className="device-status">已撤销</span> : <button type="button" className="danger-button" disabled={revoking === device.id} onClick={() => void revoke(device)}>{revoking === device.id ? "撤销中…" : "撤销"}</button>}</article>)}
+    </section>
+    <section className="security-section"><div className="section-heading"><div><strong>会话安全</strong><small>所有者密码只存在于 Cloudflare Secret，不会写入 D1</small></div></div><p className="security-note">如需修改密码，请更新部署环境中的 <code>OWNER_PASSWORD</code>，重新加载服务后注销全部设备，使旧会话立即失效。</p><button type="button" className="logout-all" disabled={loggingOut} onClick={() => void logoutEverywhere()}>{loggingOut ? "正在注销…" : "注销全部设备"}</button>{action.message && <p className={action.error ? "inline-error" : "action-message"}>{action.message}</p>}</section>
+    <section className="security-section"><div className="section-heading"><div><strong>最近操作</strong><small>最多显示最近 100 条，完整记录保留 180 天</small></div></div>{audit.length ? <ol className="audit-list">{audit.map((entry) => <li key={entry.id}><div><strong>{actionNames[entry.action] || entry.action}</strong><span>{entry.target}</span></div><time>{formatTime(entry.createdAt)}</time></li>)}</ol> : <div className="empty-state">暂无审计记录</div>}</section>
+  </div>;
 }

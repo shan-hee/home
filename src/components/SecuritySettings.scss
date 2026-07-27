@@ -35,6 +35,45 @@
   }
 }
 
+.device-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border-radius: 7px;
+  background: rgba(from currentColor r g b / 0.07);
+
+  button {
+    min-width: 0;
+    min-height: 32px;
+    padding: 0 8px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 5px;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.71rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(from currentColor r g b / 0.08);
+    }
+
+    &.is-active {
+      background: rgba(from currentColor r g b / 0.16);
+      box-shadow: 0 1px 4px rgb(0 0 0 / 10%);
+    }
+
+    span {
+      margin-left: 3px;
+      opacity: 0.5;
+    }
+  }
+}
+
 .device-row {
   padding: 10px 0;
   border-top: 1px solid rgba(from currentColor r g b / 0.08);
@@ -64,6 +103,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+.device-status {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  opacity: 0.48;
 }
 
 .text-button,
