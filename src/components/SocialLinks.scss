@@ -49,6 +49,7 @@
       display: flex;
       align-items: center;
       color: var(--social-font-color);
+      transition: opacity 0.2s ease-out;
 
       &:focus-visible {
         border-radius: 4px;
@@ -56,19 +57,31 @@
         outline-offset: 4px;
       }
 
-      .icon {
+      .icon,
+      > svg {
         display: block;
         width: 24px;
         height: 24px;
-        transition: transform 0.3s;
+        transform-origin: center;
+        transition: transform 0.2s ease-out;
       }
 
-      &:hover .icon {
-        transform: scale(1.1);
+      &:not(:disabled):hover {
+        opacity: 1;
+
+        .icon,
+        > svg {
+          transform: scale(1.1);
+        }
       }
 
-      &:active .icon {
-        transform: scale(1);
+      &:not(:disabled):active {
+        opacity: 0.5;
+
+        .icon,
+        > svg {
+          transform: scale(0.8);
+        }
       }
     }
 
@@ -82,9 +95,6 @@
       background: transparent;
       cursor: pointer;
       opacity: 0.56;
-      transition: opacity 0.2s, transform 0.2s;
-
-      &:hover { opacity: 1; transform: scale(1.08); }
     }
 
   }
@@ -103,6 +113,17 @@
 
     &:active {
       cursor: grabbing;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social .link {
+    a,
+    .add-social,
+    .icon,
+    .add-social > svg {
+      transition: none;
     }
   }
 }

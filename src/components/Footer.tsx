@@ -7,12 +7,11 @@ export default function Footer({ className = "" }: { className?: string }) {
   const blur = useSiteContentStore((state) => state.snapshot.sections.preferences.footerBlur);
   const footerPlayer = useMainStore((state) => state.footerPlayerShow);
   const musicReady = useMainStore((state) => state.musicIsOk);
-  const status = useMainStore((state) => state.playerStatus);
   const lyric = useMainStore((state) => state.playerLyric);
   const title = useMainStore((state) => state.playerTitle);
   const artist = useMainStore((state) => state.playerArtist);
   const profile = useSiteContentStore((state) => state.snapshot.sections.profile);
-  const showPlayer = footerPlayer && musicReady && status === "playing";
+  const showPlayer = footerPlayer && musicReady;
   return (
     <footer id="footer" className={`${blur ? "blur " : ""}${className}`.trim()}>
       {!showPlayer ? (
