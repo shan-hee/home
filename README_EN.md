@@ -1,176 +1,112 @@
 English | [简体中文](./README.md)
 
+# Homepage
 
-<p>
-<strong><h2>Homepage</h2></strong>
-</p>
+A personal navigation homepage built with React and Cloudflare, including links, weather, Hitokoto, music, wallpapers, and an owner dashboard.
 
-![Homepage](/screenshots/main.png)<p>
-![Homepage](/screenshots/main1.png)<p>
-![Homepage](/screenshots/main2.png)<p>
+![Homepage](/screenshots/main.png)
 
-### 👀Demo
+[Live demo](https://nanorocky.top/)
 
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Due to workbox caching, you may need to press `Ctrl` + `F5` to force refresh the browser cache to view the latest effects!
+## Features
 
-- [NanoRocky's Homepage](https://nanorocky.top/)
+- Responsive homepage with site and social-link management
+- Time, weather, Hitokoto, and time-progress views
+- Music search, playlist playback, lyrics, and media shortcuts
+- Bing, Wallhaven, and custom R2 wallpapers with scheduled rotation
+- Owner dashboard, device management, and audit history
+- PWA offline startup and offline owner-draft synchronization
 
-> If your project does not require Workbox local caching, such as when using a CDN or encountering an issue where subpath visits automatically redirect to the homepage, you can uncomment the following two lines in `vite.config.ts`:
+## Stack
 
-```bash
-selfDestroying: true,
-injectRegister: false,
-```
+- React, TypeScript, Vite, Zustand
+- Cloudflare Pages Functions, D1, R2
+- IndexedDB, Workbox PWA
+- IconPark, Iconify
 
-### 🎉 Functions
+## Local development
 
-- [x] Loading animation
-- [x] Site description
-- [x] Hitokoto
-- [x] Date and time
-- [x] Live weather
-- [x] Time progress bar
-- [x] Music player
-- [x] Mobile adaptation
-- [x] Line-by-line lyrics
-
-### ⚙️ Local development
-
-* **Installation** [node.js](https://nodejs.org/en-us/) **Environment**
-
-  > node > 24.13.0 <p>
-  > npm > 10.15.0
-
-* Then run the `PowerShell` terminal with **administrator privileges** and `cd` to the project root directory
-* In the `terminal` type:
+Node.js 24+ and pnpm 11+ are required.
 
 ```bash
-# Install pnpm
-npm install -g pnpm
-
-# Install the dependencies
 pnpm install --frozen-lockfile
 
-# Initialize the local D1 database once
 cp .dev.vars.example .dev.vars
 cp scripts/site-content.seed.example.json .site-content.seed.json
+```
+
+Edit `.dev.vars` and provide at least:
+
+```ini
+OWNER_PASSWORD = "at least 8 characters"
+IP_HASH_SECRET = "generate with openssl rand -base64 48"
+```
+
+Initialize the local D1 database before the first run:
+
+```bash
 pnpm db:migrate:local
 pnpm db:seed:generate
 pnpm db:seed:local
+```
 
-# Frontend-only development
-pnpm dev:web
+Start the complete development environment:
 
-# Start the Vite frontend and Cloudflare Pages Functions in parallel
+```bash
 pnpm dev:cf
 ```
 
-`dev:web` does not execute `/api/*` and does not open a browser automatically. Use `dev:cf` when validating Pages Functions, then open `http://localhost:3000`; the development server proxies `/api/*` to the local Wrangler process.
+Open `http://localhost:3000`. Vite proxies `/api/*` to the local Wrangler process.
 
-### ⚙️ Cloudflare Pages deployment
+Use `pnpm dev:web` for frontend-only work. API routes are unavailable in that mode.
 
-Cloudflare Pages is the only deployment target maintained for the first release:
+## Configuration
 
-1. Connect this repository in Cloudflare Pages.
-2. Set the install command to `pnpm install --frozen-lockfile`.
-3. Set the build command to `pnpm build`.
-4. Set the output directory to `dist`; the root `functions/` directory is deployed as Pages Functions.
-5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `WALLHAVEN_API_KEY`, `GITHUB_REPOSITORY`, and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
-6. Create the R2 bucket configured by `wrangler.jsonc` and bind it as `WALLPAPER_BUCKET`.
+Non-secret values live in `wrangler.jsonc`. Local secrets are documented in `.dev.vars.example`:
 
-The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
+- `OWNER_PASSWORD`: required owner password
+- `IP_HASH_SECRET`: required login rate-limit hashing secret
+- `WALLHAVEN_API_KEY`: optional Wallhaven identity
+- `QWEATHER_API_KEY`: optional weather alerts for China
+- `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, `DEFAULT_CITY`: local weather fallback
+- `GITHUB_REPOSITORY`, `GITHUB_TOKEN`: optional update-check configuration
 
-### Site content
+Initial site content comes from `.site-content.seed.json`. After initialization, public profile, global behavior, music, wallpapers, and Hitokoto are managed in the owner dashboard.
 
-Profile, global behavior, site links, social links, music, wallpaper references, and Hitokoto configuration use D1 as their authoritative source; wallpaper binaries live in R2. Offline owner drafts and confirmed pending saves are stored in IndexedDB, then submitted with an idempotent mutation ID after connectivity returns. Section revisions still prevent silent overwrites, and conflicts retain the local draft for an explicit decision.
+## Cloudflare deployment
 
-```json
-{
-  "name": "Blog",
-  "link": "https://blog.your.domain/",
-  "iconMode": "icon",
-  "iconValue": "ri:blogger-fill",
-  "iconColor": "#FF4757"
-}
+Cloudflare Pages is the only maintained deployment target:
+
+1. Create a D1 database and an R2 bucket, then update the real bindings in `wrangler.jsonc`.
+2. Bind D1 as `DB` and R2 as `WALLPAPER_BUCKET`.
+3. Configure `APP_ORIGIN`, `APP_ENV`, and `SESSION_TTL_DAYS` in Pages, and add `OWNER_PASSWORD` and `IP_HASH_SECRET` as Secrets.
+4. Prepare `.site-content.seed.json`, then initialize the remote database.
+
+```bash
+pnpm db:migrate:remote
+pnpm db:seed:generate
+pnpm db:seed:remote
 ```
 
-`iconMode` accepts `icon`, `text`, or `image`. Icon mode uses an Iconify code such as `ri:github-fill`; text mode accepts one to four characters in `iconValue`, and image mode uses an HTTPS icon URL. `iconColor` is a six-digit hexadecimal color.
+5. Use `pnpm build` as the Pages build command and `dist` as the output directory.
 
-### Social Links
+Never commit real passwords, tokens, `.dev.vars`, or `.site-content.seed.json`.
 
-After signing in, social links are managed directly in their home-page row. The form provides common Iconify choices and also accepts a valid Iconify code directly.
+## Data and offline behavior
 
-### Weather
+- D1 stores site configuration, devices, sessions, and audit records.
+- R2 stores server-validated and normalized custom wallpapers up to 50MB each.
+- IndexedDB stores owner drafts and queued mutations, which are submitted after connectivity returns.
+- The PWA caches the application shell, recent configuration, and a limited wallpaper set. Uncached music is not guaranteed to play offline.
 
-Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
+## External services
 
-- Cloudflare supplies an approximate location from the visitor IP through `request.cf`; the app no longer requests browser geolocation permission. The owner can configure a fixed city and coordinates in **Site settings → Global behavior**.
-- Open-Meteo is tried first, with MET Norway as a fallback; both are normalized before the UI receives the response.
-- If both providers fail, the page shows a clear offline/unavailable state and does not maintain a weather localStorage cache.
-- `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
-- When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
-
-**Wallpaper management** supports Bing, Wallhaven, and custom sources. Bing desktop and mobile images come from the [Nuoxian Bing API](https://docs.nxvav.cn/doc/bing.html). Wallhaven uses its official public API for random SFW images; an optional `WALLHAVEN_API_KEY` remains server-side. Global behavior settings can disable rotation or select a preset or custom interval in minutes. Bing itself changes daily, so shorter intervals still resolve to that day's image.
-
-Custom wallpaper files live in Cloudflare R2 and support upload, preview, download, selection, and deletion. Each file may be up to 50MB. The server detects JPEG, PNG, WebP, or AVIF from the file header and normalizes the object extension and MIME type. The selected asset is used first; when rotation is enabled, the other R2 wallpapers for the same viewport variant are cycled in order. Public pages read immutable objects through `/api/assets/:id`. The PWA caches custom wallpapers and a small set of the latest successful Bing or Wallhaven images. Offline startup reuses a cached image when available and falls back to a solid background only when none is usable. Update checks continue to use `/api/version`.
-
-### Music
-
->This project uses a native HTML Audio engine with a custom React interface for playlists, lyrics, fullscreen playback, footer progress, and media shortcuts.
->\*Only supported in **Mainland China**
-
-Configure the provider, query type, and resource ID (or keyword for search) under **Music settings**. The backend uses the fixed [Nuoxian Music API](https://docs.nxvav.cn/doc/music.html), validates its response, and converts it into the application's stable playlist format. The upstream service generates media signatures, so no `auth` value or additional Worker Secret is required.
-
-The first release maintains a single playback queue. Its response is cached briefly, while audio, artwork, and lyrics are still requested directly from the upstream service. The PWA can reopen the page and previously loaded site configuration offline, but it does not guarantee offline playback of uncached music.
-
-### Fonts
-
-Now using` MiSans` and `HarmonyOS Sans` font, using font splitting to improve loading speed.
-
-> `https://cdn-font.hyperos.mi.com/font/css?family=MiSans_VF:VF:Chinese_Simplify,Latin&display=swap` <p>
-> `https://s1.hdslb.com/bfs/static/jinkela/long/font/regular.css`
-
-### Website icon and website background
-
-#### Website Background
-
-Wallpapers are no longer stored under `public/images`, continuously numbered, path-templated, or selected by visitors. The owner can choose Bing or Wallhaven as an online source, or upload separate desktop and mobile custom wallpapers to R2. The custom source uses the solid-color fallback when no asset is selected.
-
-#### Website Icon
-
-The website icon can be modified in `public/images/icon`.
-
-#### More default settings
-
-> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;·&nbsp;Global defaults are managed in the owner panel. Anonymous visitors persist only theme and background effects; player controls remain session-only.
-
-### Technology Stack
-
-- [React](https://react.dev/)
-- [Vite](https://vitejs.cn/vite3-cn/)
-- [Zustand](https://zustand.docs.pmnd.rs/)
-- [idb](https://github.com/jakearchibald/idb)
-- [Valibot](https://valibot.dev/)
-- Cloudflare D1 / R2 / Pages Functions
-- [IconPark](https://iconpark.oceanengine.com/official)
-- [TypeScript](https://www.typescriptlang.org/zh/)
-
-### API
-
-- [搏天 API](https://api.btstu.cn/doc/sjbz.php)
-- [教书先生 API](https://api.oioweb.cn/doc/weather/GetWeather)
-- [高德开放平台](https://lbs.amap.com/)
-- [腾讯位置服务](https://lbs.qq.com/)
-- [Hitokoto 一言](https://hitokoto.cn/)
 - [Nuoxian Music API](https://docs.nxvav.cn/doc/music.html)
+- [Nuoxian Bing Wallpaper API](https://docs.nxvav.cn/doc/bing.html)
+- [Wallhaven API](https://wallhaven.cc/help/api)
+- [Open-Meteo](https://open-meteo.com/) and [MET Norway](https://api.met.no/)
+- [Hitokoto](https://hitokoto.cn/)
 
-## Star History
+## Credits
 
-[![Star History Chart](https://api.star-history.com/svg?repos=imsyy/home&type=Date)](https://star-history.com/#imsyy/home&Date)
-
-### Thanks to the original author imsyy and the friends who helped with this project!
-- [imsyy](https://github.com/imsyy/)
-- [这个哔养得](https://github.com/pizeroLOL/)
-
-<a title="SSL" target="_blank" href="https://myssl.com/seal/detail?domain=nanorocky.top"><img src="https://img.shields.io/badge/MySSL-Security Certification-brightgreen"></a>&nbsp;<a title="CDN" target="_blank" href="https://cdnjs.com/"><img src="https://img.shields.io/badge/CDN-Cloudflare-blue"></a>&nbsp;<a title="CDN2" target="_blank" href="https://cdnjs.com/"><img src="https://img.shields.io/badge/CDN-Tencent EdgeOne-blue"></a>&nbsp;<a title="Copyright" target="_blank" href="https://nanorocky.top/"><img src="https://img.shields.io/badge/Copyright%20%C2%A9%202023--2025-NanoRocky-red"></a>
-
+Thanks to the original author [imsyy](https://github.com/imsyy/) and everyone who has contributed maintenance, feedback, or testing.
