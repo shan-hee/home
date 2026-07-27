@@ -1,6 +1,7 @@
 import { requestJson } from "@/services/apiClient";
 
 export interface PlaylistItem {
+  id: string;
   name: string;
   artist: string;
   url: string;
@@ -11,7 +12,8 @@ export interface PlaylistItem {
 const isPlaylistItem = (value: unknown): value is PlaylistItem => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const item = value as Record<keyof PlaylistItem, unknown>;
-  return typeof item.name === "string"
+  return typeof item.id === "string"
+    && typeof item.name === "string"
     && typeof item.artist === "string"
     && typeof item.url === "string"
     && typeof item.cover === "string"
@@ -30,6 +32,18 @@ export const getPlayerList = async (): Promise<PlaylistItem[]> => {
     throw new Error("音乐源响应格式无效");
   }
   return payload;
+};
+
+export const resolveNeteasePlaybackUrl = async (id: string, signal?: AbortSignal): Promise<string> => {
+  const payload = await requestJson<unknown>(`/api/music/resolve?id=${encodeURIComponent(id)}`, { signal });
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new Error("音乐解析响应格式无效");
+  }
+  const url = (payload as { url?: unknown }).url;
+  if (typeof url !== "string" || !url.trim()) {
+    throw new Error("音乐解析响应格式无效");
+  }
+  return url;
 };
 
 export const getHitokoto = async () => {

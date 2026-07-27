@@ -333,7 +333,7 @@ export const siteConfigCacheUrl = (request: Request) => {
 };
 
 export const musicCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/music-v4", request.url).toString();
+  return new URL("/__edge-cache/music-v5", request.url).toString();
 };
 
 export const hitokotoCacheUrl = (request: Request) => {

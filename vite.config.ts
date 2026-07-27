@@ -35,7 +35,7 @@ export default (): UserConfig => {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/music",
                             handler: "NetworkFirst",
                             options: {
-                                cacheName: "music-playlist-v2",
+                                cacheName: "music-playlist-v3",
                                 networkTimeoutSeconds: 5,
                                 expiration: {
                                     maxEntries: 1,
