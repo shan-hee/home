@@ -6,7 +6,7 @@
 
 ![無名の主页](/screenshots/main.png)
 
-[在线预览](https://nanorocky.top/)
+[在线预览](https://ajjj.de/)
 
 ## 主要功能
 
@@ -102,6 +102,7 @@ pnpm db:seed:remote
 ## 外部服务
 
 - [诺西 API 音乐解析](https://docs.nxvav.cn/doc/music.html)
+- [ChKSz API 网易云音乐解析](https://api.chksz.top/docs/163_music.html)
 - [诺西 API 必应每日美图](https://docs.nxvav.cn/doc/bing.html)
 - [Wallhaven API](https://wallhaven.cc/help/api)
 - [Open-Meteo](https://open-meteo.com/) 与 [MET Norway](https://api.met.no/)
@@ -109,4 +110,7 @@ pnpm db:seed:remote
 
 ## 致谢
 
-感谢原作者 [imsyy](https://github.com/imsyy/) 和所有参与维护、反馈与测试的贡献者。
+感谢原作者 imsyy 和所有参与维护、反馈与测试的贡献者。
+
+- [imsyy](https://github.com/imsyy/)
+- [NanoRocky](https://github.com/NanoRocky/home)

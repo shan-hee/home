@@ -6,7 +6,7 @@ A personal navigation homepage built with React and Cloudflare, including links,
 
 ![Homepage](/screenshots/main.png)
 
-[Live demo](https://nanorocky.top/)
+[Live demo](https://ajjj.de/)
 
 ## Features
 
@@ -102,6 +102,7 @@ Never commit real passwords, tokens, `.dev.vars`, or `.site-content.seed.json`.
 ## External services
 
 - [Nuoxian Music API](https://docs.nxvav.cn/doc/music.html)
+- [ChKSz NetEase Music API](https://api.chksz.top/docs/163_music.html)
 - [Nuoxian Bing Wallpaper API](https://docs.nxvav.cn/doc/bing.html)
 - [Wallhaven API](https://wallhaven.cc/help/api)
 - [Open-Meteo](https://open-meteo.com/) and [MET Norway](https://api.met.no/)
@@ -109,4 +110,7 @@ Never commit real passwords, tokens, `.dev.vars`, or `.site-content.seed.json`.
 
 ## Credits
 
-Thanks to the original author [imsyy](https://github.com/imsyy/) and everyone who has contributed maintenance, feedback, or testing.
+Thanks to the original author imsyy and everyone who has contributed maintenance, feedback, or testing.
+
+- [imsyy](https://github.com/imsyy/)
+- [NanoRocky](https://github.com/NanoRocky/home)
