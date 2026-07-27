@@ -9,6 +9,11 @@ export interface PlaylistItem {
   lrc: string;
 }
 
+export interface NeteaseLyrics {
+  lrc: string;
+  yrc: string;
+}
+
 const isPlaylistItem = (value: unknown): value is PlaylistItem => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const item = value as Record<keyof PlaylistItem, unknown>;
@@ -44,6 +49,18 @@ export const resolveNeteasePlaybackUrl = async (id: string, signal?: AbortSignal
     throw new Error("音乐解析响应格式无效");
   }
   return url;
+};
+
+export const resolveNeteaseLyrics = async (id: string, signal?: AbortSignal): Promise<NeteaseLyrics> => {
+  const payload = await requestJson<unknown>(`/api/music/lyric?id=${encodeURIComponent(id)}`, { signal });
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new Error("歌词响应格式无效");
+  }
+  const { lrc, yrc } = payload as { lrc?: unknown; yrc?: unknown };
+  if (typeof lrc !== "string" || typeof yrc !== "string") {
+    throw new Error("歌词响应格式无效");
+  }
+  return { lrc, yrc };
 };
 
 export const getHitokoto = async () => {

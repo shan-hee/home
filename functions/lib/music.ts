@@ -4,6 +4,7 @@ import { fetchWithTimeout } from "./http";
 const NXVAV_ENDPOINT = "https://api.nxvav.cn/api/music/";
 const CHKSZ_NETEASE_ENDPOINT = "https://api.chksz.top/api/163_music";
 const CHKSZ_NETEASE_LEVEL = "lossless";
+const NETEASE_LYRIC_ENDPOINT = "https://music.163.com/api/song/lyric";
 
 interface MusicUpstreamItem {
   title?: unknown;
@@ -36,6 +37,11 @@ interface MusicResource {
 interface ChkszMusicPayload {
   code?: unknown;
   data?: unknown;
+}
+
+interface NeteaseLyricPayload {
+  lrc?: { lyric?: unknown };
+  yrc?: { lyric?: unknown };
 }
 
 const text = (value: unknown, fallback: string, maxLength: number) => {
@@ -137,6 +143,53 @@ export const resolveNeteasePlaybackUrl = async (id: string) => {
     throw new ApiError(502, "MUSIC_RESOLVE_INVALID", "音乐解析服务返回无效数据");
   }
   return url;
+};
+
+export const resolveNeteaseLyrics = async (id: string) => {
+  if (!/^\d{1,20}$/.test(id)) {
+    throw new ApiError(400, "MUSIC_TRACK_ID_INVALID", "歌曲 ID 格式无效");
+  }
+
+  const upstream = new URL(NETEASE_LYRIC_ENDPOINT);
+  upstream.searchParams.set("id", id);
+  upstream.searchParams.set("lv", "-1");
+  upstream.searchParams.set("kv", "-1");
+  upstream.searchParams.set("tv", "-1");
+  upstream.searchParams.set("yv", "-1");
+  upstream.searchParams.set("rv", "-1");
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(upstream, {
+      headers: {
+        accept: "application/json",
+        referer: "https://music.163.com/",
+      },
+    }, 8000);
+  } catch {
+    throw new ApiError(502, "MUSIC_LYRIC_FAILED", "逐字歌词暂时无法获取");
+  }
+  if (!response.ok) {
+    throw new ApiError(502, "MUSIC_LYRIC_FAILED", "逐字歌词暂时无法获取");
+  }
+
+  let payload: NeteaseLyricPayload;
+  try {
+    payload = await response.json() as NeteaseLyricPayload;
+  } catch {
+    throw new ApiError(502, "MUSIC_LYRIC_INVALID", "歌词服务返回无效数据");
+  }
+
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new ApiError(502, "MUSIC_LYRIC_INVALID", "歌词服务返回无效数据");
+  }
+
+  const lrc = typeof payload.lrc?.lyric === "string" ? payload.lrc.lyric : "";
+  const yrc = typeof payload.yrc?.lyric === "string" ? payload.yrc.lyric : "";
+  if (!lrc && !yrc) {
+    throw new ApiError(404, "MUSIC_LYRIC_EMPTY", "这首歌曲暂无歌词");
+  }
+  return { lrc, yrc };
 };
 
 export const fetchMusicPlaylist = async ({ server, type, id }: MusicQuery) => {
