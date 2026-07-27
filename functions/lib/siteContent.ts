@@ -186,8 +186,13 @@ const nullableAssetId = (value: unknown, name: string) => {
 
 const wallpaper = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "壁纸配置格式无效");
-  knownKeys(value, ["desktopAssetId", "mobileAssetId"]);
+  knownKeys(value, ["source", "desktopAssetId", "mobileAssetId"]);
+  const source = text(value.source, "壁纸来源", 20, false);
+  if (!(["bing", "wallhaven", "custom"] as string[]).includes(source)) {
+    throw new ApiError(400, "INVALID_CONTENT", "壁纸来源无效");
+  }
   return {
+    source,
     desktopAssetId: nullableAssetId(value.desktopAssetId, "桌面端壁纸"),
     mobileAssetId: nullableAssetId(value.mobileAssetId, "移动端壁纸"),
   };
@@ -202,7 +207,8 @@ const preferences = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "全局偏好格式无效");
   knownKeys(value, [
     "siteStartShow", "footerBlur", "messageNameShow", "playerAutoplay",
-    "playerKeyboardShortcuts", "playerDefaultVolume", "playerDefaultOrder", "weatherLocation",
+    "playerKeyboardShortcuts", "playerDefaultVolume", "playerDefaultOrder",
+    "wallpaperRotationMinutes", "weatherLocation",
   ]);
   const playerDefaultOrder = text(value.playerDefaultOrder, "默认播放顺序", 10, false);
   if (!(["list", "single", "shuffle"] as string[]).includes(playerDefaultOrder)) {
@@ -211,6 +217,10 @@ const preferences = (value: unknown) => {
   const playerDefaultVolume = Number(value.playerDefaultVolume);
   if (!Number.isFinite(playerDefaultVolume) || playerDefaultVolume < 0 || playerDefaultVolume > 1) {
     throw new ApiError(400, "INVALID_CONTENT", "默认音量范围无效");
+  }
+  const wallpaperRotationMinutes = Number(value.wallpaperRotationMinutes);
+  if (!Number.isInteger(wallpaperRotationMinutes) || wallpaperRotationMinutes < 0 || wallpaperRotationMinutes > 10080) {
+    throw new ApiError(400, "INVALID_CONTENT", "壁纸切换时间应为 0 到 10080 分钟");
   }
   let weatherLocation = null;
   if (value.weatherLocation !== null) {
@@ -235,6 +245,7 @@ const preferences = (value: unknown) => {
     playerKeyboardShortcuts: boolean(value.playerKeyboardShortcuts, "播放器快捷键"),
     playerDefaultVolume: Math.round(playerDefaultVolume * 100) / 100,
     playerDefaultOrder,
+    wallpaperRotationMinutes,
     weatherLocation,
   };
 };
@@ -308,7 +319,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,
@@ -318,7 +329,7 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config-v5", request.url).toString();
+  return new URL("/__edge-cache/site-config-v6", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {

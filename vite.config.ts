@@ -44,6 +44,19 @@ export default (): UserConfig => {
                             },
                         },
                         {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/wallpaper",
+                            handler: "NetworkFirst",
+                            options: {
+                                cacheName: "remote-wallpaper-metadata-v1",
+                                networkTimeoutSeconds: 5,
+                                expiration: {
+                                    maxEntries: 8,
+                                    maxAgeSeconds: 7 * 24 * 60 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("download") !== "1",
                             handler: "CacheFirst",
                             options: {
@@ -53,6 +66,19 @@ export default (): UserConfig => {
                                     purgeOnQuotaError: true,
                                 },
                                 cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => ["bing.com", "www.bing.com", "w.wallhaven.cc"].includes(url.hostname),
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "remote-wallpaper-images-v1",
+                                expiration: {
+                                    maxEntries: 6,
+                                    maxAgeSeconds: 7 * 24 * 60 * 60,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: { statuses: [0, 200] },
                             },
                         },
                         {

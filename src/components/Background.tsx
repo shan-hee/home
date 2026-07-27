@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { requestJson } from "@/services/apiClient";
 import { useMainStore } from "@/store";
 import { useSiteContentStore } from "@/stores/siteContent";
 import { useVisitorAppearanceStore } from "@/stores/visitorAppearance";
@@ -16,6 +17,7 @@ interface Props {
 const preloadImage = (url: string, timeout = 12000) => new Promise<HTMLImageElement | null>((resolve) => {
   const image = new Image();
   image.decoding = "async";
+  image.referrerPolicy = "no-referrer";
   let settled = false;
   const finish = (result: HTMLImageElement | null) => {
     if (settled) return;
@@ -56,13 +58,22 @@ const automaticEffects = (date = new Date()): BackgroundEffect[] => {
 const closeAllEffects = () => { closeMeteor(); closeSnowfall(); closeFirefly(); closeLantern(); };
 const assetUrl = (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}`;
 
+interface RemoteWallpaper {
+  imageUrl: string;
+}
+
 export default function Background({ onLoadComplete }: Props) {
   const wallpaper = useSiteContentStore((state) => state.snapshot.sections.wallpaper);
   const wallpaperRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.wallpaper);
+  const rotationMinutes = useSiteContentStore((state) => state.snapshot.sections.preferences.wallpaperRotationMinutes);
   const effectsMode = useVisitorAppearanceStore((state) => state.effectsMode);
   const selectedEffects = useVisitorAppearanceStore((state) => state.selectedEffects);
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 720px)").matches);
+  const variant = mobile ? "mobile" : "desktop";
   const assetId = mobile ? wallpaper.mobileAssetId : wallpaper.desktopAssetId;
+  const rotationKey = `${wallpaper.source}:${variant}:${assetId || "none"}:${rotationMinutes}`;
+  const [rotation, setRotation] = useState({ key: "", tick: 0 });
+  const rotationTick = rotation.key === rotationKey ? rotation.tick : 0;
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState<string | null>(null);
   const [transitioning, setTransitioning] = useState(false);
@@ -105,15 +116,36 @@ export default function Background({ onLoadComplete }: Props) {
   useEffect(() => {
     const requestId = ++sequence.current;
     clearTimers();
-    if (!assetId) {
+    const fail = () => {
+      if (currentRef.current && (wallpaper.source !== "custom" || rotationTick > 0)) {
+        finishInitial();
+        return;
+      }
       activateSolidFallback(requestId);
-      return;
-    }
-    const candidate = assetUrl(assetId);
-    void preloadImage(candidate).then((image) => {
+    };
+    const resolveUrl = async () => {
+      if (wallpaper.source === "custom" && (!assetId || rotationTick === 0)) {
+        return assetId ? assetUrl(assetId) : null;
+      }
+      const params = new URLSearchParams({ source: wallpaper.source, variant });
+      if (wallpaper.source === "custom") {
+        params.set("current", assetId!);
+        params.set("cursor", String(rotationTick));
+      }
+      const result = await requestJson<RemoteWallpaper>(`/api/wallpaper?${params}`, { cache: "no-store" });
+      return result.imageUrl;
+    };
+    void resolveUrl().then(async (candidate) => {
       if (requestId !== sequence.current) return;
-      if (!image) return activateSolidFallback(requestId);
+      if (!candidate) return fail();
+      const image = await preloadImage(candidate);
+      if (requestId !== sequence.current) return;
+      if (!image) return fail();
       setSolidFallback(false);
+      if (currentRef.current === candidate) {
+        setCurrentUrl(candidate); setNextUrl(null); setTransitioning(false); setBlurringIn(false); finishInitial();
+        return;
+      }
       if (!currentRef.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         currentRef.current = candidate; setCurrentUrl(candidate); setNextUrl(null);
         setTransitioning(false); setBlurringIn(false); finishInitial();
@@ -128,14 +160,41 @@ export default function Background({ onLoadComplete }: Props) {
         setTransitioning(false); setBlurringIn(false);
         requestAnimationFrame(() => requestAnimationFrame(() => setSkipTransition(false)));
       }, 850));
-    });
-  }, [activateSolidFallback, assetId, clearTimers, finishInitial, wallpaperRevision]);
+    }).catch(fail);
+  }, [activateSolidFallback, assetId, clearTimers, finishInitial, rotationTick, variant, wallpaper.source, wallpaperRevision]);
 
   useEffect(() => {
+    if (rotationMinutes <= 0 || (wallpaper.source === "custom" && !assetId)) return;
+    const duration = rotationMinutes * 60 * 1000;
+    let lastRotationAt = Date.now();
+    const rotate = () => {
+      if (document.hidden) return;
+      lastRotationAt = Date.now();
+      setRotation((current) => ({
+        key: rotationKey,
+        tick: current.key === rotationKey ? current.tick + 1 : 1,
+      }));
+    };
+    const interval = window.setInterval(rotate, duration);
+    const online = () => rotate();
+    const visible = () => {
+      if (!document.hidden && Date.now() - lastRotationAt >= duration) rotate();
+    };
+    window.addEventListener("online", online);
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("online", online);
+      document.removeEventListener("visibilitychange", visible);
+    };
+  }, [assetId, rotationKey, rotationMinutes, wallpaper.source]);
+
+  useEffect(() => {
+    if (wallpaper.source !== "custom") return;
     [wallpaper.desktopAssetId, wallpaper.mobileAssetId]
       .filter((value): value is string => Boolean(value) && value !== assetId)
-      .forEach((value) => { const image = new Image(); image.decoding = "async"; image.src = assetUrl(value); });
-  }, [assetId, wallpaper.desktopAssetId, wallpaper.mobileAssetId]);
+      .forEach((value) => { const image = new Image(); image.decoding = "async"; image.referrerPolicy = "no-referrer"; image.src = assetUrl(value); });
+  }, [assetId, wallpaper.desktopAssetId, wallpaper.mobileAssetId, wallpaper.source]);
 
   useEffect(() => {
     const apply = () => {
@@ -157,8 +216,8 @@ export default function Background({ onLoadComplete }: Props) {
   useEffect(() => () => { sequence.current += 1; clearTimers(); closeAllEffects(); }, [clearTimers]);
 
   return <div className={`cover${solidFallback ? " solid-fallback" : ""}`}>
-    {currentUrl && !solidFallback && <img src={currentUrl} className={`bg current${transitioning ? " blur-out" : ""}${skipTransition ? " no-transition" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
-    {nextUrl && transitioning && <img src={nextUrl} className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
+    {currentUrl && !solidFallback && <img src={currentUrl} referrerPolicy="no-referrer" className={`bg current${transitioning ? " blur-out" : ""}${skipTransition ? " no-transition" : ""}`} alt="" aria-hidden="true" onError={() => activateSolidFallback(++sequence.current)} />}
+    {nextUrl && transitioning && <img src={nextUrl} referrerPolicy="no-referrer" className={`bg next${blurringIn ? " blur-in" : ""}`} alt="" aria-hidden="true" />}
     <div className="gray" />
   </div>;
 }

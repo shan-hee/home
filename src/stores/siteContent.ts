@@ -6,7 +6,7 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Partial<SiteContentSnapshot>;
   if (
-    snapshot.schemaVersion !== 5
+    snapshot.schemaVersion !== 6
     || typeof snapshot.revision !== "string"
     || typeof snapshot.etag !== "string"
     || !snapshot.sections
@@ -27,6 +27,7 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
       && typeof item.icon === "string"
       && typeof item.url === "string"
     ))
+    && ["bing", "wallhaven", "custom"].includes(sections.wallpaper?.source || "")
     && (sections.wallpaper?.desktopAssetId === null || typeof sections.wallpaper?.desktopAssetId === "string")
     && (sections.wallpaper?.mobileAssetId === null || typeof sections.wallpaper?.mobileAssetId === "string")
     && typeof sections.preferences?.siteStartShow === "boolean"
@@ -34,7 +35,8 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
     && typeof sections.preferences?.messageNameShow === "boolean"
     && typeof sections.preferences?.playerAutoplay === "boolean"
     && typeof sections.preferences?.playerKeyboardShortcuts === "boolean"
-    && typeof sections.preferences?.playerDefaultVolume === "number";
+    && typeof sections.preferences?.playerDefaultVolume === "number"
+    && typeof sections.preferences?.wallpaperRotationMinutes === "number";
 };
 
 const applyDocumentMetadata = (snapshot: SiteContentSnapshot) => {

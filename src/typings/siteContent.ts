@@ -37,6 +37,7 @@ export interface MusicContentConfig {
 }
 
 export interface WallpaperContentConfig {
+  source: "bing" | "wallhaven" | "custom";
   desktopAssetId: string | null;
   mobileAssetId: string | null;
 }
@@ -49,6 +50,7 @@ export interface SitePreferences {
   playerKeyboardShortcuts: boolean;
   playerDefaultVolume: number;
   playerDefaultOrder: "list" | "single" | "shuffle";
+  wallpaperRotationMinutes: number;
   weatherLocation: {
     city: string;
     latitude: number;
@@ -76,7 +78,7 @@ export interface SiteContentSections {
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 5;
+  schemaVersion: 6;
   revision: string;
   generatedAt: string;
   etag: string;

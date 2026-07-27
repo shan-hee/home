@@ -1,7 +1,7 @@
 import type { SiteContentSnapshot } from "@/typings/siteContent";
 
 export const siteContentFallback: SiteContentSnapshot = {
-  schemaVersion: 5,
+  schemaVersion: 6,
   revision: "build-fallback",
   generatedAt: "",
   etag: "",
@@ -52,6 +52,7 @@ export const siteContentFallback: SiteContentSnapshot = {
       id: "9379831714",
     },
     wallpaper: {
+      source: "custom",
       desktopAssetId: null,
       mobileAssetId: null,
     },
@@ -63,6 +64,7 @@ export const siteContentFallback: SiteContentSnapshot = {
       playerKeyboardShortcuts: true,
       playerDefaultVolume: 0.3,
       playerDefaultOrder: "shuffle",
+      wallpaperRotationMinutes: 0,
       weatherLocation: null,
     },
     hitokoto: {

@@ -73,13 +73,25 @@ const rememberedOwnerSchema = object({
   expiresAt: string(),
 });
 
-const database = openDB<OfflineDatabase>("home-admin-offline", 1, {
-  upgrade(db) {
-    db.createObjectStore("adminDrafts", { keyPath: "section" });
-    const outbox = db.createObjectStore("adminOutbox", { keyPath: "mutationId" });
-    outbox.createIndex("by-section", "section");
-    outbox.createIndex("by-status", "status");
-    db.createObjectStore("metadata", { keyPath: "key" });
+const database = openDB<OfflineDatabase>("home-admin-offline", 2, {
+  async upgrade(db, oldVersion, _newVersion, transaction) {
+    if (oldVersion < 1) {
+      db.createObjectStore("adminDrafts", { keyPath: "section" });
+      const outbox = db.createObjectStore("adminOutbox", { keyPath: "mutationId" });
+      outbox.createIndex("by-section", "section");
+      outbox.createIndex("by-status", "status");
+      db.createObjectStore("metadata", { keyPath: "key" });
+    }
+    if (oldVersion < 2) {
+      const changedSections: ContentSection[] = ["wallpaper", "preferences"];
+      const drafts = transaction.objectStore("adminDrafts");
+      const outbox = transaction.objectStore("adminOutbox");
+      await Promise.all(changedSections.map(async (section) => {
+        await drafts.delete(section);
+        const records = await outbox.index("by-section").getAll(section);
+        await Promise.all(records.map((record) => outbox.delete(record.mutationId)));
+      }));
+    }
   },
 });
 
