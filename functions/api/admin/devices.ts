@@ -17,7 +17,7 @@ export const onRequestGet = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
     const session = await requireOwnerSession(context.request, context.env);
-    if (context.waitUntil) context.waitUntil(cleanupExpiredData(context.env));
+    await cleanupExpiredData(context.env);
     const result = await context.env.DB.prepare(`
       SELECT
         devices.id,

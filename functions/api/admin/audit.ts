@@ -1,5 +1,6 @@
 import { apiResponse, errorResponse, getRequestId } from "../../lib/api";
 import { requireOwnerSession } from "../../lib/auth";
+import { cleanupExpiredData } from "../../lib/maintenance";
 import type { PagesContext } from "../../lib/types";
 
 interface AuditRow {
@@ -15,6 +16,7 @@ export const onRequestGet = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
     await requireOwnerSession(context.request, context.env);
+    await cleanupExpiredData(context.env);
     const result = await context.env.DB.prepare(`
       SELECT id, action, target, detail_json, device_id, created_at
       FROM audit_logs
