@@ -6,6 +6,13 @@
 
   .right-home {
     width: 100%;
+
+    &.is-owner-panel-hidden {
+      position: absolute;
+      inset: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
   }
 
   &.has-owner-panel {

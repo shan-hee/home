@@ -22,5 +22,5 @@ export default function MainRight({ ownerPanelOpen, onCloseOwnerPanel }: Props) 
     const parts = raw.split(".");
     return [parts[0] || "imsyy", parts.slice(1).join(".") || "top"];
   }, [siteUrl]);
-  return <div className={`right${mobileOpen ? "" : " is-hidden"}${ownerPanelOpen && authStatus === "authenticated" ? " has-owner-panel" : ""}`}>{!ownerPanelOpen ? <div className="right-home"><button type="button" className="logo text-truncate-ellipsis" onClick={() => patch({ mobileFuncState: !mobileFunc })}><span className="bg">{domain[0]}</span><span className="sm">.{domain[1]}</span></button><Func /><Links /></div> : <OwnerPanel onClose={onCloseOwnerPanel} />}</div>;
+  return <div className={`right${mobileOpen ? "" : " is-hidden"}${ownerPanelOpen && authStatus === "authenticated" ? " has-owner-panel" : ""}`}><div className={`right-home${ownerPanelOpen ? " is-owner-panel-hidden" : ""}`} aria-hidden={ownerPanelOpen || undefined}><button type="button" className="logo text-truncate-ellipsis" onClick={() => patch({ mobileFuncState: !mobileFunc })}><span className="bg">{domain[0]}</span><span className="sm">.{domain[1]}</span></button><Func /><Links /></div>{ownerPanelOpen && <OwnerPanel onClose={onCloseOwnerPanel} />}</div>;
 }
