@@ -75,7 +75,7 @@ Cloudflare Pages is the only deployment target maintained for the first release:
 2. Set the install command to `pnpm install --frozen-lockfile`.
 3. Set the build command to `pnpm build`.
 4. Set the output directory to `dist`; the root `functions/` directory is deployed as Pages Functions.
-5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `GITHUB_REPOSITORY` and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
+5. Use Pages environment variables for non-secret configuration and Cloudflare Secrets for credentials. Do not expose secrets through `VITE_*`. Optional values such as `WALLHAVEN_API_KEY`, `GITHUB_REPOSITORY`, and `GITHUB_TOKEN` are documented in `.dev.vars.example`.
 6. Create the R2 bucket configured by `wrangler.jsonc` and bind it as `WALLPAPER_BUCKET`.
 
 The repository's `wrangler.jsonc` supports local preview and Wrangler deployment. Docker, Vercel, Netlify, and GitHub Pages are outside the first-release support scope.
@@ -110,7 +110,9 @@ Weather is provided by the same-origin Cloudflare Pages Function `/api/weather`:
 - `/api/alerts` is independent and optional. Without `QWEATHER_API_KEY`, it returns an empty list and does not affect regular weather.
 - When Wrangler has no visitor geolocation, set `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, and `DEFAULT_CITY` in `.dev.vars`.
 
-Wallpaper files are stored in Cloudflare R2 and managed under **Wallpaper management**, including upload, preview, download, selection, and deletion. Each file may be up to 50MB. The server detects the actual JPEG, PNG, WebP, or AVIF format from its header and normalizes the object extension and MIME type. Public pages read immutable objects through `/api/assets/:id`; Cloudflare and the PWA runtime cache those responses. Update checks continue to use `/api/version`.
+**Wallpaper management** supports Bing, Wallhaven, and custom sources. Bing desktop and mobile images come from the [Nuoxian Bing API](https://docs.nxvav.cn/doc/bing.html). Wallhaven uses its official public API for random SFW images; an optional `WALLHAVEN_API_KEY` remains server-side. Global behavior settings can disable rotation or select a preset or custom interval in minutes. Bing itself changes daily, so shorter intervals still resolve to that day's image.
+
+Custom wallpaper files live in Cloudflare R2 and support upload, preview, download, selection, and deletion. Each file may be up to 50MB. The server detects JPEG, PNG, WebP, or AVIF from the file header and normalizes the object extension and MIME type. The selected asset is used first; when rotation is enabled, the other R2 wallpapers for the same viewport variant are cycled in order. Public pages read immutable objects through `/api/assets/:id`. The PWA caches custom wallpapers and a small set of the latest successful Bing or Wallhaven images. Offline startup reuses a cached image when available and falls back to a solid background only when none is usable. Update checks continue to use `/api/version`.
 
 ### Music
 
@@ -132,7 +134,7 @@ Now using` MiSans` and `HarmonyOS Sans` font, using font splitting to improve lo
 
 #### Website Background
 
-Desktop and mobile wallpapers are uploaded by the owner to Cloudflare R2. They are no longer stored under `public/images`, continuously numbered, or selected by visitors. The page uses its solid-color fallback when no wallpaper is configured.
+Wallpapers are no longer stored under `public/images`, continuously numbered, path-templated, or selected by visitors. The owner can choose Bing or Wallhaven as an online source, or upload separate desktop and mobile custom wallpapers to R2. The custom source uses the solid-color fallback when no asset is selected.
 
 #### Website Icon
 

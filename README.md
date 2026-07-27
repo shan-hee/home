@@ -78,7 +78,7 @@ pnpm dev:cf
 3. 按 `scripts/site-content.seed.example.json` 的结构准备初始化内容，并写入远端 `content_sections`；不要把访问密钥放进 Seed。
 4. 在 Cloudflare Pages 连接本仓库，安装命令填写 `pnpm install --frozen-lockfile`，构建命令填写 `pnpm build`，输出目录填写 `dist`。
 5. 将 `DB` 和 `WALLPAPER_BUCKET` 绑定到对应的 D1/R2；设置 `APP_ORIGIN`、`APP_ENV` 和 `SESSION_TTL_DAYS`。
-6. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`。其它可选变量见 `.dev.vars.example`。
+6. 通过 Cloudflare Secret 配置 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`；需要带身份请求 Wallhaven 时可额外配置 `WALLHAVEN_API_KEY`。其它可选变量见 `.dev.vars.example`。
 7. 部署后先确认公开主页正常，再用铅笔入口登录；站点设置、R2 壁纸、设备和审计均在原位管理面板操作。
 
 仓库中的 `wrangler.jsonc` 可用于本地预览和 Wrangler 部署。Docker、Vercel、Netlify 与 GitHub Pages 不属于首版支持范围。
@@ -113,7 +113,9 @@ Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和�
 - `/api/alerts` 是独立可选能力。未配置 `QWEATHER_API_KEY` 时返回空数组，不影响普通天气。
 - Wrangler 本地开发没有访客地理信息时，可在 `.dev.vars` 中填写 `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE` 和 `DEFAULT_CITY`。
 
-壁纸文件存放在 Cloudflare R2，管理员通过“壁纸管理”上传、预览、下载、选择和删除。单文件最大 50MB；服务端根据文件头识别 JPEG、PNG、WebP 或 AVIF 的真实格式，并规范化对象扩展名和 MIME。公开页面通过 `/api/assets/:id` 读取不可变对象，并由 Cloudflare 与 PWA 运行时缓存；版本检查统一请求 `/api/version`。
+“壁纸管理”支持 Bing、Wallhaven 和自定义三个来源。Bing 通过[诺西 API 必应每日美图](https://docs.nxvav.cn/doc/bing.html)分别获取桌面与移动图片；Wallhaven 通过官方公开 API 获取随机 SFW 图片，可选的 `WALLHAVEN_API_KEY` 只保存在服务端。常规设置可关闭自动切换，或设置预设及自定义分钟周期；Bing 本身每日更新，较短周期仍会得到当天图片。
+
+自定义壁纸文件存放在 Cloudflare R2，支持上传、预览、下载、选择和删除。单文件最大 50MB；服务端根据文件头识别 JPEG、PNG、WebP 或 AVIF 的真实格式，并规范化对象扩展名和 MIME。选中项是首次背景；启用自动切换后，同尺寸的其它 R2 壁纸会依次轮换。公开页面通过 `/api/assets/:id` 读取不可变对象；PWA 同时缓存自定义壁纸以及最近成功加载的少量 Bing/Wallhaven 图片。断网时优先继续显示缓存图片，没有任何可用图片时才回退纯色背景；版本检查统一请求 `/api/version`。
 
 ### 音乐
 
@@ -136,7 +138,7 @@ Profile、全局行为、网站列表、社交链接、音乐、壁纸引用和�
 
 #### 网站背景
 
-桌面与移动端壁纸都由管理员上传到 Cloudflare R2，不再放入 `public/images`，也不使用连续编号、路径模板、在线随机源或访客壁纸 ID。未配置壁纸时页面使用纯色背景。
+壁纸不再放入 `public/images`，也不使用连续编号、路径模板或访客壁纸 ID。管理员可以选择 Bing、Wallhaven 在线来源，也可以为桌面与移动端上传独立的 R2 自定义壁纸。自定义来源未选择资源时页面使用纯色背景。
 
 #### 网站图标
 

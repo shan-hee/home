@@ -12,6 +12,9 @@ DEFAULT_CITY = ""
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"
 
+# 可选：Wallhaven 请求身份；当前仅请求公开 SFW 壁纸，留空即可使用。
+WALLHAVEN_API_KEY = ""
+
 # 版本检查目标仓库与可选 GitHub Token。
 GITHUB_REPOSITORY = "shan-hee/home"
 GITHUB_TOKEN = ""
