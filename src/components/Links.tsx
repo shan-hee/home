@@ -40,6 +40,14 @@ interface DragOverlaySize {
   height: number;
 }
 
+const siteLinkIdentity = (item: SiteLinkConfig) => JSON.stringify([
+  item.name,
+  item.link,
+  item.iconMode,
+  item.iconValue,
+  item.iconColor,
+]);
+
 interface SortableSiteLinkProps extends SiteLinkEntry {
   disabled: boolean;
   onOpenMenu: (clientX: number, clientY: number, id: string) => void;
@@ -122,7 +130,7 @@ export default function Links() {
   const [dragOverlaySize, setDragOverlaySize] = useState<DragOverlaySize | null>(null);
   const [contextMenu, setContextMenu] = useState<LinkContextMenu | null>(null);
   const [saving, setSaving] = useState(false);
-  const itemIdsRef = useRef(new WeakMap<SiteLinkConfig, string>());
+  const itemIdsRef = useRef(new Map<string, string[]>());
   const nextIdRef = useRef(0);
   const sensors = useSensors(useSensor(NavigationSafePointerSensor, NAVIGATION_SAFE_POINTER_SENSOR_OPTIONS));
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
@@ -141,15 +149,23 @@ export default function Links() {
     }
   }, [authenticated]);
 
-  const entries = useMemo<SiteLinkEntry[]>(() => orderedLinks.map((item, index) => {
-    let id = itemIdsRef.current.get(item);
-    if (!id) {
-      nextIdRef.current += 1;
-      id = `site-link-${nextIdRef.current}`;
-      itemIdsRef.current.set(item, id);
-    }
-    return { id, item, index };
-  }), [orderedLinks]);
+  const entries = useMemo<SiteLinkEntry[]>(() => {
+    const occurrences = new Map<string, number>();
+    return orderedLinks.map((item, index) => {
+      const identity = siteLinkIdentity(item);
+      const occurrence = occurrences.get(identity) || 0;
+      occurrences.set(identity, occurrence + 1);
+      const identityIds = itemIdsRef.current.get(identity) || [];
+      let id = identityIds[occurrence];
+      if (!id) {
+        nextIdRef.current += 1;
+        id = `site-link-${nextIdRef.current}`;
+        identityIds[occurrence] = id;
+        itemIdsRef.current.set(identity, identityIds);
+      }
+      return { id, item, index };
+    });
+  }, [orderedLinks]);
 
   const pages = useMemo(() => {
     const slots = entries.length + (authenticated ? 1 : 0);
