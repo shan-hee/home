@@ -63,7 +63,7 @@ export const siteContentFallback: SiteContentSnapshot = {
       playerAutoplay: false,
       playerKeyboardShortcuts: true,
       playerDefaultVolume: 0.3,
-      playerDefaultOrder: "shuffle",
+      playerDefaultOrder: "list",
       wallpaperRotationMinutes: 0,
       weatherLocation: null,
     },

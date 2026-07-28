@@ -7,7 +7,7 @@
   "home": "https://imsyy.top",
   "efuh": "https://nanorocky.top",
   "private": true,
-  "version": "4.3.9.dev [EFU]",
+  "version": "4.3.9",
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {

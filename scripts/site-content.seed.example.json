@@ -1,39 +1,29 @@
 {
   "profile": {
-    "siteName": "無名の主页",
+    "siteName": "home",
     "author": "shanhee",
-    "keywords": "無名,个人主页",
+    "keywords": "个人主页",
     "description": "一个默默无闻的主页",
     "siteUrl": "https://ajjj.de/",
-    "mainName": "無名",
+    "mainName": "home",
     "siteLogo": "/images/icon/favicon.ico",
     "mainLogo": "/images/icon/logo.png",
     "appleLogo": "/images/icon/apple-touch-icon.png",
-    "startDate": "2020-10-24",
+    "startDate": "2026-07-26",
     "icp": "",
     "mps": "",
     "repositoryUrl": "https://github.com/shan-hee/home"
   },
   "siteLinks": [
-    { "name": "博客", "link": "https://blog.imsyy.top/", "iconMode": "icon", "iconValue": "ri:blogger-fill", "iconColor": "#FF4757" },
-    { "name": "网盘", "link": "https://pan.imsyy.top/", "iconMode": "icon", "iconValue": "ri:cloud-fill", "iconColor": "#25A7F0" },
-    { "name": "起始页", "link": "https://nav.imsyy.top/", "iconMode": "icon", "iconValue": "ri:compass-fill", "iconColor": "#1D8FCA" },
-    { "name": "网址集", "link": "https://web.imsyy.top/", "iconMode": "icon", "iconValue": "ri:book-fill", "iconColor": "#F09A37" },
-    { "name": "今日热榜", "link": "https://hot.imsyy.top/", "iconMode": "icon", "iconValue": "ri:fire-fill", "iconColor": "#F05B45" },
-    { "name": "站点监测", "link": "https://status.imsyy.top/", "iconMode": "icon", "iconValue": "ri:code-box-fill", "iconColor": "#525866" }
+    { "name": "博客", "link": "https://blog.ajjj.de/", "iconMode": "icon", "iconValue": "ri:blogger-fill", "iconColor": "#FF4757" }
   ],
   "socialLinks": [
-    { "name": "Github", "icon": "ri:github-fill", "url": "https://github.com/shan-hee" },
-    { "name": "BiliBili", "icon": "ri:bilibili-fill", "url": "https://space.bilibili.com/98544142" },
-    { "name": "QQ", "icon": "ri:qq-fill", "url": "https://res.abeim.cn/api/qq/?qq=1539250352" },
-    { "name": "Email", "icon": "ri:mail-fill", "url": "mailto:one@imsyy.top" },
-    { "name": "Twitter", "icon": "ri:twitter-x-fill", "url": "https://x.com/iimmsyy" },
-    { "name": "Telegram", "icon": "ri:telegram-fill", "url": "https://t.me/bottom_user" }
+    { "name": "Github", "icon": "ri:github-fill", "url": "https://github.com/shan-hee" }
   ],
   "music": {
     "server": "netease",
     "type": "playlist",
-    "id": "9379831714"
+    "id": "694211863"
   },
   "wallpaper": {
     "source": "custom",
@@ -47,7 +37,7 @@
     "playerAutoplay": false,
     "playerKeyboardShortcuts": true,
     "playerDefaultVolume": 0.3,
-    "playerDefaultOrder": "shuffle",
+    "playerDefaultOrder": "list",
     "wallpaperRotationMinutes": 0,
     "weatherLocation": null
   },
