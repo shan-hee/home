@@ -1,4 +1,4 @@
-import { ArrowRight, BackOne, CloseSmall, Devices, IdCardH, Logout, Music, PictureAlbum, Quote, SettingTwo, Sync } from "@icon-park/react";
+import { ArrowRight, BackOne, CloseSmall, Devices, IdCardH, Info, Logout, Music, PictureAlbum, Quote, SettingTwo, Sync } from "@icon-park/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ApiClientError } from "@/services/apiClient";
 import { useAuthStore } from "@/stores/auth";
@@ -15,6 +15,7 @@ const tabs = [
   { key: "music", label: "音乐设置", icon: Music },
   { key: "hitokoto", label: "一言设置", icon: Quote },
   { key: "security", label: "设备安全", icon: Devices },
+  { key: "about", label: "关于", icon: Info },
 ] as const;
 
 export default function OwnerPanel({ onClose }: { onClose: () => void }) {

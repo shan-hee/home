@@ -6,13 +6,15 @@ import { useAdminOfflineStore } from "@/stores/adminOffline";
 import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MusicContentConfig, SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
+import { checkForUpdate, type UpdateResult } from "@/utils/updatecheck";
+import { appVersion, appVersionInfo } from "@/utils/ver";
 import "@/components/ContentSettings.scss";
 
 type Section = keyof SiteContentSections;
 type SaveState = { saving: boolean; message: string; error: boolean };
 type MusicPreviewState = { status: "idle" | "loading" | "success" | "error"; message: string; tracks: PlaylistItem[] };
 type WallpaperSource = SiteContentSections["wallpaper"]["source"];
-export type ContentSettingsView = "general" | "wallpaper" | "profile" | "music" | "hitokoto";
+export type ContentSettingsView = "general" | "wallpaper" | "profile" | "music" | "hitokoto" | "about";
 interface AssetRecord {
   id: string;
   variant: "desktop" | "mobile";
@@ -38,12 +40,18 @@ interface PreviewImage {
   fileName?: string;
 }
 type RemotePreviewState = { loading: boolean; message: string; items: RemoteWallpaperPreview[] };
+type UpdateCheckState = {
+  status: "idle" | "loading" | "up-to-date" | "available" | "error";
+  message: string;
+  result: UpdateResult | null;
+};
 
 const keys: Section[] = ["profile", "siteLinks", "socialLinks", "music", "wallpaper", "preferences", "hitokoto"];
 const MAX_ASSET_SIZE = 50 * 1024 * 1024;
 const initialStates = () => Object.fromEntries(keys.map((key) => [key, { saving: false, message: "", error: false }])) as Record<Section, SaveState>;
 const initialMusicPreview = (): MusicPreviewState => ({ status: "idle", message: "", tracks: [] });
 const initialRemotePreview = (): RemotePreviewState => ({ loading: false, message: "", items: [] });
+const initialUpdateCheck = (): UpdateCheckState => ({ status: "idle", message: "点击按钮检查代码仓库中的最新 Release 或 Tag", result: null });
 const rotationPresets = [0, 5, 15, 30, 60, 180, 360, 720, 1440] as const;
 
 function SaveRow({ state, dirty, onSave, onDiscard }: { state: SaveState; dirty: boolean; onSave: () => void; onDiscard: () => void }) {
@@ -108,6 +116,7 @@ const viewCopy: Record<ContentSettingsView, { heading: string; description: stri
   profile: { heading: "公开站点资料", description: "维护页面标题、作者、图标和备案信息" },
   music: { heading: "默认音乐来源", description: "设置公开页面加载的音乐平台、类型和 ID" },
   hitokoto: { heading: "一言内容", description: "设置远程分类、固定内容和失败回退文案" },
+  about: { heading: "关于此站点", description: "查看版本信息、配置代码仓库并检查更新" },
 };
 
 export default function ContentSettings({ view }: { view: ContentSettingsView }) {
@@ -132,6 +141,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
   const [remotePreview, setRemotePreview] = useState<RemotePreviewState>(initialRemotePreview);
   const [wallpaperTab, setWallpaperTab] = useState<WallpaperSource | null>(null);
   const [musicPreview, setMusicPreview] = useState<MusicPreviewState>(initialMusicPreview);
+  const [updateCheck, setUpdateCheck] = useState<UpdateCheckState>(initialUpdateCheck);
   const musicPreviewRequest = useRef(0);
   const wallpaperPreviewRequest = useRef(0);
   const offline = authStatus === "offline-owner";
@@ -359,6 +369,35 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     }
   };
 
+  const runUpdateCheck = async () => {
+    if (offline) {
+      setUpdateCheck({ status: "error", message: "离线时无法检查更新", result: null });
+      return;
+    }
+    if (dirty("profile")) {
+      setUpdateCheck({ status: "error", message: "请先保存代码仓库，再检查更新", result: null });
+      return;
+    }
+    if (updateCheck.status === "loading") return;
+    setUpdateCheck({ status: "loading", message: "正在检查最新版本…", result: null });
+    try {
+      const result = await checkForUpdate(appVersionInfo.version);
+      setUpdateCheck({
+        status: result.status,
+        message: result.status === "up-to-date"
+          ? `当前版本 ${appVersionInfo.version} 已是最新版本`
+          : `发现新版本 ${result.latestVersion}`,
+        result,
+      });
+    } catch (reason) {
+      setUpdateCheck({
+        status: "error",
+        message: reason instanceof ApiClientError || reason instanceof Error ? reason.message : "检查更新失败，请稍后再试",
+        result: null,
+      });
+    }
+  };
+
   const copy = viewCopy[view];
   const reload = () => {
     if (view === "music") resetMusicPreview();
@@ -425,7 +464,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     {remotePreview.message && <p className="asset-message is-error">{remotePreview.message}</p>}
     {remotePreview.items.length > 0 && <div className="wallpaper-card-grid">{remotePreview.items.map((item) => <WallpaperCard key={item.variant} title={item.title} subtitle={item.variant === "desktop" ? "桌面端" : "移动端"} imageUrl={item.imageUrl} downloadUrl={remoteDownloadUrl(item)} selected={drafts.wallpaper.source === source} onPreview={() => openRemotePreview(item)} onApply={() => update((draft) => { draft.wallpaper.source = source; })} />)}</div>}
   </section>;
-  const profileFields: Array<[keyof typeof profile, string, "text" | "url" | "textarea", boolean?]> = [["siteName", "站点名称", "text"], ["author", "作者", "text"], ["mainName", "主页名称", "text"], ["siteUrl", "站点地址", "url"], ["keywords", "关键词", "text", true], ["description", "简介", "textarea", true], ["siteLogo", "站点图标", "text"], ["mainLogo", "主页图标", "text"], ["appleLogo", "Apple 图标", "text"], ["startDate", "建站日期", "text"], ["icp", "ICP备案号", "text"], ["mps", "公安备案号", "text"], ["repositoryUrl", "代码仓库", "url", true]];
+  const profileFields: Array<[keyof typeof profile, string, "text" | "url" | "textarea", boolean?]> = [["siteName", "站点名称", "text"], ["author", "作者", "text"], ["mainName", "主页名称", "text"], ["siteUrl", "站点地址", "url"], ["keywords", "关键词", "text", true], ["description", "简介", "textarea", true], ["siteLogo", "站点图标", "text"], ["mainLogo", "主页图标", "text"], ["appleLogo", "Apple 图标", "text"], ["startDate", "建站日期", "text"], ["icp", "ICP备案号", "text"], ["mps", "公安备案号", "text"], ["repositoryUrl", "GitHub 仓库地址", "url", true]];
 
   const renderPage = () => {
     if (view === "general") return <div className="admin-section"><div className="form-grid">
@@ -449,9 +488,25 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
       <SaveRow state={saveStates.wallpaper} dirty={dirty("wallpaper")} onSave={() => void save("wallpaper")} onDiscard={() => void discard("wallpaper")} />
     </div>;
 
-    if (view === "profile") return <div className="admin-section"><div className="form-grid">{profileFields.map(([field, label, type, wide]) => <label key={field} className={wide ? "wide" : ""}>{label}{type === "textarea" ? <textarea value={profile[field]} rows={2} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} /> : <input value={profile[field]} type={type} placeholder={field === "startDate" ? "YYYY-MM-DD" : undefined} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} />}</label>)}</div><SaveRow state={saveStates.profile} dirty={dirty("profile")} onSave={() => void save("profile")} onDiscard={() => void discard("profile")} /></div>;
+    if (view === "profile") return <div className="admin-section"><div className="form-grid">{profileFields.map(([field, label, type, wide]) => <label key={field} className={wide ? "wide" : ""}>{label}{type === "textarea" ? <textarea value={profile[field]} rows={2} onChange={(event) => update((draft) => { draft.profile[field] = event.target.value; })} /> : <input value={profile[field]} type={type} placeholder={field === "startDate" ? "YYYY-MM-DD" : undefined} onChange={(event) => { update((draft) => { draft.profile[field] = event.target.value; }); if (field === "repositoryUrl") setUpdateCheck(initialUpdateCheck()); }} />}</label>)}</div><SaveRow state={saveStates.profile} dirty={dirty("profile")} onSave={() => void save("profile")} onDiscard={() => void discard("profile")} /></div>;
 
     if (view === "music") return <div className="admin-section"><div className="form-grid"><label>平台<select value={drafts.music.server} onChange={(event) => updateMusic("server", event.target.value as MusicContentConfig["server"])}><option value="netease">网易云音乐</option><option value="tencent">QQ 音乐</option><option value="kugou">酷狗音乐</option><option value="baidu">百度音乐</option><option value="kuwo">酷我音乐</option></select></label><label>类型<select value={drafts.music.type} onChange={(event) => updateMusic("type", event.target.value as MusicContentConfig["type"])}><option value="playlist">歌单</option><option value="song">单曲</option><option value="album">专辑</option><option value="artist">歌手</option><option value="search">搜索</option></select></label><label className="wide">资源 ID / 搜索词<span className="music-query-control"><input value={drafts.music.id} onChange={(event) => updateMusic("id", event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void previewMusic(); } }} /><button type="button" title={offline ? "离线时无法查询" : "查询音乐内容"} aria-label="查询音乐内容" disabled={offline || musicPreview.status === "loading" || !drafts.music.id.trim()} onClick={() => void previewMusic()}><Search theme="outline" size="18" /></button></span></label>{musicPreview.status !== "idle" && <section className={`music-preview ${musicPreview.status === "error" ? "is-error" : ""}`} aria-live="polite"><header><strong>{musicPreview.message}</strong></header>{musicPreview.tracks.length > 0 && <ol>{musicPreview.tracks.slice(0, 100).map((track, index) => <li key={`${track.url}-${index}`}>{track.cover ? <img src={track.cover} alt="" loading="lazy" /> : <span className="music-preview-cover" aria-hidden="true" />}<span><strong>{track.name}</strong><small>{track.artist}</small></span></li>)}</ol>}</section>}</div><SaveRow state={saveStates.music} dirty={dirty("music")} onSave={() => void save("music")} onDiscard={() => void discard("music")} /></div>;
+
+    if (view === "about") return <div className="admin-section about-page">
+      <section className="about-overview">
+        <img src={profile.mainLogo} alt="" />
+        <div className="about-title"><strong>{profile.siteName}</strong><small>{profile.description}</small></div>
+        <dl>
+          <div><dt>版本</dt><dd>{appVersion}</dd></div>
+          <div><dt>代码仓库</dt><dd><a href={profile.repositoryUrl} target="_blank" rel="noopener noreferrer">{profile.repositoryUrl.replace(/^https:\/\//, "")}</a></dd></div>
+          <div><dt>技术栈</dt><dd>React + Vite + Cloudflare</dd></div>
+        </dl>
+      </section>
+      <section className={`about-card update-card is-${updateCheck.status}`} aria-live="polite">
+        <header><div><strong>版本更新</strong><small>{updateCheck.message}</small></div><button type="button" disabled={offline || dirty("profile") || updateCheck.status === "loading"} onClick={() => void runUpdateCheck()}><Refresh theme="outline" size="17" /><span>{updateCheck.status === "loading" ? "检查中…" : "检查更新"}</span></button></header>
+        {updateCheck.result?.status === "available" && <a className="release-link" href={updateCheck.result.releaseUrl} target="_blank" rel="noopener noreferrer">前往 GitHub 查看 {updateCheck.result.latestVersion}{updateCheck.result.prerelease ? " 预发行版" : ""}</a>}
+      </section>
+    </div>;
 
     return <div className="admin-section"><div className="form-grid"><label>模式<select value={drafts.hitokoto.mode} onChange={(event) => update((draft) => { draft.hitokoto.mode = event.target.value as SiteContentSections["hitokoto"]["mode"]; })}><option value="remote">远程一言</option><option value="fixed">固定内容</option></select></label><label className="wide">远程分类（逗号分隔）<input value={drafts.hitokoto.categories.join(", ")} onChange={(event) => update((draft) => { draft.hitokoto.categories = event.target.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean); })} /></label><label className="wide">固定内容<textarea rows={2} value={drafts.hitokoto.fixedText} onChange={(event) => update((draft) => { draft.hitokoto.fixedText = event.target.value; })} /></label><label>固定内容来源<input value={drafts.hitokoto.fixedFrom} onChange={(event) => update((draft) => { draft.hitokoto.fixedFrom = event.target.value; })} /></label><label className="wide">失败时内容<textarea rows={2} value={drafts.hitokoto.fallbackText} onChange={(event) => update((draft) => { draft.hitokoto.fallbackText = event.target.value; })} /></label><label>失败时来源<input value={drafts.hitokoto.fallbackFrom} onChange={(event) => update((draft) => { draft.hitokoto.fallbackFrom = event.target.value; })} /></label></div><SaveRow state={saveStates.hitokoto} dirty={dirty("hitokoto")} onSave={() => void save("hitokoto")} onDiscard={() => void discard("hitokoto")} /></div>;
   };

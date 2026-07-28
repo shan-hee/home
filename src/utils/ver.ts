@@ -1,5 +1,7 @@
 import config from "@/../package.json";
 
+export const appVersion = config.version;
+
 export const parseVersion = (ver: string) => {
     const versionMatch = ver.match(/^(\d+\.\d+\.\d+)/);
     const isDevelopment = /\.dev\b/.test(ver);
@@ -24,3 +26,5 @@ export const parseVersion = (ver: string) => {
         upa: updateAuthor
     };
 };
+
+export const appVersionInfo = parseVersion(appVersion);

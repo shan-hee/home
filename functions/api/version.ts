@@ -1,16 +1,8 @@
+import { apiResponse, ApiError, errorResponse, getRequestId } from "../lib/api";
 import { cachedResponse } from "../lib/cache";
-import { fetchJson, jsonResponse } from "../lib/http";
-
-interface Environment {
-  GITHUB_REPOSITORY?: string;
-  GITHUB_TOKEN?: string;
-}
-
-type PagesContext = {
-  request: Request;
-  env: Environment;
-  waitUntil?: (promise: Promise<unknown>) => void;
-};
+import { fetchJson } from "../lib/http";
+import { loadSiteContent } from "../lib/siteContent";
+import type { PagesContext } from "../lib/types";
 
 interface GitHubRelease {
   tag_name?: string;
@@ -39,20 +31,24 @@ const compareVersions = (first: string, second: string) => {
 };
 
 export const onRequestGet = async (context: PagesContext) => {
-  const repository = context.env.GITHUB_REPOSITORY?.trim() || "shan-hee/home";
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) {
-    return jsonResponse({ error: "GITHUB_REPOSITORY 格式无效" }, { status: 500 });
-  }
-  const cacheUrl = new URL(
-    `/__edge-cache/version?repository=${encodeURIComponent(repository)}`,
-    context.request.url,
-  ).toString();
+  const requestId = getRequestId(context.request);
   try {
+    const config = await loadSiteContent(context.env.DB);
+    const profile = config.sections.profile as { repositoryUrl?: unknown };
+    if (typeof profile.repositoryUrl !== "string") {
+      throw new ApiError(500, "REPOSITORY_NOT_CONFIGURED", "代码仓库尚未配置");
+    }
+    const repositoryUrl = new URL(profile.repositoryUrl);
+    const repository = repositoryUrl.pathname.split("/").filter(Boolean).join("/");
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repository)) {
+      throw new ApiError(500, "REPOSITORY_INVALID", "代码仓库配置无效");
+    }
+    const cacheUrl = new URL(
+      `/__edge-cache/version?repository=${encodeURIComponent(repository)}`,
+      context.request.url,
+    ).toString();
     return await cachedResponse(cacheUrl, 600, context, async () => {
       const headers = new Headers({ accept: "application/vnd.github+json", "user-agent": "shan-hee-home" });
-      if (context.env.GITHUB_TOKEN?.trim()) {
-        headers.set("authorization", `Bearer ${context.env.GITHUB_TOKEN.trim()}`);
-      }
 
       try {
         const release = await fetchJson<GitHubRelease>(
@@ -60,7 +56,7 @@ export const onRequestGet = async (context: PagesContext) => {
           { headers },
         );
         if (!release.tag_name || !versionParts(release.tag_name)) throw new Error("Release 版本格式无效");
-        return jsonResponse({
+        return apiResponse({
           version: release.tag_name.replace(/^v/i, ""),
           tag: release.tag_name,
           name: release.name || release.tag_name,
@@ -68,7 +64,7 @@ export const onRequestGet = async (context: PagesContext) => {
           url: release.html_url || `https://github.com/${repository}/releases`,
           publishedAt: release.published_at || null,
           repository,
-        }, {}, "public, max-age=600");
+        }, requestId, {}, "public, max-age=600");
       } catch {
         const tags = await fetchJson<GitHubTag[]>(
           `https://api.github.com/repos/${repository}/tags?per_page=30`,
@@ -76,7 +72,7 @@ export const onRequestGet = async (context: PagesContext) => {
         );
         const tag = tags.map((item) => item.name || "").filter((name) => versionParts(name)).sort(compareVersions)[0];
         if (!tag) throw new Error("仓库没有可解析的 Release 或 Tag");
-        return jsonResponse({
+        return apiResponse({
           version: tag.replace(/^v/i, ""),
           tag,
           name: tag,
@@ -84,11 +80,12 @@ export const onRequestGet = async (context: PagesContext) => {
           url: `https://github.com/${repository}/releases/tag/${encodeURIComponent(tag)}`,
           publishedAt: null,
           repository,
-        }, {}, "public, max-age=600");
+        }, requestId, {}, "public, max-age=600");
       }
     });
   } catch (error) {
+    if (error instanceof ApiError) return errorResponse(error, requestId);
     console.error("版本检查失败：", error);
-    return jsonResponse({ error: "版本检查暂时不可用" }, { status: 503 });
+    return errorResponse(new ApiError(503, "VERSION_CHECK_FAILED", "版本检查暂时不可用"), requestId);
   }
 };

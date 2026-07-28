@@ -68,10 +68,8 @@ Non-secret values live in `wrangler.jsonc`. Local secrets are documented in `.de
 - `IP_HASH_SECRET`: required login rate-limit hashing secret
 - `WALLHAVEN_API_KEY`: optional Wallhaven identity
 - `QWEATHER_API_KEY`: optional weather alerts for China
-- `DEFAULT_LATITUDE`, `DEFAULT_LONGITUDE`, `DEFAULT_CITY`: local weather fallback
-- `GITHUB_REPOSITORY`, `GITHUB_TOKEN`: optional update-check configuration
 
-Initial site content comes from `.site-content.seed.json`. After initialization, public profile, global behavior, music, wallpapers, and Hitokoto are managed in the owner dashboard.
+Initial site content comes from `.site-content.seed.json`. After initialization, public profile, global behavior, music, wallpapers, and Hitokoto are managed in the owner dashboard. The GitHub repository in site profile is stored in D1 and used for manual update checks on the About page.
 
 ## Cloudflare deployment
 

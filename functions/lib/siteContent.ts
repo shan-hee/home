@@ -57,6 +57,24 @@ const assetUrl = (value: unknown, name: string) => {
   return url(normalized, name);
 };
 
+const githubRepositoryUrl = (value: unknown) => {
+  const normalized = url(value, "代码仓库");
+  const parsed = new URL(normalized);
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  const repositoryName = segments[1]?.replace(/\.git$/i, "") || "";
+  if (
+    parsed.hostname.toLowerCase() !== "github.com"
+    || parsed.search
+    || parsed.hash
+    || segments.length !== 2
+    || !segments.every((segment) => /^[\w.-]+$/.test(segment))
+    || !repositoryName
+  ) {
+    throw new ApiError(400, "INVALID_CONTENT_URL", "代码仓库必须是 GitHub 仓库地址");
+  }
+  return `https://github.com/${segments[0]}/${repositoryName}`;
+};
+
 const iconCode = (value: unknown, name = "图标代码") => {
   const normalized = text(value, name, 80, false).toLowerCase();
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized)) {
@@ -112,7 +130,7 @@ const profile = (value: unknown) => {
     startDate: text(value.startDate, "建站日期", 10),
     icp: text(value.icp, "ICP 备案号", 80),
     mps: text(value.mps, "公安备案号", 80),
-    repositoryUrl: url(value.repositoryUrl, "仓库地址"),
+    repositoryUrl: githubRepositoryUrl(value.repositoryUrl),
   };
 };
 

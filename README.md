@@ -68,10 +68,8 @@ pnpm dev:cf
 - `IP_HASH_SECRET`：登录限流摘要密钥，必填
 - `WALLHAVEN_API_KEY`：Wallhaven 可选身份配置
 - `QWEATHER_API_KEY`：可选的中国天气预警
-- `DEFAULT_LATITUDE`、`DEFAULT_LONGITUDE`、`DEFAULT_CITY`：本地天气默认位置
-- `GITHUB_REPOSITORY`、`GITHUB_TOKEN`：可选的版本检查配置
 
-站点初始内容来自 `.site-content.seed.json`。完成初始化后，公开资料、常规行为、音乐、壁纸和一言均在管理员后台维护。
+站点初始内容来自 `.site-content.seed.json`。完成初始化后，公开资料、常规行为、音乐、壁纸和一言均在管理员后台维护。站点资料中的 GitHub 仓库地址保存在 D1，并用于“关于”页面手动检查更新。
 
 ## Cloudflare 部署
 

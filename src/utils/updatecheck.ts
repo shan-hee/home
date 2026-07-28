@@ -1,20 +1,22 @@
-interface VersionInfo {
-  channel: string;
-  version: string;
-  type: string;
-  upa: string;
-}
+import { requestJson } from "@/services/apiClient";
 
 interface VersionApiResponse {
   version: string;
+  tag: string;
+  name: string;
   prerelease: boolean;
+  url: string;
+  publishedAt: string | null;
+  repository: string;
 }
 
-interface UpdateResult {
-  status: "true" | "false" | "error";
+export interface UpdateResult {
+  status: "up-to-date" | "available";
   latestVersion: string;
-  isPreview: "true" | "false";
-  versionType: string;
+  prerelease: boolean;
+  releaseUrl: string;
+  publishedAt: string | null;
+  repository: string;
 }
 
 const normalizeVersion = (value: string) => {
@@ -29,32 +31,28 @@ const compareVersions = (current: number[], latest: number[]) => {
   return 0;
 };
 
-export const checkForUpdate = async (versionInfo: VersionInfo): Promise<UpdateResult> => {
-  try {
-    const response = await fetch("/api/version", { headers: { accept: "application/json" } });
-    if (!response.ok) throw new Error(`版本接口返回 ${response.status}`);
-    const payload: unknown = await response.json();
-    if (!payload || typeof payload !== "object") throw new Error("版本接口响应格式无效");
-    const value = payload as Partial<VersionApiResponse>;
-    if (typeof value.version !== "string" || typeof value.prerelease !== "boolean") {
-      throw new Error("版本接口响应字段无效");
-    }
-    const current = normalizeVersion(versionInfo.version);
-    const latest = normalizeVersion(value.version);
-    if (!current || !latest) throw new Error("版本格式无效");
-    return {
-      status: compareVersions(current, latest) >= 0 ? "true" : "false",
-      latestVersion: latest.join("."),
-      isPreview: value.prerelease ? "true" : "false",
-      versionType: value.prerelease ? "prerelease" : "release",
-    };
-  } catch (error) {
-    console.error("更新检查失败：", error);
-    return {
-      status: "error",
-      latestVersion: "0.0.0",
-      isPreview: "false",
-      versionType: "error",
-    };
+export const checkForUpdate = async (currentVersion: string): Promise<UpdateResult> => {
+  const payload = await requestJson<unknown>("/api/version", { cache: "no-store" });
+  if (!payload || typeof payload !== "object") throw new Error("版本接口响应格式无效");
+  const value = payload as Partial<VersionApiResponse>;
+  if (
+    typeof value.version !== "string"
+    || typeof value.prerelease !== "boolean"
+    || typeof value.url !== "string"
+    || typeof value.repository !== "string"
+    || (value.publishedAt !== null && typeof value.publishedAt !== "string")
+  ) {
+    throw new Error("版本接口响应格式无效");
   }
+  const current = normalizeVersion(currentVersion);
+  const latest = normalizeVersion(value.version);
+  if (!current || !latest) throw new Error("版本格式无效");
+  return {
+    status: compareVersions(current, latest) >= 0 ? "up-to-date" : "available",
+    latestVersion: latest.join("."),
+    prerelease: value.prerelease,
+    releaseUrl: value.url,
+    publishedAt: value.publishedAt,
+    repository: value.repository,
+  };
 };
