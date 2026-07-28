@@ -1,10 +1,10 @@
-简体中文 | [English](./README_EN.md)
+简体中文 | [English](./docs/README_EN.md)
 
 # 無名の主页
 
 一个基于 React 和 Cloudflare 构建的个人导航主页，包含站点导航、天气、一言、音乐播放器、壁纸和管理员后台。
 
-![無名の主页](/screenshots/main.png)
+![無名の主页](./screenshots/main.png)
 
 [在线预览](https://ajjj.de/)
 
@@ -24,71 +24,70 @@
 - IndexedDB、Workbox PWA
 - IconPark、Iconify
 
-## 本地开发
+## 部署到 Cloudflare
 
-需要 Node.js 24+ 和 pnpm 11+。
+部署前需要一个 GitHub 账号和一个已开通 Pages、D1、R2 的 Cloudflare 账号。当前只支持 Cloudflare Pages。
+
+### 1. 准备仓库和 Cloudflare 资源
+
+1. Fork 本仓库到自己的 GitHub 账号。
+2. 在 Cloudflare 控制台创建一个名为 `home` 的 D1 数据库。
+3. 创建一个名为 `home-assets` 的 R2 Bucket。
+
+### 2. 创建 Pages 项目
+
+在 Cloudflare 控制台进入 Workers & Pages，选择“创建应用”并连接刚才 Fork 的 GitHub 仓库：
+
+| 项目 | 填写内容 |
+| --- | --- |
+| 生产分支 | `main` |
+| 构建命令 | `pnpm build` |
+| 构建输出目录 | `dist` |
+| 根目录 | 留空 |
+
+### 3. 添加资源绑定和密钥
+
+在 Pages 项目的“设置”中添加以下绑定：
+
+| 类型 | 变量名称 | 绑定内容 |
+| --- | --- | --- |
+| D1 数据库 | `DB` | 选择创建的 D1 数据库 |
+| R2 Bucket | `WALLPAPER_BUCKET` | 选择创建的 R2 Bucket |
+| Secret | `OWNER_PASSWORD` | 管理员登录密码，至少 8 个字符 |
+| Secret | `IP_HASH_SECRET` | 至少 32 个字符的随机字符串 |
+
+`OWNER_PASSWORD` 和 `IP_HASH_SECRET` 必须选择 Secret 类型，不要添加 `VITE_` 前缀。可按需添加 `QWEATHER_API_KEY` 和 `WALLHAVEN_API_KEY`。
+
+### 4. 首次初始化
+
+在电脑上安装 Node.js 24+ 和 pnpm 11+，然后进入仓库目录执行：
 
 ```bash
 pnpm install --frozen-lockfile
-
-cp .dev.vars.example .dev.vars
-cp scripts/site-content.seed.example.json .site-content.seed.json
-```
-
-编辑 `.dev.vars`，至少设置：
-
-```ini
-OWNER_PASSWORD = "至少 8 个字符"
-IP_HASH_SECRET = "使用 openssl rand -base64 48 生成"
-```
-
-首次启动前初始化本地 D1：
-
-```bash
-pnpm db:migrate:local
-pnpm db:seed:generate
-pnpm db:seed:local
-```
-
-启动完整开发环境：
-
-```bash
-pnpm dev:cf
-```
-
-浏览器访问 `http://localhost:3000`。Vite 会将 `/api/*` 转发到本地 Wrangler。
-
-只开发前端页面时可以运行 `pnpm dev:web`，但此模式不会启动 API。
-
-## 常用配置
-
-非敏感配置位于 `wrangler.jsonc`，本地 Secret 参考 `.dev.vars.example`：
-
-- `OWNER_PASSWORD`：管理员密码，必填
-- `IP_HASH_SECRET`：登录限流摘要密钥，必填
-- `WALLHAVEN_API_KEY`：Wallhaven 可选身份配置
-- `QWEATHER_API_KEY`：可选的中国天气预警
-
-站点初始内容来自 `.site-content.seed.json`。完成初始化后，公开资料、常规行为、音乐、壁纸和一言均在管理员后台维护。站点资料中的 GitHub 仓库地址保存在 D1，并用于“关于”页面手动检查更新。
-
-## Cloudflare 部署
-
-当前只维护 Cloudflare Pages 部署：
-
-1. 创建 D1 数据库和 R2 Bucket，并更新 `wrangler.jsonc` 中的真实绑定信息。
-2. 将 R2 绑定命名为 `WALLPAPER_BUCKET`，D1 绑定命名为 `DB`。
-3. 在 Pages 中配置 `APP_ORIGIN`、`APP_ENV`、`SESSION_TTL_DAYS`，并以 Secret 形式配置 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`。
-4. 准备 `.site-content.seed.json`，然后执行远端迁移和初始化。
-
-```bash
+pnpm exec wrangler login
 pnpm db:migrate:remote
 pnpm db:seed:generate
 pnpm db:seed:remote
 ```
 
-5. Pages 构建命令使用 `pnpm build`，输出目录为 `dist`。
+这组初始化命令只需在全新数据库上执行一次。完成后刷新站点，即可使用 `OWNER_PASSWORD` 登录管理员后台并修改站点资料。
 
 不要将真实密码、密钥、`.dev.vars` 或 `.site-content.seed.json` 提交到仓库。
+
+## 本地维护
+
+```bash
+pnpm install --frozen-lockfile
+cp .dev.vars.example .dev.vars
+pnpm db:migrate:local
+pnpm db:seed:generate
+pnpm db:seed:local
+pnpm dev:cf
+```
+
+编辑 `.dev.vars`，填写本地使用的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`，然后访问 `http://localhost:3000`。只调整前端页面时可使用 `pnpm dev:web`。
+
+站点初始内容来自 `scripts/site-content.seed.example.json`。部署完成后，站点资料、默认行为、音乐、壁纸和一言均可在管理员后台维护；代码仓库地址用于“关于”页面检查更新。
 
 ## 数据与离线行为
 
@@ -99,9 +98,9 @@ pnpm db:seed:remote
 
 ## 外部服务
 
-- [诺西 API 音乐解析](https://docs.nxvav.cn/doc/music.html)
+- [nuoxian's API 音乐解析](https://docs.nxvav.cn/doc/music.html)
 - [ChKSz API 网易云音乐解析](https://api.chksz.top/docs/163_music.html)
-- [诺西 API 必应每日美图](https://docs.nxvav.cn/doc/bing.html)
+- [nuoxian's API 必应每日美图](https://docs.nxvav.cn/doc/bing.html)
 - [Wallhaven API](https://wallhaven.cc/help/api)
 - [Open-Meteo](https://open-meteo.com/) 与 [MET Norway](https://api.met.no/)
 - [Hitokoto 一言](https://hitokoto.cn/)
