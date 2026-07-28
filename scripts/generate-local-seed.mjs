@@ -20,9 +20,8 @@ if (
 }
 
 const statements = [
-  "DELETE FROM content_sections;",
   ...Object.entries(sections).map(([key, content]) => (
-    `INSERT INTO content_sections (`
+    `INSERT OR IGNORE INTO content_sections (`
       + "section_key, content_json, revision, updated_at, updated_by_device"
       + `) VALUES (${sqlText(key)}, ${sqlText(JSON.stringify(content))}, ${seedRevision}, ${sqlText(now)}, NULL);`
   )),
