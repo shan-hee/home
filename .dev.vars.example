@@ -1,3 +1,6 @@
+# 本地运行配置；生产变量在 Cloudflare Pages 项目设置中定义。
+APP_ENV = "development"
+
 # 单所有者登录密码。由所有者设置，至少 8 个字符，不得提交真实值。
 OWNER_PASSWORD = ""
 # 用于登录限流的 IP 摘要密钥，应使用 `openssl rand -base64 48` 生成。
