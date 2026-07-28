@@ -87,6 +87,8 @@ pnpm dev:cf
 
 编辑 `.dev.vars`，填写本地使用的 `OWNER_PASSWORD` 和 `IP_HASH_SECRET`，然后访问 `http://localhost:3000`。只调整前端页面时可使用 `pnpm dev:web`。
 
+`wrangler.local.jsonc` 仅用于本地 D1 和 R2，不参与 Cloudflare Pages 生产部署。
+
 站点初始内容来自 `scripts/site-content.seed.example.json`。部署完成后，站点资料、默认行为、音乐、壁纸和一言均可在管理员后台维护；代码仓库地址用于“关于”页面检查更新。
 
 ## 数据与离线行为

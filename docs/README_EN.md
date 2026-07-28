@@ -87,6 +87,8 @@ pnpm dev:cf
 
 Set the local `OWNER_PASSWORD` and `IP_HASH_SECRET` in `.dev.vars`, then open `http://localhost:3000`. Use `pnpm dev:web` when only working on frontend pages.
 
+`wrangler.local.jsonc` is used only for local D1 and R2 resources. It is not used by the production Cloudflare Pages deployment.
+
 Initial content comes from `scripts/site-content.seed.example.json`. After deployment, profile data, default behavior, music, wallpapers, and Hitokoto can be managed from the owner dashboard. The repository address is used by the About page to check for updates.
 
 ## Data and offline behavior
