@@ -3,18 +3,9 @@ OWNER_PASSWORD = ""
 # 用于登录限流的 IP 摘要密钥，应使用 `openssl rand -base64 48` 生成。
 IP_HASH_SECRET = ""
 
-# Wrangler 本地没有 Cloudflare request.cf 时使用的可选默认位置。
-DEFAULT_LATITUDE = ""
-DEFAULT_LONGITUDE = ""
-DEFAULT_CITY = ""
-
 # 可选：中国天气预警。留空时 /api/alerts 返回空数组，不影响普通天气。
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"
 
 # 可选：Wallhaven 请求身份；当前仅请求公开 SFW 壁纸，留空即可使用。
 WALLHAVEN_API_KEY = ""
-
-# 版本检查目标仓库与可选 GitHub Token。
-GITHUB_REPOSITORY = "shan-hee/home"
-GITHUB_TOKEN = ""

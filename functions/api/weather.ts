@@ -1,12 +1,6 @@
 import { cacheCoordinate, cachedResponse } from "../lib/cache";
 import { fetchJson, jsonResponse } from "../lib/http";
 
-interface Environment {
-  DEFAULT_LATITUDE?: string;
-  DEFAULT_LONGITUDE?: string;
-  DEFAULT_CITY?: string;
-}
-
 interface CloudflareLocation {
   latitude?: string;
   longitude?: string;
@@ -16,7 +10,6 @@ interface CloudflareLocation {
 type PagesRequest = Request & { cf?: CloudflareLocation };
 type PagesContext = {
   request: PagesRequest;
-  env: Environment;
   waitUntil?: (promise: Promise<unknown>) => void;
 };
 
@@ -125,11 +118,11 @@ const getWindLevel = (speed: number) => {
   ).toString();
 };
 
-const resolveLocation = (request: PagesRequest, env: Environment) => {
+const resolveLocation = (request: PagesRequest) => {
   const url = new URL(request.url);
-  const latitude = toNumber(url.searchParams.get("latitude") || request.cf?.latitude || env.DEFAULT_LATITUDE);
-  const longitude = toNumber(url.searchParams.get("longitude") || request.cf?.longitude || env.DEFAULT_LONGITUDE);
-  const city = (url.searchParams.get("city") || request.cf?.city || env.DEFAULT_CITY || "IP 所在地").trim().slice(0, 80);
+  const latitude = toNumber(url.searchParams.get("latitude") || request.cf?.latitude);
+  const longitude = toNumber(url.searchParams.get("longitude") || request.cf?.longitude);
+  const city = (url.searchParams.get("city") || request.cf?.city || "IP 所在地").trim().slice(0, 80);
 
   if (latitude === null || longitude === null || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
     throw new Error("缺少有效的定位信息");
@@ -201,7 +194,7 @@ const loadMetNorway = async (location: ReturnType<typeof resolveLocation>) => {
 
 export const onRequestGet = async (context: PagesContext) => {
   try {
-    const location = resolveLocation(context.request, context.env);
+    const location = resolveLocation(context.request);
     const cacheUrl = new URL(
       `/__edge-cache/weather?latitude=${cacheCoordinate(location.latitude)}&longitude=${cacheCoordinate(location.longitude)}&city=${encodeURIComponent(location.city)}`,
       context.request.url,

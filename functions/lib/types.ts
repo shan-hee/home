@@ -58,11 +58,6 @@ export interface AppEnvironment {
   WALLHAVEN_API_KEY?: string;
   QWEATHER_API_KEY?: string;
   QWEATHER_API_HOST?: string;
-  GITHUB_REPOSITORY?: string;
-  GITHUB_TOKEN?: string;
-  DEFAULT_LATITUDE?: string;
-  DEFAULT_LONGITUDE?: string;
-  DEFAULT_CITY?: string;
 }
 
 export interface PagesContext<Environment extends AppEnvironment = AppEnvironment> {
