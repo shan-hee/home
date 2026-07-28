@@ -7,7 +7,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MusicContentConfig, SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
 import { checkForUpdate, type UpdateResult } from "@/utils/updatecheck";
-import { appVersion, appVersionInfo } from "@/utils/ver";
+import { appVersion, appVersionNumber } from "@/utils/ver";
 import "@/components/ContentSettings.scss";
 
 type Section = keyof SiteContentSections;
@@ -381,11 +381,11 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     if (updateCheck.status === "loading") return;
     setUpdateCheck({ status: "loading", message: "正在检查最新版本…", result: null });
     try {
-      const result = await checkForUpdate(appVersionInfo.version);
+      const result = await checkForUpdate(appVersionNumber);
       setUpdateCheck({
         status: result.status,
         message: result.status === "up-to-date"
-          ? `当前版本 ${appVersionInfo.version} 已是最新版本`
+          ? `当前版本 ${appVersionNumber} 已是最新版本`
           : `发现新版本 ${result.latestVersion}`,
         result,
       });
