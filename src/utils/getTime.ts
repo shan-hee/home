@@ -97,7 +97,7 @@ export const helloInit = () => {
 };
 
 // 默哀模式
-const anniversaries = {
+const anniversaries: Record<string, string> = {
   4.4: "清明节",
   5.12: "汶川大地震纪念日",
   7.7: "中国人民抗日战争纪念日",

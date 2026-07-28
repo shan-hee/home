@@ -4,7 +4,7 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ContextMenuEvent, KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import type { KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Mousewheel, Pagination } from "swiper/modules";
@@ -62,7 +62,7 @@ function SortableSiteLink({ id, item, disabled, onOpenMenu }: SortableSiteLinkPr
   const { setNodeRef, setActivatorNodeRef, transform, transition, isDragging, listeners } = useSortable({ id, disabled });
   const longPress = useLongPressContextMenu((clientX, clientY) => onOpenMenu(clientX, clientY, id), disabled);
 
-  const openContextMenu = (event: ContextMenuEvent) => {
+  const openContextMenu = (event: ReactMouseEvent) => {
     if (disabled) return;
     event.preventDefault();
     event.stopPropagation();

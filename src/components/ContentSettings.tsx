@@ -166,7 +166,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
     await Promise.all(keys.map(async (section) => {
       const draft = await loadDraft(section);
       if (!draft) return;
-      (next as Record<string, unknown>)[section] = structuredClone(draft.editedContent);
+      (next as unknown as Record<string, unknown>)[section] = structuredClone(draft.editedContent);
       states[section] = {
         saving: false,
         message: draft.baseRevision === base.sectionRevisions[section] ? "已恢复本机草稿" : "草稿基于旧版本，保存时可能发生冲突",
