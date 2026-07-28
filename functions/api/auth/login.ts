@@ -23,7 +23,7 @@ interface LoginBody {
 export const onRequestPost = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    requireSameOrigin(context.request, context.env);
+    requireSameOrigin(context.request);
     const body = await parseJsonBody<LoginBody>(context.request);
     const password = typeof body.password === "string" ? body.password : "";
     const deviceId = crypto.randomUUID();

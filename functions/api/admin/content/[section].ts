@@ -43,7 +43,7 @@ const changes = (result: { meta?: Record<string, unknown> }) => {
 export const onRequestPut = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    requireSameOrigin(context.request, context.env);
+    requireSameOrigin(context.request);
     const session = await requireOwnerSession(context.request, context.env);
     const section = routeSection(context)?.trim() || "";
     if (!isContentSectionKey(section)) {

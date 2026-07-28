@@ -9,7 +9,7 @@ import type { PagesContext } from "../../lib/types";
 export const onRequestPost = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    requireSameOrigin(context.request, context.env);
+    requireSameOrigin(context.request);
     const session = await requireOwnerSession(context.request, context.env);
     const now = new Date().toISOString();
     await writeAuditLog(context.env, session, "auth.logout_all", "sessions");

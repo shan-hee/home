@@ -20,7 +20,7 @@ const routeId = (context: PagesContext) => {
 export const onRequestDelete = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    requireSameOrigin(context.request, context.env);
+    requireSameOrigin(context.request);
     const session = await requireOwnerSession(context.request, context.env);
     const deviceId = routeId(context)?.trim() || "";
     if (!deviceId || deviceId.length > 80) {

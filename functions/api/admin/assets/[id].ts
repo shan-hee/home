@@ -16,7 +16,7 @@ const routeId = (context: PagesContext) => {
 export const onRequestDelete = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    requireSameOrigin(context.request, context.env);
+    requireSameOrigin(context.request);
     const session = await requireOwnerSession(context.request, context.env);
     const id = routeId(context);
     const asset = await context.env.DB.prepare("SELECT id, object_key FROM assets WHERE id = ?").bind(id).first<AssetRow>();

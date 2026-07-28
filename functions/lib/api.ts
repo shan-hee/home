@@ -1,5 +1,4 @@
 import { jsonResponse } from "./http";
-import type { AppEnvironment } from "./types";
 
 export class ApiError extends Error {
   readonly code: string;
@@ -70,16 +69,10 @@ export const parseJsonBody = async <Body>(request: Request, maxBytes = 4096): Pr
   }
 };
 
-const normalizedOrigin = (value: string) => value.replace(/\/$/, "");
-
-export const requireSameOrigin = (request: Request, env: AppEnvironment) => {
-  const expected = env.APP_ORIGIN?.trim();
-  if (!expected) {
-    throw new ApiError(503, "ORIGIN_NOT_CONFIGURED", "服务暂时不可用");
-  }
-
+export const requireSameOrigin = (request: Request) => {
+  const expected = new URL(request.url).origin;
   const origin = request.headers.get("origin")?.trim();
-  if (!origin || normalizedOrigin(origin) !== normalizedOrigin(expected)) {
+  if (!origin || origin !== expected) {
     throw new ApiError(403, "ORIGIN_REJECTED", "请求来源不受信任");
   }
 };
