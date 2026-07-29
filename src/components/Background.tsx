@@ -91,7 +91,7 @@ export default function Background({ onLoadComplete }: Props) {
   }, []);
 
   const finishInitial = useCallback(() => {
-    useMainStore.getState().setImgLoadStatus(true);
+    useMainStore.getState().patch({ imgLoadStatus: true });
     if (initialComplete.current) return;
     initialComplete.current = true;
     onLoadComplete();

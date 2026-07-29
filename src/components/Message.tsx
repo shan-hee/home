@@ -16,11 +16,11 @@ export default function Message({ onOpenOwnerPanel }: Props) {
   const msgNameShow = useSiteContentStore((state) => state.snapshot.sections.preferences.messageNameShow);
   const innerWidth = useMainStore((state) => state.innerWidth);
   const boxOpenState = useMainStore((state) => state.boxOpenState);
-  const setSetting = useMainStore((state) => state.setSetting);
+  const patch = useMainStore((state) => state.patch);
   const profile = useSiteContentStore((state) => state.snapshot.sections.profile);
   const siteUrl = displayUrl(msgNameShow ? profile.mainName || profile.siteUrl : profile.siteUrl);
   const changeBox = () => {
-    if ((innerWidth ?? 0) >= 721) setSetting("boxOpenState", !boxOpenState);
+    if ((innerWidth ?? 0) >= 721) patch({ boxOpenState: !boxOpenState });
     else toast.info("当前显示分辨率不足以打开拓展盒子啦qwq");
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

@@ -14,7 +14,7 @@ export default function ProgressBar() {
   const rawDuration = useMainStore((state) => state.playerDuration);
   const canPlay = useMainStore((state) => state.playerCanplay);
   const status = useMainStore((state) => state.playerStatus);
-  const setSetting = useMainStore((state) => state.setSetting);
+  const patch = useMainStore((state) => state.patch);
   const track = useRef<HTMLDivElement>(null);
   const pointer = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -33,7 +33,7 @@ export default function ProgressBar() {
     const next = Math.min(duration, Math.max(0, value));
     const audio = document.querySelector<HTMLAudioElement>("audio[data-music-engine]");
     if (audio) audio.currentTime = next;
-    setSetting("playerCurrentTime", next);
+    patch({ playerCurrentTime: next });
   };
   const down = (event: PointerEvent<HTMLDivElement>) => {
     if (!duration || (event.pointerType === "mouse" && event.button !== 0)) return;

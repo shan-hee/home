@@ -9,7 +9,6 @@ import VolumeSlider from "@/components/VolumeSlider";
 import { ApiClientError } from "@/services/apiClient";
 import { useMainStore } from "@/store";
 import { loadPlayerPreferences, savePlayerPreferences } from "@/stores/playerPreferences";
-import { loadPlayerSession, savePlayerSession } from "@/stores/playerSession";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MainState } from "@/typings/store";
 import type { MusicContentConfig } from "@/typings/siteContent";
@@ -151,9 +150,7 @@ export default function Music() {
   const audio = useRef<HTMLAudioElement>(null);
   const lyricsPanel = useRef<HTMLDivElement>(null);
   const resolvingTrack = useRef<string | null>(null);
-  const activeTrackId = useRef<string | null>(null);
   const lyricsTrackId = useRef<string | null>(null);
-  const pendingResumeTime = useRef<number | null>(null);
   const shouldPlay = useRef(false);
   const failedSources = useRef(new Set<string>());
   const previousVolume = useRef(useMainStore.getState().musicVolume || .3);
@@ -173,7 +170,6 @@ export default function Music() {
   const musicConfig = useSiteContentStore((state) => state.snapshot.sections.music);
   const musicRevision = useSiteContentStore((state) => state.snapshot.sectionRevisions.music);
   const preferences = useSiteContentStore((state) => state.snapshot.sections.preferences);
-  const musicSessionKey = `${musicConfig.server}:${musicConfig.type}:${musicConfig.id}`;
   const status = useMainStore((state) => state.playerStatus);
   const currentTime = useMainStore((state) => state.playerCurrentTime);
   const duration = useMainStore((state) => state.playerDuration);
@@ -187,9 +183,6 @@ export default function Music() {
   const autoplay = preferences.playerAutoplay;
   const patch = useMainStore((state) => state.patch);
   const setStatus = useMainStore((state) => state.setPlayerStatus);
-  const setCanPlay = useMainStore((state) => state.setPlayerCanplay);
-  const setPlayerData = useMainStore((state) => state.setPlayerData);
-  const setLyric = useMainStore((state) => state.setPlayerLyric);
   const current = playlist[index] ?? null;
   const currentSource = current ? sources[current.id] : undefined;
   const playbackUrl = currentSource?.url;
@@ -230,48 +223,17 @@ export default function Music() {
   }, []);
 
   useEffect(() => {
-    const persistSession = () => {
-      const trackId = activeTrackId.current;
-      if (!trackId || pendingResumeTime.current !== null) return;
-      const media = audio.current;
-      const storedTime = media && Number.isFinite(media.currentTime) ? media.currentTime : useMainStore.getState().playerCurrentTime;
-      savePlayerSession({
-        playlistKey: musicSessionKey,
-        trackId,
-        currentTime: Math.max(0, storedTime),
-        wasPlaying: Boolean(media && !media.paused && !media.ended),
-      });
-    };
-    const interval = window.setInterval(persistSession, 1000);
-    const visibilityChange = () => { if (document.visibilityState === "hidden") persistSession(); };
-    window.addEventListener("pagehide", persistSession);
-    document.addEventListener("visibilitychange", visibilityChange);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("pagehide", persistSession);
-      document.removeEventListener("visibilitychange", visibilityChange);
-    };
-  }, [musicSessionKey]);
-
-  useEffect(() => {
     let alive = true;
     let retryTimer: number | null = null;
-    pendingResumeTime.current = null;
-    activeTrackId.current = null;
     shouldPlay.current = false;
     failedSources.current.clear();
     setPlaylist([]); setSources({}); setIndex(0); setLyrics([]);
     patch({ playerStatus: "loading", musicIsOk: false, playerError: null, playerCurrentTime: 0, playerDuration: 0 });
     void getPlayerList(musicRevision).then((tracks) => {
       if (!tracks.length) throw new Error("播放列表为空");
-      const savedSession = loadPlayerSession();
-      const savedIndex = savedSession?.playlistKey === musicSessionKey ? tracks.findIndex((track) => track.id === savedSession.trackId) : -1;
-      const initialIndex = savedIndex >= 0 ? savedIndex : 0;
-      const restoredSession = savedIndex >= 0 && savedSession ? savedSession : null;
       if (!alive) return;
-      pendingResumeTime.current = restoredSession && restoredSession.currentTime > 0 ? restoredSession.currentTime : null;
-      shouldPlay.current = restoredSession ? restoredSession.wasPlaying : autoplay;
-      setIndex(initialIndex);
+      shouldPlay.current = autoplay;
+      setIndex(0);
       setPlaylist(tracks);
       patch({ musicIsOk: true, playerStatus: "ready" });
     }).catch((reason: unknown) => {
@@ -284,16 +246,18 @@ export default function Music() {
       alive = false;
       if (retryTimer !== null) window.clearTimeout(retryTimer);
     };
-  }, [autoplay, musicConfig.id, musicConfig.server, musicConfig.type, musicRevision, musicSessionKey, patch, reloadToken]);
+  }, [autoplay, musicConfig.id, musicConfig.server, musicConfig.type, musicRevision, patch, reloadToken]);
 
   useEffect(() => {
-    activeTrackId.current = current?.id ?? null;
     if (!current) return;
-    setPlayerData(current.name, current.artist);
-    setLyric(`${current.name} · ${current.artist || "未知歌手"}`);
+    patch({
+      playerTitle: current.name,
+      playerArtist: current.artist,
+      playerLyric: `${current.name} · ${current.artist || "未知歌手"}`,
+    });
     if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
     navigator.mediaSession.metadata = new MediaMetadata({ title: current.name, artist: current.artist, artwork: current.cover ? [{ src: current.cover }] : [] });
-  }, [current, setLyric, setPlayerData]);
+  }, [current, patch]);
 
   const prepareTrackSource = useCallback(async (track: PlaylistItem) => {
     if (resolvingTrack.current === track.id) return;
@@ -366,8 +330,8 @@ export default function Music() {
   useEffect(() => {
     const line = activeLyric >= 0 ? lyrics[activeLyric]?.text : undefined;
     const fallback = `${current?.name || "未知歌曲"} · ${current?.artist || "未知歌手"}`;
-    setLyric(usableLyric(line) ? line!.replace(/&nbsp;/g, " ") : fallback);
-  }, [activeLyric, current?.artist, current?.name, lyrics, setLyric]);
+    patch({ playerLyric: usableLyric(line) ? line!.replace(/&nbsp;/g, " ") : fallback });
+  }, [activeLyric, current?.artist, current?.name, lyrics, patch]);
 
   useEffect(() => {
     if (!fullscreen || activeLyric < 0) return;
@@ -432,11 +396,9 @@ export default function Music() {
       return;
     }
     shouldPlay.current = start;
-    pendingResumeTime.current = null;
-    savePlayerSession({ playlistKey: musicSessionKey, trackId: nextTrack.id, currentTime: 0, wasPlaying: start });
     patch({ playerCurrentTime: 0, playerDuration: 0, playerCanplay: false, playerStatus: "loading", playerError: null });
     setIndex(nextIndex);
-  }, [index, musicSessionKey, patch, play, playlist]);
+  }, [index, patch, play, playlist]);
   const change = useCallback((direction: -1 | 1) => select(pickNext(direction)), [pickNext, select]);
   const seek = useCallback((time: number) => {
     if (!audio.current || !Number.isFinite(time)) return;
@@ -494,47 +456,36 @@ export default function Music() {
   const openPlaylist = useCallback(() => patch({ musicBoxOpenState: true }), [patch]);
 
   const handleLoadStart = useCallback(() => {
-    setCanPlay(false);
+    patch({ playerCanplay: false });
     if (useMainStore.getState().musicIsOk) setStatus("loading");
-  }, [setCanPlay, setStatus]);
-  const restorePendingPosition = useCallback(() => {
-    const media = audio.current;
-    const requestedTime = pendingResumeTime.current;
-    if (!media || requestedTime === null || media.readyState < HTMLMediaElement.HAVE_METADATA) return;
-    const upperBound = Number.isFinite(media.duration) && media.duration > 0 ? Math.max(0, media.duration - 0.25) : requestedTime;
-    const restoredTime = Math.min(requestedTime, upperBound);
-    media.currentTime = restoredTime;
-    patch({ playerCurrentTime: restoredTime });
-    pendingResumeTime.current = null;
-  }, [patch]);
+  }, [patch, setStatus]);
   const handleCanPlay = useCallback(() => {
-    restorePendingPosition();
-    setCanPlay(true);
+    patch({ playerCanplay: true });
     failedSources.current.delete(current ? `${current.id}:${currentSource?.source || "original"}` : "");
     if (shouldPlay.current) void play();
     else {
       const state = useMainStore.getState();
       setStatus(state.playerHasStarted ? "paused" : "ready");
     }
-  }, [current, currentSource?.source, play, restorePendingPosition, setCanPlay, setStatus]);
+  }, [current, currentSource?.source, patch, play, setStatus]);
   const handlePlay = useCallback(() => {
     shouldPlay.current = true;
     setStatus("playing");
   }, [setStatus]);
   const handlePlaying = useCallback(() => {
     shouldPlay.current = true;
-    setCanPlay(true);
+    patch({ playerCanplay: true });
     setStatus("playing");
-  }, [setCanPlay, setStatus]);
+  }, [patch, setStatus]);
   const handlePause = useCallback(() => {
     const state = useMainStore.getState();
     if (state.playerStatus === "error" || (state.playerStatus === "loading" && shouldPlay.current)) return;
     setStatus(state.playerHasStarted ? "paused" : "ready");
   }, [setStatus]);
   const handleWaiting = useCallback(() => {
-    setCanPlay(false);
+    patch({ playerCanplay: false });
     setStatus("loading");
-  }, [setCanPlay, setStatus]);
+  }, [patch, setStatus]);
   const handlePlaybackError = useCallback(() => {
     const track = playlist[index];
     if (!track || !currentSource || resolvingTrack.current === track.id) return;
@@ -625,8 +576,7 @@ export default function Music() {
   const handleLoadedMetadata = useCallback(() => {
     const media = audio.current;
     if (media) patch({ playerDuration: Number.isFinite(media.duration) ? media.duration : 0 });
-    restorePendingPosition();
-  }, [patch, restorePendingPosition]);
+  }, [patch]);
 
   const volumeIcon = effectiveVolume === 0 ? <VolumeMute theme="filled" size="23" fill="currentColor" /> : effectiveVolume < .7 ? <VolumeSmall theme="filled" size="23" fill="currentColor" /> : <VolumeNotice theme="filled" size="23" fill="currentColor" />;
   const cycleMode = () => {
