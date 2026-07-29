@@ -91,7 +91,7 @@ export const onRequestPost = async (context: PagesContext) => {
     const id = crypto.randomUUID();
     const objectKey = `wallpapers/${variant}/${id}.${format.extension}`;
     const originalName = normalizedFileName(file.name, format.extension);
-    const stored = await context.env.WALLPAPER_BUCKET.put(objectKey, file, {
+    const stored = await context.env.ASSET_BUCKET.put(objectKey, file, {
       httpMetadata: { contentType: format.mimeType, cacheControl: "public, max-age=31536000, immutable" },
       customMetadata: { assetId: id },
     });
@@ -105,7 +105,7 @@ export const onRequestPost = async (context: PagesContext) => {
         ) VALUES (?, ?, 'wallpaper', ?, ?, ?, ?, ?, ?, ?)
       `).bind(id, objectKey, variant, originalName, format.mimeType, file.size, checksum, now, session.deviceId).run();
     } catch (error) {
-      await context.env.WALLPAPER_BUCKET.delete(objectKey);
+      await context.env.ASSET_BUCKET.delete(objectKey);
       throw error;
     }
     const row: AssetRow = {

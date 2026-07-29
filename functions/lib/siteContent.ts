@@ -99,14 +99,10 @@ const iconText = (value: unknown) => {
   return normalized;
 };
 
-const siteIconUrl = (value: unknown, siteLink: string) => {
-  const normalized = url(value, "网站图标地址");
-  const icon = new URL(normalized);
-  const site = new URL(siteLink);
-  const fromGoogle = icon.host === "www.google.com" && icon.pathname === "/s2/favicons";
-  const fromDuckDuckGo = icon.host === "icons.duckduckgo.com" && icon.pathname.startsWith("/ip3/");
-  if (icon.host !== site.host && !fromGoogle && !fromDuckDuckGo) {
-    throw new ApiError(400, "INVALID_CONTENT_URL", "网站图标地址与目标网站不匹配");
+const assetId = (value: unknown, name: string) => {
+  const normalized = text(value, name, 36, false);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalized)) {
+    throw new ApiError(400, "INVALID_CONTENT", `${name}格式无效`);
   }
   return normalized;
 };
@@ -142,7 +138,7 @@ const siteLinks = (value: unknown) => {
     if (!isRecord(item)) throw new ApiError(400, "INVALID_CONTENT", `网站 ${index + 1} 格式无效`);
     knownKeys(item, ["name", "link", "iconMode", "iconValue", "iconColor"]);
     const iconMode = text(item.iconMode, "网站图标类型", 10, false);
-    if (iconMode !== "text" && iconMode !== "icon" && iconMode !== "image") {
+    if (iconMode !== "text" && iconMode !== "icon" && iconMode !== "asset") {
       throw new ApiError(400, "INVALID_CONTENT", "网站图标类型无效");
     }
     const link = url(item.link, "网站地址", ["http:", "https:"]);
@@ -152,8 +148,8 @@ const siteLinks = (value: unknown) => {
       iconMode,
       iconValue: iconMode === "icon"
         ? iconCode(item.iconValue, "网站图标代码")
-        : iconMode === "image"
-          ? siteIconUrl(item.iconValue, link)
+        : iconMode === "asset"
+          ? assetId(item.iconValue, "网站图标资源")
           : iconText(item.iconValue),
       iconColor: color(item.iconColor, "网站图标颜色"),
     };
@@ -337,7 +333,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,
@@ -347,7 +343,7 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config-v6", request.url).toString();
+  return new URL("/__edge-cache/site-config-v7", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {

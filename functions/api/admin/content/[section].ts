@@ -28,6 +28,11 @@ interface MutationRow {
   response_json: string;
 }
 
+interface SiteIconRow {
+  id: string;
+  object_key: string;
+}
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const routeSection = (context: PagesContext) => {
@@ -68,6 +73,9 @@ export const onRequestPut = async (context: PagesContext) => {
       throw new ApiError(400, "INVALID_CONTENT_REVISION", "配置版本无效");
     }
     const content = normalizeContentSection(section, body.content);
+    const baseRevision = body.baseRevision as number;
+    const retainedSiteIconIds = new Set<string>();
+    const previousSiteIconIds = new Set<string>();
     if (section === "wallpaper") {
       const wallpaper = content as { desktopAssetId: string | null; mobileAssetId: string | null };
       const assets = [
@@ -82,7 +90,34 @@ export const onRequestPut = async (context: PagesContext) => {
         if (!asset) throw new ApiError(400, "INVALID_WALLPAPER_ASSET", `${variant === "desktop" ? "桌面端" : "移动端"}壁纸资源不存在`);
       }));
     }
-    const baseRevision = body.baseRevision as number;
+    if (section === "siteLinks") {
+      const links = content as Array<{ iconMode: "text" | "icon" | "asset"; iconValue: string }>;
+      links.filter((link) => link.iconMode === "asset").forEach((link) => retainedSiteIconIds.add(link.iconValue));
+      await Promise.all([...retainedSiteIconIds].map(async (id) => {
+        const asset = await context.env.DB.prepare(
+          "SELECT id FROM assets WHERE id = ? AND kind = 'site_icon'",
+        ).bind(id).first<{ id: string }>();
+        if (!asset) throw new ApiError(400, "INVALID_SITE_ICON_ASSET", "网站图标资源不存在");
+      }));
+      if (baseRevision > 0) {
+        const current = await context.env.DB.prepare(
+          "SELECT content_json FROM content_sections WHERE section_key = 'siteLinks' AND revision = ?",
+        ).bind(baseRevision).first<{ content_json: string }>();
+        if (current) {
+          const currentLinks = JSON.parse(current.content_json) as unknown;
+          if (Array.isArray(currentLinks)) {
+            currentLinks.forEach((link) => {
+              if (
+                link && typeof link === "object"
+                && "iconMode" in link && link.iconMode === "asset"
+                && "iconValue" in link && typeof link.iconValue === "string"
+                && UUID_PATTERN.test(link.iconValue)
+              ) previousSiteIconIds.add(link.iconValue);
+            });
+          }
+        }
+      }
+    }
     const now = new Date().toISOString();
     const revision = baseRevision + 1;
     const response = { section, content, revision, updatedAt: now };
@@ -132,6 +167,24 @@ export const onRequestPut = async (context: PagesContext) => {
     }
 
     await writeAuditLog(context.env, session, "content.update", section, { revision });
+    if (section === "siteLinks") {
+      const removedIds = [...previousSiteIconIds].filter((id) => !retainedSiteIconIds.has(id));
+      const cleanup = Promise.allSettled(removedIds.map(async (id) => {
+        const asset = await context.env.DB.prepare(
+          "SELECT id, object_key FROM assets WHERE id = ? AND kind = 'site_icon'",
+        ).bind(id).first<SiteIconRow>();
+        if (!asset) return;
+        await context.env.ASSET_BUCKET.delete(asset.object_key);
+        await context.env.DB.prepare("DELETE FROM assets WHERE id = ? AND kind = 'site_icon'").bind(asset.id).run();
+        await deleteCachedResponse(new URL(`/api/assets/${asset.id}?kind=site-icon`, context.request.url).toString());
+      })).then((results) => {
+        results.forEach((result) => {
+          if (result.status === "rejected") console.error("清理未引用网站图标失败：", result.reason);
+        });
+      });
+      if (context.waitUntil) context.waitUntil(cleanup);
+      else await cleanup;
+    }
     const cacheDeletes = [deleteCachedResponse(siteConfigCacheUrl(context.request))];
     if (section === "music") cacheDeletes.push(deleteCachedResponse(musicCacheUrl(context.request)));
     if (section === "hitokoto") cacheDeletes.push(deleteCachedResponse(hitokotoCacheUrl(context.request)));

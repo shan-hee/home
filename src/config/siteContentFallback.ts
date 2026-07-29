@@ -1,7 +1,7 @@
 import type { SiteContentSnapshot } from "@/typings/siteContent";
 
 export const siteContentFallback: SiteContentSnapshot = {
-  schemaVersion: 6,
+  schemaVersion: 7,
   revision: "build-fallback",
   generatedAt: "",
   etag: "",

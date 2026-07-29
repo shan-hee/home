@@ -8,11 +8,11 @@ interface Props {
 }
 
 export default function SiteLinkIcon({ link, size = 31 }: Props) {
-  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [failedAssetId, setFailedAssetId] = useState<string | null>(null);
 
   if (link.iconMode === "text") return <b>{link.iconValue}</b>;
-  if (link.iconMode === "image" && failedImageUrl !== link.iconValue) {
-    return <img className="site-icon-image" src={link.iconValue} alt="" width={size} height={size} referrerPolicy="no-referrer" draggable={false} onError={() => setFailedImageUrl(link.iconValue)} />;
+  if (link.iconMode === "asset" && failedAssetId !== link.iconValue) {
+    return <img className="site-icon-image" src={`/api/assets/${encodeURIComponent(link.iconValue)}?kind=site-icon`} alt="" width={size} height={size} draggable={false} onError={() => setFailedAssetId(link.iconValue)} />;
   }
   return <DynamicIcon code={link.iconMode === "icon" ? link.iconValue : "ri:links-fill"} size={size} />;
 }

@@ -14,7 +14,7 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev:web": "vite --host",
-    "dev:api": "wrangler pages dev public --port 8788 --compatibility-date=2026-07-23 --d1 DB=00000000-0000-0000-0000-000000000000 --r2 WALLPAPER_BUCKET=home-assets-dev",
+    "dev:api": "wrangler pages dev public --port 8788 --compatibility-date=2026-07-23 --d1 DB=00000000-0000-0000-0000-000000000000 --r2 ASSET_BUCKET=home-assets-dev",
     "dev:cf": "pnpm run --parallel \"/^dev:(web|api)$/\"",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.jsonc",
     "db:migrate:remote": "wrangler d1 migrations apply home --remote",

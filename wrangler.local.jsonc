@@ -12,7 +12,7 @@
   ],
   "r2_buckets": [
     {
-      "binding": "WALLPAPER_BUCKET",
+      "binding": "ASSET_BUCKET",
       "bucket_name": "home-assets-dev"
     }
   ]

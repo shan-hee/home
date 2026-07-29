@@ -6,7 +6,7 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Partial<SiteContentSnapshot>;
   if (
-    snapshot.schemaVersion !== 6
+    snapshot.schemaVersion !== 7
     || typeof snapshot.revision !== "string"
     || typeof snapshot.etag !== "string"
     || !snapshot.sections
@@ -17,7 +17,7 @@ const isSiteContentSnapshot = (value: unknown): value is SiteContentSnapshot => 
     && sections.siteLinks.every((item) => (
       typeof item.name === "string"
       && typeof item.link === "string"
-      && (item.iconMode === "text" || item.iconMode === "icon" || item.iconMode === "image")
+      && (item.iconMode === "text" || item.iconMode === "icon" || item.iconMode === "asset")
       && typeof item.iconValue === "string"
       && typeof item.iconColor === "string"
     ))

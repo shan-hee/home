@@ -1,4 +1,4 @@
-export type LinkIconMode = "text" | "icon" | "image";
+export type LinkIconMode = "text" | "icon" | "asset";
 
 export interface SiteProfile {
   siteName: string;
@@ -78,7 +78,7 @@ export interface SiteContentSections {
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 6;
+  schemaVersion: 7;
   revision: string;
   generatedAt: string;
   etag: string;

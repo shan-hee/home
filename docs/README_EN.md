@@ -52,7 +52,7 @@ Add the following bindings in the Pages project settings:
 | Type | Variable name | Value |
 | --- | --- | --- |
 | D1 database | `DB` | Select the D1 database |
-| R2 bucket | `WALLPAPER_BUCKET` | Select the R2 bucket |
+| R2 bucket | `ASSET_BUCKET` | Select the R2 bucket |
 | Secret | `OWNER_PASSWORD` | Owner password with at least 8 characters |
 | Secret | `IP_HASH_SECRET` | Random string with at least 32 characters |
 
@@ -94,9 +94,10 @@ Initial content comes from `scripts/site-content.seed.example.json`. After deplo
 ## Data and offline behavior
 
 - D1 stores site configuration, devices, sessions, and audit records.
-- R2 stores server-validated and normalized custom wallpapers up to 50MB each.
+- R2 stores server-validated custom wallpapers and site icons; wallpapers are limited to 50MB and site icons to 512KB, with scripts and external resource references rejected in SVG icons.
+- Favicons selected by the owner are deduplicated by content hash in R2, so public pages no longer depend on live third-party favicon requests.
 - IndexedDB stores owner drafts and queued mutations, which are submitted after connectivity returns.
-- The PWA caches the application shell, recent configuration, and a limited wallpaper set. Uncached music is not guaranteed to play offline.
+- The PWA caches the application shell, recent configuration, and limited sets of wallpapers and site icons. Uncached music is not guaranteed to play offline.
 
 ## External services
 

@@ -49,7 +49,7 @@ export interface R2Bucket {
 
 export interface AppEnvironment {
   DB: D1Database;
-  WALLPAPER_BUCKET: R2Bucket;
+  ASSET_BUCKET: R2Bucket;
   APP_ENV?: string;
   SESSION_TTL_DAYS?: string;
   OWNER_PASSWORD?: string;
