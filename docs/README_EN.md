@@ -4,7 +4,7 @@ English | [简体中文](../README.md)
 
 A personal navigation homepage built with React and Cloudflare, including links, weather, Hitokoto, music, wallpapers, and an owner dashboard.
 
-![Homepage](../screenshots/main.png)
+![home](../screenshots/image.png)
 
 [Live demo](https://ajjj.de/)
 

@@ -4,7 +4,7 @@
 
 一个基于 React 和 Cloudflare 构建的个人导航主页，包含站点导航、天气、一言、音乐播放器、壁纸和管理员后台。
 
-![無名の主页](./screenshots/main.png)
+![home](./screenshots/image.png)
 
 [在线预览](https://ajjj.de/)
 
