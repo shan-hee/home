@@ -63,8 +63,8 @@ export const resolveNeteaseLyrics = async (id: string, signal?: AbortSignal): Pr
   return { lrc, yrc };
 };
 
-export const getHitokoto = async () => {
-  const response = await fetch("/api/hitokoto", { headers: { accept: "application/json" } });
+export const getHitokoto = async (revision: number) => {
+  const response = await fetch(`/api/hitokoto?revision=${revision}`, { headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(`一言接口返回 ${response.status}`);
   return await response.json();
 };
