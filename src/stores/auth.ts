@@ -39,8 +39,10 @@ interface AuthStore {
   status: AuthStatus;
   device: AuthDevice | null;
   expiresAt: string | null;
+  initializePromise: Promise<boolean> | null;
   checkPromise: Promise<boolean> | null;
   applySession: (response: SessionResponse) => void;
+  initialize: () => Promise<boolean>;
   checkSession: () => Promise<boolean>;
   login: (password: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -52,12 +54,31 @@ export const useAuthStore = create<AuthStore>()(subscribeWithSelector((set, get)
   status: "checking",
   device: null,
   expiresAt: null,
+  initializePromise: null,
   checkPromise: null,
   applySession: (response) => set({
     status: response.authenticated ? "authenticated" : "anonymous",
     device: response.authenticated && response.device ? response.device : null,
     expiresAt: response.authenticated ? response.expiresAt || null : null,
   }),
+  initialize: () => {
+    if (get().initializePromise) return get().initializePromise!;
+    const promise = (async () => {
+      const remembered = await readRememberedOwner();
+      const current = get();
+      if (current.checkPromise) return current.checkPromise;
+      if (current.status !== "checking") {
+        return current.status === "authenticated" || current.status === "offline-owner";
+      }
+      if (!remembered) {
+        set({ status: "anonymous", device: null, expiresAt: null });
+        return false;
+      }
+      return get().checkSession();
+    })().finally(() => set({ initializePromise: null }));
+    set({ initializePromise: promise });
+    return promise;
+  },
   checkSession: async () => {
     if (get().checkPromise) return get().checkPromise!;
     set({ status: "checking" });

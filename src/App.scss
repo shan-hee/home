@@ -6,8 +6,13 @@
   height: 100%;
   // transform: scale(1.2);
   transition: transform 0.3s;
-  animation: fade-blur-main-in 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: fade-blur-main-in 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
   animation-delay: 0.5s;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transition: none;
+  }
 
   .page-container {
     width: 100%;
