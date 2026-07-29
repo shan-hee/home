@@ -3,11 +3,9 @@ import { resolve } from "path";
 import { VitePWA } from "vite-plugin-pwa";
 import react from "@vitejs/plugin-react";
 import UnoCSS from 'unocss/vite';
-import type { UserConfig } from "vite";
 
 // https://vitejs.dev/config/
-export default (): UserConfig => {
-    return defineConfig({
+export default defineConfig({
         plugins: [
             react(),
             UnoCSS(),
@@ -20,13 +18,13 @@ export default (): UserConfig => {
                     cleanupOutdatedCaches: true,
                     runtimeCaching: [
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config",
-                            handler: "CacheFirst",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config" && !url.search,
+                            handler: "NetworkFirst",
                             options: {
-                                cacheName: "site-config-v4",
+                                cacheName: "site-config-v7",
+                                networkTimeoutSeconds: 3,
                                 expiration: {
                                     maxEntries: 1,
-                                    maxAgeSeconds: 6 * 60 * 60,
                                 },
                                 cacheableResponse: { statuses: [200] },
                             },
@@ -234,7 +232,6 @@ export default (): UserConfig => {
                     replacement: resolve(__dirname, "src")
                 }
             ],
-            extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
         },
         css: {
             preprocessorOptions: {
@@ -253,6 +250,4 @@ export default (): UserConfig => {
             },
             chunkSizeWarningLimit: 1024,
         },
-        publicDir: "public",
     });
-};

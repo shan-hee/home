@@ -3,12 +3,6 @@ import { array, object, picklist, safeParse } from "valibot";
 import type { BackgroundEffect, BackgroundEffectMode, ThemePreference } from "@/typings/store";
 
 const STORAGE_KEY = "home:visitor-appearance:v1";
-const legacyStorageKeys = [
-  "home:owner-settings:v1",
-  "home:site-content:v1",
-  "home:weather:cache:v1",
-  "home:owner:device-id:v1",
-] as const;
 const effectValues = ["snow", "firefly", "lantern", "meteor"] as const;
 const appearanceSchema = object({
   theme: picklist(["system", "time", "light", "dark"]),
@@ -34,7 +28,6 @@ const defaults: AppearanceValues = {
 
 const loadAppearance = (): AppearanceValues => {
   try {
-    legacyStorageKeys.forEach((key) => localStorage.removeItem(key));
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaults;
     const parsed = safeParse(appearanceSchema, JSON.parse(raw) as unknown);

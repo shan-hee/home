@@ -9,19 +9,6 @@ export const setupPwaUpdate = () => {
     void navigator.storage.persist().catch(() => false);
   }
 
-  if ("caches" in window) {
-    const obsoleteCaches = [
-      "js-css-cache",
-      "image-cache",
-      "site-config-v1",
-      "site-config-v2",
-      "site-config-v3",
-      "music-playlist-v3",
-      "online-wallpaper-v1",
-    ];
-    void Promise.all(obsoleteCaches.map((name) => window.caches.delete(name))).catch(() => undefined);
-  }
-
   const updateSW = registerSW({
     onNeedRefresh: async () => {
       const playing = useMainStore.getState().playerStatus === "playing";
