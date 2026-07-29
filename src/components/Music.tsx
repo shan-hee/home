@@ -152,6 +152,7 @@ export default function Music() {
   const lyricsPanel = useRef<HTMLDivElement>(null);
   const resolvingTrack = useRef<string | null>(null);
   const activeTrackId = useRef<string | null>(null);
+  const lyricsTrackId = useRef<string | null>(null);
   const pendingResumeTime = useRef<number | null>(null);
   const shouldPlay = useRef(false);
   const failedSources = useRef(new Set<string>());
@@ -193,7 +194,7 @@ export default function Music() {
   const currentSource = current ? sources[current.id] : undefined;
   const playbackUrl = currentSource?.url;
   const playing = status === "playing";
-  const loading = !canPlay && status !== "error";
+  const loading = status === "loading";
   const displayName = current?.name || useMainStore.getState().playerTitle || error || "播放器准备中";
   const currentMode = modes.find((mode) => mode.value === order) ?? modes[0]!;
   const effectiveVolume = muted ? 0 : volume;
@@ -261,24 +262,15 @@ export default function Music() {
     failedSources.current.clear();
     setPlaylist([]); setSources({}); setIndex(0); setLyrics([]);
     patch({ playerStatus: "loading", musicIsOk: false, playerError: null, playerCurrentTime: 0, playerDuration: 0 });
-    void getPlayerList().then(async (tracks) => {
+    void getPlayerList(musicRevision).then((tracks) => {
       if (!tracks.length) throw new Error("播放列表为空");
       const savedSession = loadPlayerSession();
       const savedIndex = savedSession?.playlistKey === musicSessionKey ? tracks.findIndex((track) => track.id === savedSession.trackId) : -1;
       const initialIndex = savedIndex >= 0 ? savedIndex : 0;
       const restoredSession = savedIndex >= 0 && savedSession ? savedSession : null;
-      const first = tracks[initialIndex]!;
-      let initialSource: PlaybackSource = { url: first.url, source: "original" };
-      if (musicConfig.server === "netease" && /^\d{1,20}$/.test(first.id)) {
-        try {
-          const url = await resolveNeteasePlaybackUrl(first.id);
-          initialSource = { url, source: "chksz" };
-        } catch { /* 使用歌单原始地址。 */ }
-      }
       if (!alive) return;
       pendingResumeTime.current = restoredSession && restoredSession.currentTime > 0 ? restoredSession.currentTime : null;
       shouldPlay.current = restoredSession ? restoredSession.wasPlaying : autoplay;
-      setSources({ [first.id]: initialSource });
       setIndex(initialIndex);
       setPlaylist(tracks);
       patch({ musicIsOk: true, playerStatus: "ready" });
@@ -303,23 +295,25 @@ export default function Music() {
     navigator.mediaSession.metadata = new MediaMetadata({ title: current.name, artist: current.artist, artwork: current.cover ? [{ src: current.cover }] : [] });
   }, [current, setLyric, setPlayerData]);
 
-  useEffect(() => {
-    if (!current || currentSource) return;
-    const controller = new AbortController();
-    const setSource = (source: PlaybackSource) => {
-      if (!controller.signal.aborted) setSources((currentSources) => ({ ...currentSources, [current.id]: source }));
-    };
-
-    if (musicConfig.server !== "netease" || !/^\d{1,20}$/.test(current.id)) {
-      setSource({ url: current.url, source: "original" });
-      return () => controller.abort();
+  const prepareTrackSource = useCallback(async (track: PlaylistItem) => {
+    if (resolvingTrack.current === track.id) return;
+    resolvingTrack.current = track.id;
+    let source: PlaybackSource = { url: track.url, source: "original" };
+    if (musicConfig.server === "netease" && /^\d{1,20}$/.test(track.id)) {
+      try {
+        source = { url: await resolveNeteasePlaybackUrl(track.id), source: "chksz" };
+      } catch {
+        // 解析服务不可用时使用歌单原始地址。
+      }
     }
+    setSources((currentSources) => ({ ...currentSources, [track.id]: source }));
+    if (resolvingTrack.current === track.id) resolvingTrack.current = null;
+  }, [musicConfig.server]);
 
-    void resolveNeteasePlaybackUrl(current.id, controller.signal)
-      .then((url) => setSource({ url, source: "chksz" }))
-      .catch(() => setSource({ url: current.url, source: "original" }));
-    return () => controller.abort();
-  }, [current, currentSource, musicConfig.server]);
+  useEffect(() => {
+    if (!current || currentSource || !shouldPlay.current) return;
+    void prepareTrackSource(current);
+  }, [current, currentSource, prepareTrackSource]);
 
   useEffect(() => {
     if (!playbackUrl || !audio.current) return;
@@ -328,7 +322,16 @@ export default function Music() {
 
   useEffect(() => {
     const controller = new AbortController();
-    if (!current) { setLyrics([]); return () => controller.abort(); }
+    if (!current) {
+      lyricsTrackId.current = null;
+      setLyrics([]);
+      return () => controller.abort();
+    }
+    if (lyricsTrackId.current !== current.id) {
+      lyricsTrackId.current = null;
+      setLyrics([]);
+    }
+    if ((!playing && !fullscreen) || lyricsTrackId.current === current.id) return () => controller.abort();
     const source = current.lrc.trim();
     const resolve = async () => {
       if (musicConfig.server === "netease" && /^\d{1,20}$/.test(current.id)) {
@@ -346,9 +349,19 @@ export default function Music() {
       const text = source.includes("[") ? source : await fetch(source, { signal: controller.signal }).then((response) => response.ok ? response.text() : "");
       return parseLrc(text);
     };
-    void resolve().then((nextLyrics) => { if (!controller.signal.aborted) setLyrics(nextLyrics); }).catch(() => { if (!controller.signal.aborted) setLyrics([]); });
+    void resolve().then((nextLyrics) => {
+      if (!controller.signal.aborted) {
+        lyricsTrackId.current = current.id;
+        setLyrics(nextLyrics);
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) {
+        lyricsTrackId.current = current.id;
+        setLyrics([]);
+      }
+    });
     return () => controller.abort();
-  }, [current, musicConfig.server]);
+  }, [current, fullscreen, musicConfig.server, playing]);
 
   useEffect(() => {
     const line = activeLyric >= 0 ? lyrics[activeLyric]?.text : undefined;
@@ -378,10 +391,11 @@ export default function Music() {
 
   const play = useCallback(async () => {
     const media = audio.current;
-    if (!media || !ready) return;
+    if (!media || !ready || !current) return;
     shouldPlay.current = true;
     if (!playbackUrl) {
       setStatus("loading");
+      void prepareTrackSource(current);
       return;
     }
     try {
@@ -390,7 +404,7 @@ export default function Music() {
       shouldPlay.current = false;
       setStatus("paused");
     }
-  }, [playbackUrl, ready, setStatus]);
+  }, [current, playbackUrl, prepareTrackSource, ready, setStatus]);
   const pause = useCallback(() => {
     shouldPlay.current = false;
     audio.current?.pause();
@@ -507,9 +521,15 @@ export default function Music() {
     shouldPlay.current = true;
     setStatus("playing");
   }, [setStatus]);
+  const handlePlaying = useCallback(() => {
+    shouldPlay.current = true;
+    setCanPlay(true);
+    setStatus("playing");
+  }, [setCanPlay, setStatus]);
   const handlePause = useCallback(() => {
     const state = useMainStore.getState();
-    if (state.playerStatus !== "error" && state.playerStatus !== "loading") setStatus(state.playerHasStarted ? "paused" : "ready");
+    if (state.playerStatus === "error" || (state.playerStatus === "loading" && shouldPlay.current)) return;
+    setStatus(state.playerHasStarted ? "paused" : "ready");
   }, [setStatus]);
   const handleWaiting = useCallback(() => {
     setCanPlay(false);
@@ -593,9 +613,13 @@ export default function Music() {
   const handleTimeUpdate = useCallback(() => {
     const media = audio.current;
     if (!media) return;
+    const previousTime = useMainStore.getState().playerCurrentTime;
+    const nextTime = Number.isFinite(media.currentTime) ? media.currentTime : 0;
+    const playbackAdvanced = !media.paused && !media.ended && nextTime > previousTime;
     patch({
-      playerCurrentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0,
+      playerCurrentTime: nextTime,
       playerDuration: Number.isFinite(media.duration) ? media.duration : 0,
+      ...(playbackAdvanced ? { playerCanplay: true, playerStatus: "playing" as const } : {}),
     });
   }, [patch]);
   const handleLoadedMetadata = useCallback(() => {
@@ -627,5 +651,5 @@ export default function Music() {
 
   const full = fullscreen ? <section className="fullscreen-player" role="dialog" aria-modal="true" aria-label="全屏音乐播放器"><div className="fullscreen-background" style={backgroundStyle} aria-hidden="true" /><button type="button" className="exit-fullscreen" aria-label="退出全屏播放器" onClick={() => setFullscreen(false)}><OffScreen theme="outline" size="26" fill="currentColor" /></button><div className="fullscreen-content"><header className="fullscreen-header"><h1>{displayName}</h1><p><span>歌手：{current?.artist || "未知歌手"}</span><span>来源：{musicServerLabels[musicConfig.server]}</span></p></header><div className="fullscreen-main"><div className="cover-area">{current?.cover ? <img src={current.cover} alt={`${displayName}封面`} /> : <div className="cover-placeholder"><MusicOne theme="outline" size="72" fill="currentColor" /></div>}</div><div ref={lyricsPanel} className="lyrics-panel" aria-label="歌词">{lyrics.length ? lyrics.map((line, lineIndex) => <KaraokeLyricLine key={`${line.startTime}-${lineIndex}`} line={line} lineIndex={lineIndex} active={activeLyric === lineIndex} currentTime={currentTime} />) : <div className="lyrics-placeholder"><strong>{current?.artist || "未知歌手"}</strong><span>歌词数据将在播放后显示</span></div>}</div></div></div><footer className="fullscreen-controls"><button type="button" aria-label="上一首" disabled={!ready} onClick={() => change(-1)}><GoStart theme="filled" size="25" fill="currentColor" /></button><button type="button" className="fullscreen-play" aria-label={playing ? "暂停" : "播放"} disabled={!ready} onClick={toggle}>{playing ? <Pause theme="filled" size="28" fill="currentColor" /> : <PlayOne theme="filled" size="28" fill="currentColor" />}</button><button type="button" aria-label="下一首" disabled={!ready} onClick={() => change(1)}><GoEnd theme="filled" size="25" fill="currentColor" /></button><PlayerSeekBar className="fullscreen-seek" currentTime={currentTime} duration={duration} loading={loading} showTime onSeek={seek} /><div className="volume-control fullscreen-volume"><button type="button" aria-label={effectiveVolume === 0 ? "恢复音量" : "静音"} onClick={toggleMute}>{volumeIcon}</button><div className="volume-popover"><VolumeSlider value={volume} onPreview={previewVolume} onCommit={saveVolume} /></div></div><button type="button" aria-label={`播放模式：${currentMode.label}`} title={`播放模式：${currentMode.label}`} onClick={cycleMode}><ModeIcon theme="outline" size="23" fill="currentColor" /></button><button type="button" aria-label="打开播放列表" onClick={openPlaylist}><MusicList theme="outline" size="24" fill="currentColor" /></button></footer></section> : null;
 
-  return <><section className="music" aria-label="音乐播放器"><audio ref={audio} data-music-engine src={playbackUrl} preload="metadata" onLoadStart={handleLoadStart} onLoadedMetadata={handleLoadedMetadata} onCanPlay={handleCanPlay} onTimeUpdate={handleTimeUpdate} onDurationChange={handleTimeUpdate} onPlay={handlePlay} onPause={handlePause} onWaiting={handleWaiting} onEnded={handleEnded} onError={handlePlaybackError} /><button type="button" className={`footer-player-button${footerShow ? " is-active" : ""}`} aria-pressed={footerShow} aria-label={footerShow ? "隐藏底栏歌词和进度" : "显示底栏歌词和进度"} onClick={() => patch({ footerPlayerShow: !footerShow })}><TextMessage theme="outline" size="20" strokeWidth={4} fill="currentColor" /></button><button type="button" className="fullscreen-button" aria-label="打开全屏播放器" onClick={() => setFullscreen(true)}><FullScreen theme="filled" size="20" strokeWidth={5} fill="currentColor" /></button>{current ? <CompactPlayerSurface onOpen={openPlaylist} onToggle={toggle} onChange={change} onSeek={seek} onToggleMute={toggleMute} onPreviewVolume={previewVolume} onSaveVolume={saveVolume} displayName={displayName} artist={current.artist} currentTime={currentTime} duration={duration} volume={volume} effectiveVolume={effectiveVolume} volumeIcon={volumeIcon} playing={playing} ready={ready} loading={loading} hideProgress={footerActive} /> : <div className="player-loading" aria-live="polite">{error || "播放器加载中…"}</div>}</section>{typeof document !== "undefined" && createPortal(<>{full}{queue}</>, document.body)}</>;
+  return <><section className="music" aria-label="音乐播放器"><audio ref={audio} data-music-engine src={playbackUrl} preload="metadata" onLoadStart={handleLoadStart} onLoadedMetadata={handleLoadedMetadata} onCanPlay={handleCanPlay} onTimeUpdate={handleTimeUpdate} onDurationChange={handleTimeUpdate} onPlay={handlePlay} onPlaying={handlePlaying} onPause={handlePause} onWaiting={handleWaiting} onEnded={handleEnded} onError={handlePlaybackError} /><button type="button" className={`footer-player-button${footerShow ? " is-active" : ""}`} aria-pressed={footerShow} aria-label={footerShow ? "隐藏底栏歌词和进度" : "显示底栏歌词和进度"} onClick={() => patch({ footerPlayerShow: !footerShow })}><TextMessage theme="outline" size="20" strokeWidth={4} fill="currentColor" /></button><button type="button" className="fullscreen-button" aria-label="打开全屏播放器" onClick={() => setFullscreen(true)}><FullScreen theme="filled" size="20" strokeWidth={5} fill="currentColor" /></button>{current ? <CompactPlayerSurface onOpen={openPlaylist} onToggle={toggle} onChange={change} onSeek={seek} onToggleMute={toggleMute} onPreviewVolume={previewVolume} onSaveVolume={saveVolume} displayName={displayName} artist={current.artist} currentTime={currentTime} duration={duration} volume={volume} effectiveVolume={effectiveVolume} volumeIcon={volumeIcon} playing={playing} ready={ready} loading={loading} hideProgress={footerActive} /> : <div className="player-loading" aria-live="polite">{error || "播放器加载中…"}</div>}</section>{typeof document !== "undefined" && createPortal(<>{full}{queue}</>, document.body)}</>;
 }

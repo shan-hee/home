@@ -28,8 +28,8 @@ const isPlaylistItem = (value: unknown): value is PlaylistItem => {
 /**
  * 获取单一音乐播放队列。
  */
-export const getPlayerList = async (): Promise<PlaylistItem[]> => {
-  const payload = await requestJson<unknown>("/api/music", { cache: "no-cache" });
+export const getPlayerList = async (revision: number): Promise<PlaylistItem[]> => {
+  const payload = await requestJson<unknown>(`/api/music?revision=${revision}`);
   if (!Array.isArray(payload)) {
     throw new Error("音乐源响应格式无效");
   }
