@@ -7,8 +7,11 @@ import { useAuthStore } from "@/stores/auth";
 import { useSiteContentStore } from "@/stores/siteContent";
 import type { MusicContentConfig, SiteContentSections, SiteContentSnapshot } from "@/typings/siteContent";
 import { checkForUpdate, type UpdateResult } from "@/utils/updatecheck";
-import { appVersion, appVersionNumber } from "@/utils/ver";
+import packageInfo from "@/../package.json";
 import "@/components/ContentSettings.scss";
+
+const appVersion = packageInfo.version;
+const appVersionNumber = appVersion.match(/^(\d+\.\d+\.\d+)/)?.[1] || "0.0.0";
 
 type Section = keyof SiteContentSections;
 type SaveState = { saving: boolean; message: string; error: boolean };

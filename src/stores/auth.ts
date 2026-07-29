@@ -3,7 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { requestJson } from "@/services/apiClient";
 import { forgetOwner, readRememberedOwner, rememberOwner } from "@/services/offlineDatabase";
 
-export interface AuthDevice {
+interface AuthDevice {
   id: string;
   name: string;
 }
@@ -14,7 +14,7 @@ interface SessionResponse {
   expiresAt?: string;
 }
 
-export type AuthStatus = "checking" | "anonymous" | "authenticated" | "offline-owner";
+type AuthStatus = "checking" | "anonymous" | "authenticated" | "offline-owner";
 
 const browserName = () => {
   const agent = navigator.userAgent;

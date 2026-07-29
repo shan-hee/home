@@ -1,4 +1,4 @@
-export interface ApiErrorPayload {
+interface ApiErrorPayload {
   error?: {
     code?: string;
     message?: string;

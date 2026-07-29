@@ -40,7 +40,6 @@
     "react-dom": "^19.2.8",
     "swiper": "^12.2.0",
     "valibot": "^1.4.2",
-    "workbox-window": "^7.4.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
