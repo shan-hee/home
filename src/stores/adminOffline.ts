@@ -158,7 +158,7 @@ export const useAdminOfflineStore = create<AdminOfflineStore>((set, get) => ({
           break;
         }
       }
-      if (changed) await useSiteContentStore.getState().refresh();
+      if (changed) await useSiteContentStore.getState().refresh(true);
     } finally {
       set({ flushing: false });
       await get().refreshCounts();

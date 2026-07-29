@@ -45,7 +45,7 @@ export const saveSiteContentSection = async <Section extends keyof SiteContentSe
       useAuthStore.getState().expireSession();
     }
     if (reason instanceof ApiClientError && reason.status === 409) {
-      await useSiteContentStore.getState().refresh();
+      await useSiteContentStore.getState().refresh(true);
     }
     throw reason;
   }

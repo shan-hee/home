@@ -249,7 +249,7 @@ export default function ContentSettings({ view }: { view: ContentSettingsView })
       setSnapshot((current) => current ? { ...current, sectionRevisions: { ...current.sectionRevisions, [section]: result.revision }, sections: { ...current.sections, [section]: structuredClone(result.content) } as SiteContentSections } : current);
       setDrafts((current) => current ? { ...current, [section]: structuredClone(result.content) } as SiteContentSections : current);
       setSaveStates((states) => ({ ...states, [section]: { saving: false, message: "已保存", error: false } }));
-      void refresh();
+      void refresh(true);
     } catch (reason) {
       const message = reason instanceof ApiClientError ? (reason.status === 409 ? "服务器内容已更新，本机草稿已保留，请重新加载后决定是否覆盖" : reason.message) : "保存失败，请稍后再试";
       setSaveStates((states) => ({ ...states, [section]: { saving: false, message, error: true } }));
