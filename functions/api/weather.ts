@@ -10,6 +10,7 @@ interface CloudflareLocation {
 type PagesRequest = Request & { cf?: CloudflareLocation };
 type PagesContext = {
   request: PagesRequest;
+  env: { QWEATHER_API_KEY?: string };
   waitUntil?: (promise: Promise<unknown>) => void;
 };
 
@@ -196,10 +197,10 @@ export const onRequestGet = async (context: PagesContext) => {
   try {
     const location = resolveLocation(context.request);
     const cacheUrl = new URL(
-      `/__edge-cache/weather?latitude=${cacheCoordinate(location.latitude)}&longitude=${cacheCoordinate(location.longitude)}&city=${encodeURIComponent(location.city)}`,
+      `/__edge-cache/weather-v2?latitude=${cacheCoordinate(location.latitude)}&longitude=${cacheCoordinate(location.longitude)}&city=${encodeURIComponent(location.city)}`,
       context.request.url,
     ).toString();
-    return await cachedResponse(cacheUrl, 300, context, async () => {
+    return await cachedResponse(cacheUrl, 900, context, async () => {
       let weather;
       try {
         weather = await loadOpenMeteo(location);
@@ -207,7 +208,10 @@ export const onRequestGet = async (context: PagesContext) => {
         console.error("Open-Meteo 请求失败，尝试 MET Norway：", error);
         weather = await loadMetNorway(location);
       }
-      return jsonResponse(weather, {}, "public, max-age=300");
+      return jsonResponse({
+        ...weather,
+        alertsConfigured: Boolean(context.env.QWEATHER_API_KEY?.trim()),
+      }, {}, "public, max-age=900, stale-while-revalidate=3600");
     });
   } catch (error) {
     return jsonResponse(

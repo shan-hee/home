@@ -12,7 +12,7 @@ interface HitokotoResponse {
 export const onRequestGet = async (context: PagesContext) => {
   const requestId = getRequestId(context.request);
   try {
-    return await cachedResponse(hitokotoCacheUrl(context.request), 60, context, async () => {
+    return await cachedResponse(hitokotoCacheUrl(context.request), 86400, context, async () => {
       const config = await loadSiteContent(context.env.DB);
       const hitokoto = config.sections.hitokoto as {
         mode: "remote" | "fixed";
@@ -26,7 +26,7 @@ export const onRequestGet = async (context: PagesContext) => {
         return apiResponse({
           hitokoto: hitokoto.fixedText || hitokoto.fallbackText,
           from: hitokoto.fixedFrom || hitokoto.fallbackFrom,
-        }, requestId, {}, "public, max-age=60");
+        }, requestId, {}, "public, max-age=86400, stale-while-revalidate=604800");
       }
 
       try {
@@ -37,12 +37,12 @@ export const onRequestGet = async (context: PagesContext) => {
         return apiResponse({
           hitokoto: payload.hitokoto.trim(),
           from: payload.from?.trim() || hitokoto.fallbackFrom,
-        }, requestId, {}, "public, max-age=60");
+        }, requestId, {}, "public, max-age=86400, stale-while-revalidate=604800");
       } catch {
         return apiResponse({
           hitokoto: hitokoto.fallbackText,
           from: hitokoto.fallbackFrom,
-        }, requestId, {}, "public, max-age=60");
+        }, requestId, {}, "public, max-age=86400, stale-while-revalidate=604800");
       }
     });
   } catch (error) {

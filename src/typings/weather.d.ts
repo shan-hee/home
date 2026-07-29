@@ -8,6 +8,7 @@ export interface WeatherApiResponse {
   windpower: string;
   source: "open-meteo" | "met-norway";
   updatedAt: string;
+  alertsConfigured: boolean;
 }
 
 export interface WeatherAlert {

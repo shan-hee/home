@@ -128,11 +128,12 @@ export default function Background({ onLoadComplete }: Props) {
         return assetId ? assetUrl(assetId) : null;
       }
       const params = new URLSearchParams({ source: wallpaper.source, variant });
+      if (wallpaper.source === "wallhaven") params.set("rotationMinutes", String(rotationMinutes));
       if (wallpaper.source === "custom") {
         params.set("current", assetId!);
         params.set("cursor", String(rotationTick));
       }
-      const result = await requestJson<RemoteWallpaper>(`/api/wallpaper?${params}`, { cache: "no-store" });
+      const result = await requestJson<RemoteWallpaper>(`/api/wallpaper?${params}`);
       return result.imageUrl;
     };
     void resolveUrl().then(async (candidate) => {
@@ -161,7 +162,7 @@ export default function Background({ onLoadComplete }: Props) {
         requestAnimationFrame(() => requestAnimationFrame(() => setSkipTransition(false)));
       }, 850));
     }).catch(fail);
-  }, [activateSolidFallback, assetId, clearTimers, finishInitial, rotationTick, variant, wallpaper.source, wallpaperRevision]);
+  }, [activateSolidFallback, assetId, clearTimers, finishInitial, rotationMinutes, rotationTick, variant, wallpaper.source, wallpaperRevision]);
 
   useEffect(() => {
     if (rotationMinutes <= 0 || (wallpaper.source === "custom" && !assetId)) return;

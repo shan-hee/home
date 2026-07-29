@@ -21,30 +21,90 @@ export default (): UserConfig => {
                     runtimeCaching: [
                         {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config",
-                            handler: "NetworkFirst",
+                            handler: "CacheFirst",
                             options: {
-                                cacheName: "site-config-v2",
-                                networkTimeoutSeconds: 3,
+                                cacheName: "site-config-v4",
                                 expiration: {
                                     maxEntries: 1,
+                                    maxAgeSeconds: 6 * 60 * 60,
                                 },
                                 cacheableResponse: { statuses: [200] },
                             },
                         },
                         {
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/music",
-                            handler: "NetworkFirst",
+                            handler: "CacheFirst",
                             options: {
-                                cacheName: "music-playlist-v3",
-                                networkTimeoutSeconds: 5,
+                                cacheName: "music-playlist-v4",
                                 expiration: {
                                     maxEntries: 1,
+                                    maxAgeSeconds: 60 * 60,
                                 },
                                 cacheableResponse: { statuses: [200] },
                             },
                         },
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/wallpaper",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/hitokoto",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "hitokoto-v1",
+                                expiration: {
+                                    maxEntries: 1,
+                                    maxAgeSeconds: 24 * 60 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/weather",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "weather-v1",
+                                expiration: {
+                                    maxEntries: 12,
+                                    maxAgeSeconds: 15 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/alerts",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "weather-alerts-v1",
+                                expiration: {
+                                    maxEntries: 12,
+                                    maxAgeSeconds: 5 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/music/lyric",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "music-lyrics-v1",
+                                expiration: {
+                                    maxEntries: 50,
+                                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/wallpaper" && url.searchParams.get("source") === "bing",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "bing-wallpaper-metadata-v1",
+                                expiration: {
+                                    maxEntries: 2,
+                                    maxAgeSeconds: 24 * 60 * 60,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/wallpaper" && url.searchParams.get("source") !== "bing",
                             handler: "NetworkFirst",
                             options: {
                                 cacheName: "remote-wallpaper-metadata-v1",
@@ -57,7 +117,20 @@ export default (): UserConfig => {
                             },
                         },
                         {
-                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("download") !== "1",
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("kind") === "site-icon" && url.searchParams.get("download") !== "1",
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "site-icon-assets-v1",
+                                expiration: {
+                                    maxEntries: 80,
+                                    maxAgeSeconds: 365 * 24 * 60 * 60,
+                                    purgeOnQuotaError: true,
+                                },
+                                cacheableResponse: { statuses: [200] },
+                            },
+                        },
+                        {
+                            urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith("/api/assets/") && url.searchParams.get("download") !== "1" && url.searchParams.get("kind") !== "site-icon",
                             handler: "CacheFirst",
                             options: {
                                 cacheName: "wallpaper-assets-v1",

@@ -10,7 +10,7 @@ const isWeatherApiResponse = (value: unknown): value is WeatherApiResponse => {
     && typeof weather.longitude === "number" && Number.isFinite(weather.longitude) && typeof weather.weather === "string"
     && typeof weather.temperature === "number" && Number.isFinite(weather.temperature) && typeof weather.winddirection === "string"
     && typeof weather.windpower === "string" && (weather.source === "open-meteo" || weather.source === "met-norway")
-    && typeof weather.updatedAt === "string";
+    && typeof weather.updatedAt === "string" && typeof weather.alertsConfigured === "boolean";
 };
 
 export default function Weather() {
@@ -52,7 +52,8 @@ export default function Weather() {
         const payload: unknown = await response.json();
         if (!isWeatherApiResponse(payload)) throw new Error();
         setWeather(payload);
-        void loadAlerts(payload.latitude, payload.longitude);
+        if (payload.alertsConfigured) void loadAlerts(payload.latitude, payload.longitude);
+        else setAlerts([]);
       })
       .catch(() => { if (!controller.signal.aborted) { setWeather(null); setAlerts([]); setError("天气数据暂时不可用"); } })
       .finally(() => { if (weatherController.current === controller) setLoading(false); });

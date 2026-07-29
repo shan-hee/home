@@ -10,7 +10,16 @@ export const setupPwaUpdate = () => {
   }
 
   if ("caches" in window) {
-    void Promise.all(["js-css-cache", "image-cache", "site-config-v1", "online-wallpaper-v1"].map((name) => window.caches.delete(name))).catch(() => undefined);
+    const obsoleteCaches = [
+      "js-css-cache",
+      "image-cache",
+      "site-config-v1",
+      "site-config-v2",
+      "site-config-v3",
+      "music-playlist-v3",
+      "online-wallpaper-v1",
+    ];
+    void Promise.all(obsoleteCaches.map((name) => window.caches.delete(name))).catch(() => undefined);
   }
 
   const updateSW = registerSW({

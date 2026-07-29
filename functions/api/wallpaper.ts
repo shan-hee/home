@@ -50,10 +50,14 @@ export const onRequestGet = async (context: PagesContext) => {
       }, requestId, {}, "public, max-age=60");
     }
 
-    const ttl = source === "bing" ? 60 * 60 : 60;
+    const requestedRotation = Number(params.get("rotationMinutes"));
+    const rotationMinutes = Number.isInteger(requestedRotation) && requestedRotation >= 1 && requestedRotation <= 10080
+      ? requestedRotation
+      : 1440;
+    const ttl = source === "bing" ? 24 * 60 * 60 : rotationMinutes * 60;
     const slot = source === "bing"
       ? new Date().toISOString().slice(0, 10)
-      : String(Math.floor(Date.now() / 60000));
+      : String(Math.floor(Date.now() / (ttl * 1000)));
     const cacheUrl = new URL(
       `/__edge-cache/wallpaper-v1/${source}/${variant}/${slot}`,
       context.request.url,
