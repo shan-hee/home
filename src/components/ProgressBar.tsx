@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
-import { Reload } from "@icon-park/react";
 import { useMainStore } from "@/store";
 import "@/components/ProgressBar.scss";
 
@@ -12,8 +11,6 @@ const formatTime = (seconds: number) => {
 export default function ProgressBar() {
   const currentTime = useMainStore((state) => state.playerCurrentTime);
   const rawDuration = useMainStore((state) => state.playerDuration);
-  const canPlay = useMainStore((state) => state.playerCanplay);
-  const status = useMainStore((state) => state.playerStatus);
   const patch = useMainStore((state) => state.patch);
   const track = useRef<HTMLDivElement>(null);
   const pointer = useRef<number | null>(null);
@@ -63,7 +60,6 @@ export default function ProgressBar() {
       <div className="track-line">
         <div className="progress" style={{ width: `${progress}%` }} />
         <span className="progress-thumb" style={{ left: `${progress}%` }} aria-hidden="true" />
-        {!canPlay && status !== "error" && <Reload size={20} className="reload-circle" style={{ left: `${Math.min(99, Math.max(1, progress))}%` }} aria-hidden="true" />}
       </div>
     </div>
   );

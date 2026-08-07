@@ -15,9 +15,9 @@ const initialState: MainState = {
   mobileOpenState: false,
   mobileFuncState: false,
   playerStatus: "idle",
+  playerPlayIntent: false,
   playerHasStarted: false,
   playerError: null,
-  playerCanplay: false,
   playerTitle: null,
   playerArtist: null,
   playerLyric: "",
@@ -46,9 +46,16 @@ export const useMainStore = create<MainStore>()(subscribeWithSelector((set) => (
     innerWidth: value,
     ...(value >= 720 ? { mobileOpenState: false, mobileFuncState: false } : {}),
   }),
-  setPlayerStatus: (value) => set((state) => ({
-    playerStatus: value,
-    ...(value === "playing" ? { playerHasStarted: true, playerError: null } : {}),
-    ...(value === "error" ? { playerCanplay: false } : {}),
-  })),
+  setPlayerStatus: (value) => set((state) => {
+    let playerPlayIntent = state.playerPlayIntent;
+    if (value === "playing") playerPlayIntent = true;
+    else if (value === "paused" || value === "ready" || value === "error") playerPlayIntent = false;
+    const playingStateCurrent = value !== "playing" || (state.playerHasStarted && state.playerError === null);
+    if (state.playerStatus === value && state.playerPlayIntent === playerPlayIntent && playingStateCurrent) return state;
+    return {
+      playerStatus: value,
+      playerPlayIntent,
+      ...(value === "playing" ? { playerHasStarted: true, playerError: null } : {}),
+    };
+  }),
 })));

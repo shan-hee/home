@@ -32,8 +32,9 @@ export interface SocialLinkConfig {
 
 export interface MusicContentConfig {
   server: "netease" | "tencent" | "kugou" | "baidu" | "kuwo";
-  type: "search" | "song" | "album" | "artist" | "playlist";
+  type: "search" | "song" | "album" | "artist" | "playlist" | "user";
   id: string;
+  playlistIds: string[];
 }
 
 export interface WallpaperContentConfig {
@@ -78,7 +79,7 @@ export interface SiteContentSections {
 }
 
 export interface SiteContentSnapshot {
-  schemaVersion: 7;
+  schemaVersion: 8;
   revision: string;
   generatedAt: string;
   etag: string;

@@ -23,7 +23,8 @@
   "music": {
     "server": "netease",
     "type": "playlist",
-    "id": "694211863"
+    "id": "694211863",
+    "playlistIds": []
   },
   "wallpaper": {
     "source": "custom",

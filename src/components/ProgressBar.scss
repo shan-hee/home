@@ -41,14 +41,6 @@
     pointer-events: none;
   }
 
-  .reload-circle {
-    position: absolute;
-    top: 50%;
-    color: var(--player-slider-main-color);
-    transform: translate(-50%, -50%);
-    animation: spin 1s linear infinite;
-  }
-
   &:hover .progress-thumb,
   &:focus-visible .progress-thumb,
   &.dragging .progress-thumb {
@@ -64,11 +56,6 @@
   &.dragging .progress {
     transition: none;
   }
-}
-
-@keyframes spin {
-  from { transform: translate(-50%, -50%) rotate(0deg); }
-  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,7 +1,7 @@
 import type { SiteContentSnapshot } from "@/typings/siteContent";
 
 export const siteContentFallback: SiteContentSnapshot = {
-  schemaVersion: 7,
+  schemaVersion: 8,
   revision: "build-fallback",
   generatedAt: "",
   etag: "",
@@ -50,6 +50,7 @@ export const siteContentFallback: SiteContentSnapshot = {
       server: "netease",
       type: "playlist",
       id: "9379831714",
+      playlistIds: [],
     },
     wallpaper: {
       source: "custom",

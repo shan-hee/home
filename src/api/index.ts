@@ -9,6 +9,19 @@ export interface PlaylistItem {
   lrc: string;
 }
 
+export interface MusicPlaylistSummary {
+  id: string;
+  name: string;
+  cover: string;
+  trackCount: number;
+}
+
+export interface MusicCatalog {
+  playlists: MusicPlaylistSummary[];
+  playlistId: string;
+  tracks: PlaylistItem[];
+}
+
 export interface NeteaseLyrics {
   lrc: string;
   yrc: string;
@@ -25,18 +38,36 @@ const isPlaylistItem = (value: unknown): value is PlaylistItem => {
     && typeof item.lrc === "string";
 };
 
+const isMusicPlaylistSummary = (value: unknown): value is MusicPlaylistSummary => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const item = value as Record<keyof MusicPlaylistSummary, unknown>;
+  return typeof item.id === "string"
+    && typeof item.name === "string"
+    && typeof item.cover === "string"
+    && typeof item.trackCount === "number";
+};
+
 /**
- * 获取单一音乐播放队列。
+ * 获取歌单目录及指定歌单的播放队列。
  */
-export const getPlayerList = async (revision: number): Promise<PlaylistItem[]> => {
-  const payload = await requestJson<unknown>(`/api/music?revision=${revision}`);
-  if (!Array.isArray(payload)) {
+export const getMusicCatalog = async (revision: number, playlistId = ""): Promise<MusicCatalog> => {
+  const params = new URLSearchParams({ revision: String(revision) });
+  if (playlistId) params.set("playlistId", playlistId);
+  const payload = await requestJson<unknown>(`/api/music?${params}`);
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
     throw new Error("音乐源响应格式无效");
   }
-  if (!payload.every(isPlaylistItem)) {
+  const value = payload as Partial<MusicCatalog>;
+  if (
+    !Array.isArray(value.playlists)
+    || !value.playlists.every(isMusicPlaylistSummary)
+    || typeof value.playlistId !== "string"
+    || !Array.isArray(value.tracks)
+    || !value.tracks.every(isPlaylistItem)
+  ) {
     throw new Error("音乐源响应格式无效");
   }
-  return payload;
+  return value as MusicCatalog;
 };
 
 export const resolveNeteasePlaybackUrl = async (id: string, signal?: AbortSignal): Promise<string> => {

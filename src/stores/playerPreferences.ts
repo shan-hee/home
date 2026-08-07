@@ -1,15 +1,17 @@
-import { maxValue, minValue, number, object, picklist, pipe, safeParse } from "valibot";
+import { maxLength, maxValue, minValue, number, object, picklist, pipe, safeParse, string } from "valibot";
 import type { MainState } from "@/typings/store";
 
-const STORAGE_KEY = "home:player-preferences:v1";
+const STORAGE_KEY = "home:player-preferences:v2";
 const playerPreferencesSchema = object({
   playerOrder: picklist(["list", "single", "shuffle"]),
   musicVolume: pipe(number(), minValue(0), maxValue(1)),
+  activeMusicPlaylistId: pipe(string(), maxLength(20)),
 });
 
 export interface PlayerPreferences {
   playerOrder: MainState["playerOrder"];
   musicVolume: number;
+  activeMusicPlaylistId: string;
 }
 
 export const loadPlayerPreferences = (): PlayerPreferences | null => {

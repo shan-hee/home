@@ -5,7 +5,6 @@ import "@/components/PlayerSeekBar.scss";
 interface Props {
   currentTime: number;
   duration: number;
-  loading?: boolean;
   showTime?: boolean;
   label?: string;
   className?: string;
@@ -17,7 +16,7 @@ const formatTime = (seconds: number) => {
   return `${Math.floor(safe / 60)}:${(safe % 60).toString().padStart(2, "0")}`;
 };
 
-export default function PlayerSeekBar({ currentTime, duration, loading = false, showTime = false, label = "播放进度", className = "", onSeek }: Props) {
+export default function PlayerSeekBar({ currentTime, duration, showTime = false, label = "播放进度", className = "", onSeek }: Props) {
   const track = useRef<HTMLDivElement>(null);
   const pointer = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -56,7 +55,7 @@ export default function PlayerSeekBar({ currentTime, duration, loading = false, 
   return <div className={`player-seek${showTime ? " with-time" : ""}${className ? ` ${className}` : ""}`}>
     {showTime && <span className="time current-time">{formatTime(displayed)}</span>}
     <div ref={track} className={`seek-track${dragging ? " dragging" : ""}${safeDuration ? "" : " disabled"}`} role="slider" tabIndex={safeDuration ? 0 : -1} aria-label={label} aria-disabled={!safeDuration} aria-valuemin={0} aria-valuemax={safeDuration} aria-valuenow={Math.round(displayed)} aria-valuetext={ariaText} onPointerDown={down} onPointerMove={move} onPointerUp={(event) => finish(event, true)} onPointerCancel={(event) => finish(event, false)} onKeyDown={keydown}>
-      <div className="seek-runway"><div className="seek-progress" style={{ width: `${progress}%` }} /><span className="seek-thumb" style={{ left: `${progress}%` }} aria-hidden="true" />{loading && <span className="seek-loading" style={{ left: `${Math.min(99, Math.max(1, progress))}%` }} aria-hidden="true" />}</div>
+      <div className="seek-runway"><div className="seek-progress" style={{ width: `${progress}%` }} /><span className="seek-thumb" style={{ left: `${progress}%` }} aria-hidden="true" /></div>
     </div>
     {showTime && <span className="time duration-time">{formatTime(safeDuration)}</span>}
   </div>;

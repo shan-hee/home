@@ -77,18 +77,6 @@
   pointer-events: none;
 }
 
-.seek-loading {
-  position: absolute;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border: 2px solid rgba(from var(--text-color) r g b / 0.35);
-  border-top-color: var(--text-color);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  animation: seek-loading-spin 0.8s linear infinite;
-}
-
 .seek-track:hover .seek-thumb,
 .seek-track:focus-visible .seek-thumb,
 .seek-track.dragging .seek-thumb {
@@ -100,19 +88,9 @@
   transition: none;
 }
 
-@keyframes seek-loading-spin {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .seek-progress,
   .seek-thumb {
     transition: none;
-  }
-
-  .seek-loading {
-    animation: none;
   }
 }

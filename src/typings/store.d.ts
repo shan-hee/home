@@ -13,9 +13,9 @@ export interface MainState {
     mobileOpenState: boolean;
     mobileFuncState: boolean;
     playerStatus: PlayerStatus;
+    playerPlayIntent: boolean;
     playerHasStarted: boolean;
     playerError: string | null;
-    playerCanplay: boolean;
     playerTitle: string | null;
     playerArtist: string | null;
     playerLyric: string;

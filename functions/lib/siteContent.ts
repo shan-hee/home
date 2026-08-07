@@ -173,19 +173,45 @@ const socialLinks = (value: unknown) => {
 
 const music = (value: unknown) => {
   if (!isRecord(value)) throw new ApiError(400, "INVALID_CONTENT", "音乐配置格式无效");
-  knownKeys(value, ["server", "type", "id"]);
+  knownKeys(value, ["server", "type", "id", "playlistIds"]);
   const server = text(value.server, "音乐平台", 20, false);
   const type = text(value.type, "音乐类型", 20, false);
   if (!(["netease", "tencent", "kugou", "baidu", "kuwo"] as string[]).includes(server)) {
     throw new ApiError(400, "INVALID_CONTENT", "不支持的音乐平台");
   }
-  if (!(["search", "song", "album", "artist", "playlist"] as string[]).includes(type)) {
+  if (!(["search", "song", "album", "artist", "playlist", "user"] as string[]).includes(type)) {
     throw new ApiError(400, "INVALID_CONTENT", "不支持的音乐类型");
+  }
+  if (type === "user" && server !== "netease") {
+    throw new ApiError(400, "INVALID_CONTENT", "用户歌单目前只支持网易云音乐");
+  }
+  const id = text(value.id, type === "user" ? "网易云用户 ID" : "音乐 ID", 120);
+  if (type === "user" && !/^\d{1,20}$/.test(id)) {
+    throw new ApiError(400, "INVALID_CONTENT", "网易云用户 ID 格式无效");
+  }
+  if (!Array.isArray(value.playlistIds) || value.playlistIds.length > 50) {
+    throw new ApiError(400, "INVALID_CONTENT", "音乐歌单选择格式无效");
+  }
+  const playlistIds = value.playlistIds.map((playlistId, index) => {
+    if (typeof playlistId !== "string" || !/^\d{1,20}$/.test(playlistId)) {
+      throw new ApiError(400, "INVALID_CONTENT", `第 ${index + 1} 个歌单 ID 格式无效`);
+    }
+    return playlistId;
+  });
+  if (new Set(playlistIds).size !== playlistIds.length) {
+    throw new ApiError(400, "INVALID_CONTENT", "音乐歌单选择存在重复项");
+  }
+  if (type === "user" && playlistIds.length === 0) {
+    throw new ApiError(400, "INVALID_CONTENT", "请至少选择一个用户歌单");
+  }
+  if (type !== "user" && playlistIds.length > 0) {
+    throw new ApiError(400, "INVALID_CONTENT", "当前音乐类型不能保存用户歌单");
   }
   return {
     server,
     type,
-    id: text(value.id, "音乐 ID", 120),
+    id,
+    playlistIds,
   };
 };
 
@@ -333,7 +359,7 @@ export const loadSiteContent = async (db: D1Database) => {
 
   const revision = CONTENT_SECTION_KEYS.map((key) => `${key}:${sectionRevisions[key]}`).join("|");
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     revision,
     generatedAt,
     etag: `W/\"site-config-${revision}\"`,
@@ -343,11 +369,14 @@ export const loadSiteContent = async (db: D1Database) => {
 };
 
 export const siteConfigCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/site-config-v7", request.url).toString();
+  return new URL("/__edge-cache/site-config-v8", request.url).toString();
 };
 
 export const musicCacheUrl = (request: Request) => {
-  return new URL("/__edge-cache/music-v5", request.url).toString();
+  const source = new URL(request.url);
+  const cache = new URL("/__edge-cache/music-v6", source);
+  cache.search = source.search;
+  return cache.toString();
 };
 
 export const hitokotoCacheUrl = (request: Request) => {

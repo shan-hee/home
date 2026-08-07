@@ -1,5 +1,5 @@
 #footer {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 0;
   z-index: 0;
@@ -11,6 +11,10 @@
   text-align: center;
   white-space: nowrap;
   word-break: keep-all;
+
+  &.is-queue-open {
+    z-index: 1250;
+  }
 
   .power {
     animation: fade 0.3s;

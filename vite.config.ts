@@ -21,7 +21,7 @@ export default defineConfig({
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/site-config" && !url.search,
                             handler: "NetworkFirst",
                             options: {
-                                cacheName: "site-config-v7",
+                                cacheName: "site-config-v8",
                                 networkTimeoutSeconds: 3,
                                 expiration: {
                                     maxEntries: 1,
@@ -33,9 +33,9 @@ export default defineConfig({
                             urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname === "/api/music",
                             handler: "CacheFirst",
                             options: {
-                                cacheName: "music-playlist-v4",
+                                cacheName: "music-playlist-v5",
                                 expiration: {
-                                    maxEntries: 1,
+                                    maxEntries: 50,
                                     maxAgeSeconds: 60 * 60,
                                 },
                                 cacheableResponse: { statuses: [200] },

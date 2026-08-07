@@ -5,6 +5,7 @@ const NXVAV_ENDPOINT = "https://api.nxvav.cn/api/music/";
 const CHKSZ_NETEASE_ENDPOINT = "https://api.chksz.top/api/163_music";
 const CHKSZ_NETEASE_LEVEL = "lossless";
 const NETEASE_LYRIC_ENDPOINT = "https://music.163.com/api/song/lyric";
+const NETEASE_USER_PLAYLIST_ENDPOINT = "https://music.163.com/api/user/playlist";
 
 interface MusicUpstreamItem {
   title?: unknown;
@@ -29,6 +30,19 @@ export interface PlaylistItem {
   lrc: string;
 }
 
+export interface MusicPlaylistSummary {
+  id: string;
+  name: string;
+  cover: string;
+  trackCount: number;
+}
+
+export interface MusicCatalog {
+  playlists: MusicPlaylistSummary[];
+  playlistId: string;
+  tracks: PlaylistItem[];
+}
+
 interface MusicResource {
   id: string;
   url: string;
@@ -42,6 +56,10 @@ interface ChkszMusicPayload {
 interface NeteaseLyricPayload {
   lrc?: { lyric?: unknown };
   yrc?: { lyric?: unknown };
+}
+
+interface NeteaseUserPlaylistPayload {
+  playlist?: unknown;
 }
 
 const text = (value: unknown, fallback: string, maxLength: number) => {
@@ -101,6 +119,99 @@ const chkszMediaUrl = (value: unknown) => {
   } catch {
     return "";
   }
+};
+
+const neteaseImageUrl = (value: unknown) => {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value);
+    if (
+      !["http:", "https:"].includes(url.protocol)
+      || url.username
+      || url.password
+      || url.port
+      || (url.hostname !== "music.126.net" && !url.hostname.endsWith(".music.126.net"))
+    ) return "";
+    url.protocol = "https:";
+    return url.toString();
+  } catch {
+    return "";
+  }
+};
+
+export const normalizeNeteaseUserId = (value: string) => {
+  const normalized = value.trim();
+  if (/^\d{1,20}$/.test(normalized)) return normalized;
+  try {
+    const url = new URL(normalized);
+    if (
+      url.protocol !== "https:"
+      || !["music.163.com", "y.music.163.com"].includes(url.hostname)
+      || url.username
+      || url.password
+      || url.port
+    ) return "";
+    const id = url.searchParams.get("id") || "";
+    return /^\d{1,20}$/.test(id) ? id : "";
+  } catch {
+    return "";
+  }
+};
+
+export const fetchNeteaseUserPlaylists = async (input: string): Promise<{ userId: string; playlists: MusicPlaylistSummary[] }> => {
+  const userId = normalizeNeteaseUserId(input);
+  if (!userId) {
+    throw new ApiError(400, "MUSIC_USER_ID_INVALID", "请输入有效的网易云用户 ID 或用户主页地址");
+  }
+
+  const upstream = new URL(NETEASE_USER_PLAYLIST_ENDPOINT);
+  upstream.searchParams.set("uid", userId);
+  upstream.searchParams.set("limit", "1000");
+  upstream.searchParams.set("offset", "0");
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(upstream, {
+      headers: {
+        accept: "application/json",
+        referer: "https://music.163.com/",
+      },
+    }, 10000);
+  } catch {
+    throw new ApiError(502, "MUSIC_USER_PLAYLISTS_FAILED", "用户歌单暂时无法查询");
+  }
+  if (!response.ok) {
+    throw new ApiError(502, "MUSIC_USER_PLAYLISTS_FAILED", "用户歌单暂时无法查询");
+  }
+
+  let payload: NeteaseUserPlaylistPayload;
+  try {
+    payload = await response.json() as NeteaseUserPlaylistPayload;
+  } catch {
+    throw new ApiError(502, "MUSIC_USER_PLAYLISTS_INVALID", "用户歌单服务返回无效数据");
+  }
+  if (!Array.isArray(payload.playlist)) {
+    throw new ApiError(502, "MUSIC_USER_PLAYLISTS_INVALID", "用户歌单服务返回无效数据");
+  }
+
+  const playlists = payload.playlist.slice(0, 500).map((item): MusicPlaylistSummary | null => {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) return null;
+    const value = item as Record<string, unknown>;
+    const id = String(value.id ?? "");
+    if (!/^\d{1,20}$/.test(id)) return null;
+    const trackCount = Number(value.trackCount);
+    return {
+      id,
+      name: text(value.name, "未命名歌单", 200),
+      cover: neteaseImageUrl(value.coverImgUrl),
+      trackCount: Number.isInteger(trackCount) && trackCount >= 0 ? Math.min(trackCount, 100000) : 0,
+    };
+  }).filter((playlist): playlist is MusicPlaylistSummary => playlist !== null);
+
+  if (payload.playlist.length > 0 && playlists.length === 0) {
+    throw new ApiError(502, "MUSIC_USER_PLAYLISTS_INVALID", "用户歌单服务返回无效数据");
+  }
+  return { userId, playlists };
 };
 
 export const resolveNeteasePlaybackUrl = async (id: string) => {
