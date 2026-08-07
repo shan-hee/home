@@ -1,11 +1,11 @@
 {
   "profile": {
-    "siteName": "home",
+    "siteName": "Home",
     "author": "shanhee",
     "keywords": "个人主页",
     "description": "一个默默无闻的主页",
     "siteUrl": "https://ajjj.de/",
-    "mainName": "home",
+    "mainName": "Home",
     "siteLogo": "/images/icon/favicon.ico",
     "mainLogo": "/images/icon/logo.png",
     "appleLogo": "/images/icon/apple-touch-icon.png",
