@@ -281,6 +281,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 20px 24px 24px;
+  scrollbar-color: rgba(from var(--text-color) r g b / 0.28) transparent;
+  scrollbar-width: thin;
 }
 
 @media (max-width: 720px) {

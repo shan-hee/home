@@ -60,7 +60,7 @@ export default function OwnerPanel({ onClose }: { onClose: () => void }) {
           <input id="owner-password" ref={input} value={password} type="password" autoComplete="off" placeholder="请输入密码" aria-label="管理员密码" disabled={submitting} aria-invalid={Boolean(error)} aria-describedby={error ? "owner-login-error" : undefined} onChange={(event) => { setPassword(event.target.value); if (event.target.value) setError(""); }} />
           <button type="submit" aria-label="登录" disabled={submitting || !password}><ArrowRight theme="outline" size="21" /></button>
         </div>
-        {error && <p id="owner-login-error" className="login-error">{error}</p>}
+        <p id="owner-login-error" className="login-error">{error}</p>
       </form>}
     </section>;
   }
