@@ -9,7 +9,7 @@ export const onRequestGet = async (context: PagesContext) => {
     const id = new URL(context.request.url).searchParams.get("id")?.trim() || "";
     const cacheUrl = new URL(`/__edge-cache/music/resolve/${encodeURIComponent(id)}`, context.request.url).toString();
     return await cachedResponse(cacheUrl, 300, context, async () => {
-      const url = await resolveNeteasePlaybackUrl(id);
+      const url = await resolveNeteasePlaybackUrl(id, context.env.CHKSZ_API_KEY);
       return apiResponse({ url }, requestId, {}, "public, max-age=300");
     });
   } catch (error) {

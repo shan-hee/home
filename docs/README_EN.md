@@ -55,8 +55,9 @@ Add the following bindings in the Pages project settings:
 | R2 bucket | `ASSET_BUCKET` | Select the R2 bucket |
 | Secret | `OWNER_PASSWORD` | Owner password with at least 8 characters |
 | Secret | `IP_HASH_SECRET` | Random string with at least 32 characters |
+| Secret | `CHKSZ_API_KEY` | ChKSz NetEase Music API key |
 
-Use the Secret type for `OWNER_PASSWORD` and `IP_HASH_SECRET`, and never add a `VITE_` prefix. Add `QWEATHER_API_KEY` and `WALLHAVEN_API_KEY` only when needed.
+Use the Secret type for `OWNER_PASSWORD`, `IP_HASH_SECRET`, and `CHKSZ_API_KEY`, and never add a `VITE_` prefix. Sign in to [ChKSz API](https://api.chksz.com/) to get `CHKSZ_API_KEY`. Add `QWEATHER_API_KEY` and `WALLHAVEN_API_KEY` only when needed.
 
 ### 4. Initialize the site once
 
@@ -102,7 +103,7 @@ Initial content comes from `scripts/site-content.seed.example.json`. After deplo
 ## External services
 
 - [nuoxian's Music API](https://docs.nxvav.cn/doc/music.html)
-- [ChKSz NetEase Music API](https://api.chksz.top/docs/163_music.html)
+- [ChKSz NetEase Music API](https://api.chksz.com/docs/163_music.html)
 - [nuoxian's Bing Wallpaper API](https://docs.nxvav.cn/doc/bing.html)
 - [Wallhaven API](https://wallhaven.cc/help/api)
 - [Open-Meteo](https://open-meteo.com/) and [MET Norway](https://api.met.no/)

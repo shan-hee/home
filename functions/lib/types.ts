@@ -55,6 +55,7 @@ export interface AppEnvironment {
   OWNER_PASSWORD?: string;
   IP_HASH_SECRET?: string;
   WALLHAVEN_API_KEY?: string;
+  CHKSZ_API_KEY?: string;
   QWEATHER_API_KEY?: string;
   QWEATHER_API_HOST?: string;
 }

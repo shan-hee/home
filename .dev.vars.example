@@ -6,6 +6,9 @@ OWNER_PASSWORD = ""
 # 用于登录限流的 IP 摘要密钥，应使用 `openssl rand -base64 48` 生成。
 IP_HASH_SECRET = ""
 
+# 网易云音乐播放地址解析服务密钥；登录 https://api.chksz.com/ 后获取。
+CHKSZ_API_KEY = ""
+
 # 可选：中国天气预警。留空时 /api/alerts 返回空数组，不影响普通天气。
 QWEATHER_API_KEY = ""
 QWEATHER_API_HOST = "devapi.qweather.com"

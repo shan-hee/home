@@ -2,7 +2,7 @@ import { ApiError } from "./api";
 import { fetchWithTimeout } from "./http";
 
 const NXVAV_ENDPOINT = "https://api.nxvav.cn/api/music/";
-const CHKSZ_NETEASE_ENDPOINT = "https://api.chksz.top/api/163_music";
+const CHKSZ_NETEASE_ENDPOINT = "https://api.chksz.com/api/163_music";
 const CHKSZ_NETEASE_LEVEL = "lossless";
 const NETEASE_LYRIC_ENDPOINT = "https://music.163.com/api/song/lyric";
 const NETEASE_USER_PLAYLIST_ENDPOINT = "https://music.163.com/api/user/playlist";
@@ -214,14 +214,19 @@ export const fetchNeteaseUserPlaylists = async (input: string): Promise<{ userId
   return { userId, playlists };
 };
 
-export const resolveNeteasePlaybackUrl = async (id: string) => {
+export const resolveNeteasePlaybackUrl = async (id: string, apiKey: string | undefined) => {
   if (!/^\d{1,20}$/.test(id)) {
     throw new ApiError(400, "MUSIC_TRACK_ID_INVALID", "歌曲 ID 格式无效");
+  }
+  const normalizedApiKey = apiKey?.trim();
+  if (!normalizedApiKey) {
+    throw new ApiError(503, "MUSIC_RESOLVE_NOT_CONFIGURED", "音乐解析服务 API 密钥未配置");
   }
 
   const upstream = new URL(CHKSZ_NETEASE_ENDPOINT);
   upstream.searchParams.set("id", id);
   upstream.searchParams.set("level", CHKSZ_NETEASE_LEVEL);
+  upstream.searchParams.set("apikey", normalizedApiKey);
 
   let response: Response;
   try {

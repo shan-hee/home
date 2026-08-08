@@ -55,8 +55,9 @@
 | R2 Bucket | `ASSET_BUCKET` | 选择创建的 R2 Bucket |
 | Secret | `OWNER_PASSWORD` | 管理员登录密码，至少 8 个字符 |
 | Secret | `IP_HASH_SECRET` | 至少 32 个字符的随机字符串 |
+| Secret | `CHKSZ_API_KEY` | ChKSz 网易云音乐解析 API 密钥 |
 
-`OWNER_PASSWORD` 和 `IP_HASH_SECRET` 必须选择 Secret 类型，不要添加 `VITE_` 前缀。可按需添加 `QWEATHER_API_KEY` 和 `WALLHAVEN_API_KEY`。
+`OWNER_PASSWORD`、`IP_HASH_SECRET` 和 `CHKSZ_API_KEY` 必须选择 Secret 类型，不要添加 `VITE_` 前缀。`CHKSZ_API_KEY` 可在 [ChKSz API](https://api.chksz.com/) 登录后获取；可按需添加 `QWEATHER_API_KEY` 和 `WALLHAVEN_API_KEY`。
 
 ### 4. 首次初始化
 
@@ -102,7 +103,7 @@ pnpm dev:cf
 ## 外部服务
 
 - [nuoxian's API 音乐解析](https://docs.nxvav.cn/doc/music.html)
-- [ChKSz API 网易云音乐解析](https://api.chksz.top/docs/163_music.html)
+- [ChKSz API 网易云音乐解析](https://api.chksz.com/docs/163_music.html)
 - [nuoxian's API 必应每日美图](https://docs.nxvav.cn/doc/bing.html)
 - [Wallhaven API](https://wallhaven.cc/help/api)
 - [Open-Meteo](https://open-meteo.com/) 与 [MET Norway](https://api.met.no/)
