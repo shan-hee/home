@@ -13,6 +13,7 @@ export interface MainState {
     mobileOpenState: boolean;
     mobileFuncState: boolean;
     playerStatus: PlayerStatus;
+    playerFullscreen: boolean;
     playerPlayIntent: boolean;
     playerHasStarted: boolean;
     playerError: string | null;

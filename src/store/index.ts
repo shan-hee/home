@@ -15,6 +15,7 @@ const initialState: MainState = {
   mobileOpenState: false,
   mobileFuncState: false,
   playerStatus: "idle",
+  playerFullscreen: false,
   playerPlayIntent: false,
   playerHasStarted: false,
   playerError: null,

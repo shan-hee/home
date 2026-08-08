@@ -12,10 +12,12 @@ export default function Footer({ className = "" }: { className?: string }) {
   const title = useMainStore((state) => state.playerTitle);
   const artist = useMainStore((state) => state.playerArtist);
   const queueOpen = useMainStore((state) => state.musicBoxOpenState);
+  const playerFullscreen = useMainStore((state) => state.playerFullscreen);
   const profile = useSiteContentStore((state) => state.snapshot.sections.profile);
   const showPlayer = footerPlayer && musicReady;
+  const raiseAboveQueue = queueOpen && !playerFullscreen;
   return createPortal(
-    <footer id="footer" className={`${blur ? "blur " : ""}${queueOpen ? "is-queue-open " : ""}${className}`.trim()}>
+    <footer id="footer" className={`${blur ? "blur " : ""}${raiseAboveQueue ? "is-queue-open " : ""}${className}`.trim()}>
       {!showPlayer ? (
         <div className="power">
           <span>&copy;&nbsp;{new Date().getFullYear()}&nbsp;&amp;&nbsp;by&nbsp;<a href={profile.repositoryUrl} target="_blank" rel="noopener noreferrer">shanhee</a></span>

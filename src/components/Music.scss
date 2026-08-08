@@ -502,6 +502,10 @@
   scrollbar-width: thin;
 }
 
+.queue-layer.is-fullscreen .queue-content {
+  padding-bottom: 12px;
+}
+
 .queue-section {
   margin: 0;
 
